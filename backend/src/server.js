@@ -1,7 +1,7 @@
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
-import path from "path"; // 1. Import thêm path để xử lý đường dẫn thư mục
+import path from "path";
 import { cleanupInactiveUsers } from "./controllers/usersControllers.js";
 import { cleanupExpiredTrashTasks } from "./controllers/tasksControllers.js";
 import { connectDB } from "./config/db.js";
@@ -15,27 +15,15 @@ const INACTIVE_ACCOUNT_CHECK_INTERVAL = 60 * 60 * 1000;
 
 const app = express();
 
-const allowedOrigins = (process.env.CORS_ORIGIN || "http://localhost:5173,http://127.0.0.1:5173").split(",").map((origin) => origin.trim()).filter(Boolean);
-
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-        return;
-      }
-
-      callback(new Error("Not allowed by CORS"));
-    },
-    credentials: true,
-  })
-);
+// Cấu hình CORS tối ưu để chạy chung frontend & backend hoặc môi trường phát triển
+app.use(cors());
 app.use(express.json());
 
+// Routes API
 app.use("/api/users", userRoute);
 app.use("/api/tasks", taskRoute);
 
-// 2. Thêm đoạn cấu hình phục vụ Frontend (cho môi trường Production trên Render)
+// Cấu hình phục vụ Frontend (cho môi trường Production trên Render)
 const __dirname = path.resolve();
 app.use(express.static(path.join(__dirname, "../frontend/dist")));
 
