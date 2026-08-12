@@ -1,6 +1,7 @@
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
+import path from "path"; // 1. Import thêm path để xử lý đường dẫn thư mục
 import { cleanupInactiveUsers } from "./controllers/usersControllers.js";
 import { cleanupExpiredTrashTasks } from "./controllers/tasksControllers.js";
 import { connectDB } from "./config/db.js";
@@ -19,6 +20,14 @@ app.use(express.json());
 
 app.use("/api/users", userRoute);
 app.use("/api/tasks", taskRoute);
+
+// 2. Thêm đoạn cấu hình phục vụ Frontend (cho môi trường Production trên Render)
+const __dirname = path.resolve();
+app.use(express.static(path.join(__dirname, "../frontend/dist")));
+
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "../frontend/dist/index.html"));
+});
 
 const runMaintenanceJobs = async () => {
   try {
