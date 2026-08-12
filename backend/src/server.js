@@ -19,7 +19,6 @@ app.use(express.json());
 
 app.use("/api/users", userRoute);
 app.use("/api/tasks", taskRoute);
-app.use("/api/premium", (await import('./routes/premiumRoutes.js')).default);
 
 const runMaintenanceJobs = async () => {
   try {
