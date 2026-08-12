@@ -3,10 +3,12 @@
     "version": "1.0.0",
     "main": "index.js",
     "scripts": {
-        "build": "npm install --prefix backend && npm install frontend && npm run build --prefix frontend",
+        "build": "npm --prefix backend ci && npm --prefix frontend ci && npm --prefix frontend run build",
         "start": "npm run start --prefix backend"
 
-
+    },
+    "engines": {
+        "node": "18.x"
     },
     "keywords": [],
     "author": "",
