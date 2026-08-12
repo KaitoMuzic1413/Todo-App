@@ -31,3 +31,9 @@ export const restoreTask = (taskId, userId) => api.patch(`/tasks/${taskId}/resto
 export const deleteTaskPermanently = (taskId, userId) => api.delete(`/tasks/${taskId}/permanent`, { data: { userId } });
 
 export const clearTrash = (userId) => api.delete('/tasks/trash/clear', { data: { userId } });
+
+// quota and premium
+export const getUserQuota = (userId) => api.get(`/tasks/quota/${userId}`);
+export const createInvite = (userId, code, expiresInDays) => api.post('/premium/invite/create', { userId, code, expiresInDays });
+export const redeemInvite = (userId, code) => api.post('/premium/invite/redeem', { userId, code });
+export const listInvites = (userId) => api.get('/premium/invite/list', { params: { userId } });

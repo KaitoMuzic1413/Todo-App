@@ -29,6 +29,8 @@ const HomePage = () => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const [quota, setQuota] = useState({ remaining: Infinity, allowed: 350, created: 0 });
+  const [showQuotaModal, setShowQuotaModal] = useState(false);
 
   useEffect(() => {
     const syncUser = () => setCurrentUser(getStoredUser());
@@ -53,6 +55,14 @@ const HomePage = () => {
         const response = await fetchTasks(currentUser._id);
         setTasks(response.data || []);
         setCurrentPage(1);
+
+        // fetch quota
+        try {
+          const q = await getUserQuota(currentUser._id);
+          setQuota(q.data || { remaining: Infinity });
+        } catch (err) {
+          console.warn('Failed to fetch quota', err);
+        }
       } catch (error) {
         console.error('Failed to load tasks', error);
       } finally {
@@ -73,29 +83,32 @@ const HomePage = () => {
   const handleAddTask = async (title) => {
     if (!currentUser?._id) return;
 
-    // enforce weekly limit of 350 creations per user (client-side enforcement)
+    // client-side check using quota state
+    if (quota.remaining !== Infinity && quota.remaining <= 0) {
+      // show premium modal
+      const go = window.confirm('Bạn đã hết lượt tạo task trong tuần. Muốn nâng cấp lên Premium?');
+      if (go) navigate('/premium');
+      return;
+    }
+
     try {
-      const now = new Date();
-      const weekAgo = new Date(now);
-      weekAgo.setDate(weekAgo.getDate() - 7);
-
-      const createdLast7Days = tasks.filter((t) => new Date(t.createdAt) >= weekAgo).length;
-      const baseLimit = 350;
-      // read any premium extra quota from localStorage (simulated purchase)
-      const premium = JSON.parse(localStorage.getItem('todo-premium') || 'null');
-      const extraQuota = premium && premium.expiresAt && premium.expiresAt > Date.now() ? (premium.extraQuota || premium.extra || 0) : 0;
-
-      if (createdLast7Days >= baseLimit + extraQuota) {
-        // redirect to premium page
-        navigate('/premium');
-        return;
-      }
-
       const response = await createTask({ userId: currentUser._id, title });
       setTasks((previous) => [response.data, ...previous]);
       setCurrentPage(1);
+
+      // update quota after creation
+      try {
+        const q = await getUserQuota(currentUser._id);
+        setQuota(q.data || quota);
+      } catch (err) {
+        console.warn('Failed to refresh quota after create', err);
+      }
     } catch (error) {
       console.error('Failed to create task', error);
+      if (error?.response?.data?.code === 'quota_exceeded') {
+        const go = window.confirm('Bạn đã hết lượt tạo task trong tuần. Muốn nâng cấp lên Premium?');
+        if (go) navigate('/premium');
+      }
     }
   };
 
@@ -161,7 +174,15 @@ const HomePage = () => {
             Loading tasks...
           </div>
         ) : (
-          <TaskList tasks={visibleTasks} onToggle={handleToggleTask} onDelete={handleDeleteTask} onUpdate={handleUpdateTask} />
+          <>
+            {quota?.remaining !== Infinity && quota?.remaining <= 10 ? (
+              <div className='mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800'>
+                Cảnh báo: Chỉ còn {quota.remaining} lượt tạo task trong tuần. Hãy cân nhắc nâng cấp Premium.
+              </div>
+            ) : null}
+
+            <TaskList tasks={visibleTasks} onToggle={handleToggleTask} onDelete={handleDeleteTask} onUpdate={handleUpdateTask} />
+          </>
         )}
 
         <div className='flex flex-col items-center justify-between gap-6 sm:flex-row'>

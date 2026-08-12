@@ -18,10 +18,8 @@ const PremiumPage = () => {
     setProcessing(true);
     setMessage('');
 
-    // Simulate payment process delay
     await new Promise((r) => setTimeout(r, 1200));
 
-    // Save premium info locally (simulated)
     const now = Date.now();
     const plan = PLANS.find((p) => p.id === selected);
     const premium = {
@@ -30,12 +28,59 @@ const PremiumPage = () => {
       expiresAt: now + 1000 * 60 * 60 * 24 * 30, // 30 days for demo
     };
 
+    // Save via backend ideally — for now, store and keep UI updated
     localStorage.setItem('todo-premium', JSON.stringify(premium));
     setProcessing(false);
     setMessage('Thanh toán mô phỏng thành công. Quota đã được cập nhật.');
 
-    // navigate back after a short delay
     setTimeout(() => navigate('/'), 1200);
+  };
+
+  const [inviteCode, setInviteCode] = useState('');
+  const handleRedeem = async () => {
+    if (!inviteCode.trim()) return;
+    setProcessing(true);
+    try {
+      const user = JSON.parse(localStorage.getItem('todo-user') || 'null');
+      if (!user?._id) throw new Error('Bạn cần đăng nhập để nhập mã mời');
+      const res = await fetch('/api/premium/invite/redeem', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user._id, code: inviteCode.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Lỗi');
+      setMessage('Mã mời áp dụng thành công. Bạn nhận được premium 1 tháng.');
+      // refresh local user premium
+      const stored = JSON.parse(localStorage.getItem('todo-user') || 'null');
+      if (stored) stored.premium = data.premium || stored.premium;
+      localStorage.setItem('todo-user', JSON.stringify(stored));
+    } catch (err) {
+      setMessage(err.message || 'Lỗi khi áp dụng mã');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  // admin create invite
+  const [newCode, setNewCode] = useState('');
+  const [adminList, setAdminList] = useState([]);
+  const handleCreateCode = async () => {
+    if (!newCode.trim()) return;
+    try {
+      const user = JSON.parse(localStorage.getItem('todo-user') || 'null');
+      const res = await fetch('/api/premium/invite/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user._id, code: newCode.trim(), expiresInDays: 30 }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Lỗi');
+      setMessage('Tạo mã thành công');
+      setNewCode('');
+    } catch (err) {
+      setMessage(err.message || 'Lỗi tạo mã');
+    }
   };
 
   return (
