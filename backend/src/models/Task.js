@@ -1,32 +1,36 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
-const taskSchema = new mongoose.Schema({
+const taskSchema = new mongoose.Schema(
+  {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      index: true,
+    },
     title: {
-        type: String,
-        required: true,
-        trim: true,
+      type: String,
+      required: true,
+      trim: true,
     },
     status: {
-        type: String,
-        enum: ["active", "complete"],
-        default: "active"
+      type: String,
+      enum: ["active", "complete"],
+      default: "active",
     },
     completedAt: {
-        type: Date,
-        default: null
+      type: Date,
+      default: null,
     },
-    isDeleted: { 
-        type: Boolean, default: false 
-    },
-    deletedAt: { 
-        type: Date, default: null 
-    }
-},
-{
-    timestamps: true,
-});
+    important: { type: Boolean, default: false },
+    isDeleted: { type: Boolean, default: false },
+    deletedAt: { type: Date, default: null },
+  },
+  { timestamps: true }
+);
 
-taskSchema.index({ deletedAt: 1 });
+taskSchema.index({ userId: 1, isDeleted: 1, createdAt: -1 });
+taskSchema.index({ deletedAt: 1 }, { expireAfterSeconds: 2592000 });
 
-const Task = mongoose.models.Task || mongoose.model("Task", taskSchema);
+const Task = mongoose.model("Task", taskSchema);
 export default Task;

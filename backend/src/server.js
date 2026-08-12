@@ -1,50 +1,52 @@
-import express from 'express';
-import mongoose from 'mongoose';
-import cron from 'node-cron';
-import dotenv from 'dotenv';
+import cors from "cors";
+import dotenv from "dotenv";
+import express from "express";
+import { cleanupInactiveUsers } from "./controllers/usersControllers.js";
+import { cleanupExpiredTrashTasks } from "./controllers/tasksControllers.js";
+import { connectDB } from "./config/db.js";
+import taskRoute from "./routes/tasksRouters.js";
+import userRoute from "./routes/usersRoutes.js";
 
 dotenv.config();
 
-import tasksRouters from './routes/tasksRouters.js';
-import Task from './models/Task.js';
+const PORT = process.env.PORT || 5001;
+const INACTIVE_ACCOUNT_CHECK_INTERVAL = 60 * 60 * 1000;
 
 const app = express();
 
+app.use(cors());
 app.use(express.json());
 
-app.use('/api/tasks', tasksRouters);
+app.use("/api/users", userRoute);
+app.use("/api/tasks", taskRoute);
 
-app.get('/', (req, res) => {
-  res.send('Kaito Todo App Backend is running successfully!');
-});
+const runMaintenanceJobs = async () => {
+  try {
+    const { deletedUsers, deletedTasks } = await cleanupInactiveUsers();
+    const expiredTrashTasks = await cleanupExpiredTrashTasks();
 
-const PORT = process.env.PORT || 5000;
-const MONGO_URI = process.env.MONGODB_CONNECTIONSTRING;
+    if (deletedUsers > 0 || deletedTasks > 0 || expiredTrashTasks > 0) {
+      console.log(
+        `Maintenance complete: ${deletedUsers} inactive users removed, ${deletedTasks} tasks removed, ${expiredTrashTasks} expired trash tasks deleted.`
+      );
+    }
+  } catch (error) {
+    console.error("Error during maintenance cleanup:", error);
+  }
+};
 
-mongoose.connect(MONGO_URI)
-  .then(() => {
-    console.log('MongoDB Connected Successfully');
+const startMaintenanceJobs = () => {
+  runMaintenanceJobs();
 
-    cron.schedule('0 0 * * *', async () => {
-      try {
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  setInterval(() => {
+    runMaintenanceJobs();
+  }, INACTIVE_ACCOUNT_CHECK_INTERVAL);
+};
 
-        const result = await Task.deleteMany({
-          isDeleted: true,
-          deletedAt: { $lt: thirtyDaysAgo }
-        });
-        
-        console.log(`[Cron Job] Deleted ${result.deletedCount} task pass 30 days.`);
-      } catch (error) {
-        console.error('[Cron Job Error]:', error);
-      }
-    });
+connectDB().then(() => {
+  startMaintenanceJobs();
 
-    app.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`);
-    });
-  })
-  .catch((err) => {
-    console.error('MongoDB Connection Error:', err);
+  app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
   });
+});
