@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
+import { createInvite, redeemInvite, listInvites } from '@/lib/api';
 
 const PLANS = [
   { id: 'weekly', label: '1$/week', desc: '+400 lượt', extra: 400, priceVND: 25000 },
@@ -78,10 +79,28 @@ const PremiumPage = () => {
       if (!res.ok) throw new Error(data.message || 'Lỗi');
       setMessage('Tạo mã thành công');
       setNewCode('');
+      // refresh list
+      loadAdminInvites();
     } catch (err) {
       setMessage(err.message || 'Lỗi tạo mã');
     }
   };
+
+  const loadAdminInvites = async () => {
+    try {
+      const user = JSON.parse(localStorage.getItem('todo-user') || 'null');
+      if (!user?._id) return;
+      const res = await fetch(`/api/premium/invite/list?userId=${user._id}`);
+      const data = await res.json();
+      if (res.ok) setAdminList(data.invites || []);
+    } catch (err) {
+      // ignore
+    }
+  };
+
+  useEffect(() => {
+    loadAdminInvites();
+  }, []);
 
   return (
     <div className='space-y-6'>
