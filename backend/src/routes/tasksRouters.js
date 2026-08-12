@@ -23,4 +23,7 @@ router.patch("/:id/restore", restoreTask);
 router.delete("/:id/permanent", deletePermanentTask);
 router.delete("/:id", deleteTask);
 
+// user quota
+router.get("/quota/:userId", getUserQuota);
+
 export default router;

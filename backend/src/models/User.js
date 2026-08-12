@@ -17,6 +17,15 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    isAdmin: {
+      type: Boolean,
+      default: false,
+    },
+    premium: {
+      extraQuota: { type: Number, default: 0 },
+      expiresAt: { type: Date, default: null },
+      unlimitedUntil: { type: Date, default: null },
+    },
   },
   { timestamps: true }
 );

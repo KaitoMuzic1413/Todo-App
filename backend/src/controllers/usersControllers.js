@@ -51,14 +51,21 @@ export const loginUserWithEmail = async (req, res) => {
 
     let user = await User.findOne({ email: normalizedEmail });
 
+    const adminEmail = process.env.ADMIN_EMAIL ? String(process.env.ADMIN_EMAIL).toLowerCase().trim() : null;
+
     if (!user) {
       user = await User.create({
         email: normalizedEmail,
         name: safeName || "User",
         lastActiveAt: new Date(),
+        isAdmin: adminEmail && adminEmail === normalizedEmail,
       });
     } else {
       user.lastActiveAt = new Date();
+      // ensure isAdmin matches env for privileged account
+      if (adminEmail && user.email === adminEmail && !user.isAdmin) {
+        user.isAdmin = true;
+      }
       await user.save();
     }
 
@@ -67,6 +74,8 @@ export const loginUserWithEmail = async (req, res) => {
         _id: user._id,
         email: user.email,
         name: user.name,
+        isAdmin: !!user.isAdmin,
+        premium: user.premium || null,
       },
     });
   } catch (error) {

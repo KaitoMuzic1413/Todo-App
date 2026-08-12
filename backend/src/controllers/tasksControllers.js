@@ -78,6 +78,34 @@ export const getAllTasks = async (req, res) => {
   }
 };
 
+export const getUserQuota = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    if (!userId) return res.status(400).json({ message: 'userId required' });
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const now = new Date();
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const baseLimit = 350;
+
+    if (user.premium?.unlimitedUntil && user.premium.unlimitedUntil > now) {
+      return res.status(200).json({ remaining: Infinity });
+    }
+
+    const createdCount = await Task.countDocuments({ userId, createdAt: { $gte: weekAgo } });
+    const extra = (user.premium && user.premium.extraQuota) || 0;
+    const allowed = baseLimit + extra;
+    const remaining = Math.max(0, allowed - createdCount);
+
+    return res.status(200).json({ remaining, allowed, created: createdCount });
+  } catch (error) {
+    console.error('Error getUserQuota', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
 export const createTask = async (req, res) => {
   try {
     const { title, userId } = req.body;
@@ -88,6 +116,26 @@ export const createTask = async (req, res) => {
 
     if (!userId) {
       return res.status(400).json({ message: "userId is required." });
+    }
+
+    // enforce weekly quota on server side
+    const baseLimit = 350;
+    const now = new Date();
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // check unlimited
+    if (user.premium?.unlimitedUntil && user.premium.unlimitedUntil > now) {
+      // unlimited: allow
+    } else {
+      const createdCount = await Task.countDocuments({ userId, createdAt: { $gte: weekAgo } });
+      const extra = (user.premium && user.premium.extraQuota) || 0;
+      const allowed = baseLimit + extra;
+      if (createdCount >= allowed) {
+        return res.status(403).json({ code: 'quota_exceeded', message: 'Task creation quota exceeded for this week.' });
+      }
     }
 
     const task = new Task({
