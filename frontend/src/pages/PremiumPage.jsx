@@ -118,7 +118,7 @@ const handleRedeem = async () => {
             <button className='absolute right-3 top-3 rounded-full p-1' onClick={() => setShowPurchaseModal(false)} aria-label='Close'>
               Đóng
             </button>
-            <img src='/Bank.jpg' alt='Bank' className='mx-auto mb-4 h-36 w-full object-cover rounded-md' />
+            <img src='/Bank.jpg' alt='Bank' className='mx-auto mb-4 w-full h-auto max-h-56 object-contain rounded-md' />
             <h3 className='text-lg font-semibold mb-2'>Bạn chọn: {PLANS.find(p => p.id === selected)?.label}</h3>
             <p className='text-sm text-slate-500 mb-4'>{PLANS.find(p => p.id === selected)?.desc}</p>
             <div className='flex justify-end gap-3'>
