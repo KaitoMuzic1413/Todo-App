@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 
+// Khai báo Backend URL trên Render
+const BACKEND_URL = 'https://todo-app-1112.onrender.com';
+
 const CreateInvitePage = () => {
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState(false);
@@ -13,7 +16,7 @@ const CreateInvitePage = () => {
   // Hàm tải danh sách mã từ server
   const loadInvites = async (userId) => {
     try {
-      const res = await fetch(`http://localhost:5001/api/premium/invite/list?userId=${userId}`);
+      const res = await fetch(`${BACKEND_URL}/api/premium/invite/list?userId=${userId}`);
       const data = await res.json();
       if (res.ok) {
         setInvites(data.invites || []);
@@ -40,7 +43,7 @@ const CreateInvitePage = () => {
 
     setProcessing(true);
     try {
-      const res = await fetch('http://localhost:5001/api/premium/invite/create', {
+      const res = await fetch(`${BACKEND_URL}/api/premium/invite/create`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -71,7 +74,7 @@ const CreateInvitePage = () => {
     if (!user) return;
 
     try {
-      const res = await fetch('http://localhost:5001/api/premium/invite/delete', {
+      const res = await fetch(`${BACKEND_URL}/api/premium/invite/delete`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: user._id, inviteId }),
