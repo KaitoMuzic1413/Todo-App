@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router';
-import { ChevronLeft, Globe, LogIn, LogOut, Mail, Moon, Phone, Search, SunMedium, UserCircle2 } from 'lucide-react';
+import { ChevronLeft, Crown, Globe, LogIn, LogOut, Mail, Moon, Phone, Search, SunMedium, UserCircle2, X } from 'lucide-react';
 import { loginWithEmail } from '@/lib/api';
 import { useLanguage } from '@/lib/i18n';
 
@@ -32,8 +32,9 @@ export function LayoutShell({ children }) {
 
   const navItems = [
     { name: t.home, to: '/' },
-    { name: t.contact, to: '/about' },
+    { name: t.premium, to: '/premium' },
     { name: t.trash, to: '/trash' },
+    { name: t.contact, to: '/about' },
   ];
 
   useEffect(() => {
@@ -134,7 +135,11 @@ export function LayoutShell({ children }) {
       </div>
 
       {isSidebarOpen ? (
-        <aside className='fixed left-0 top-0 z-30 flex h-screen w-[320px] flex-col border-r border-slate-200/80 bg-white/80 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/80'>
+        <div className='fixed inset-0 z-20 bg-slate-950/35 lg:hidden' onClick={() => setIsSidebarOpen(false)} aria-hidden='true' />
+      ) : null}
+
+      {isSidebarOpen ? (
+        <aside className={`fixed left-0 top-0 z-30 flex h-screen w-[320px] flex-col border-r border-slate-200/80 bg-white/80 backdrop-blur-xl transition-transform duration-300 dark:border-slate-800 dark:bg-slate-950/80 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
           <div className='flex items-center justify-between border-b border-slate-200/80 bg-white/60 p-4 dark:border-slate-800 dark:bg-slate-950/60'>
             <div className='flex items-center gap-3 rounded-2xl bg-slate-100/80 px-3 py-3 shadow-sm dark:bg-slate-900'>
               <img src='/Logo.jpg' alt='Redhat logo' className='h-12 w-12 rounded-xl object-cover shadow-sm' />
@@ -147,8 +152,17 @@ export function LayoutShell({ children }) {
             <button
               type='button'
               onClick={() => setIsSidebarOpen(false)}
-              className='flex h-9 w-9 cursor-default items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'
+              className='flex h-9 w-9 cursor-default items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 lg:hidden'
               aria-label='Close sidebar'
+            >
+              <X className='h-4 w-4' />
+            </button>
+
+            <button
+              type='button'
+              onClick={() => setIsSidebarOpen(false)}
+              className='hidden h-9 w-9 cursor-default items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 lg:flex'
+              aria-label='Collapse sidebar'
             >
               <ChevronLeft className='h-4 w-4' />
             </button>
@@ -171,6 +185,9 @@ export function LayoutShell({ children }) {
                 <NavLink
                   key={item.to}
                   to={item.to}
+                  onClick={() => {
+                    if (window.innerWidth < 1024) setIsSidebarOpen(false);
+                  }}
                   className={({ isActive }) =>
                     `flex cursor-default items-center justify-between rounded-2xl px-3 py-2.5 text-sm font-medium transition-colors ${
                       isActive
@@ -179,7 +196,10 @@ export function LayoutShell({ children }) {
                     }`
                   }
                 >
-                  <span>{item.name}</span>
+                  <span className='flex items-center gap-2'>
+                    {item.to === '/premium' ? <Crown className='h-4 w-4' /> : null}
+                    {item.name}
+                  </span>
                   <span className='text-xs text-slate-400'>→</span>
                 </NavLink>
               ))}
@@ -257,8 +277,8 @@ export function LayoutShell({ children }) {
         </aside>
       ) : null}
 
-      <main className={`min-h-screen transition-all duration-300 ${isSidebarOpen ? 'ml-[320px]' : 'ml-0'}`}>
-        <div className='mx-auto max-w-5xl px-6 py-8'>{children}</div>
+      <main className={`min-h-screen transition-all duration-300 ${isSidebarOpen ? 'lg:ml-[320px]' : 'lg:ml-0'}`}>
+        <div className='mx-auto max-w-5xl px-4 py-8 sm:px-6'>{children}</div>
       </main>
     </div>
   );
