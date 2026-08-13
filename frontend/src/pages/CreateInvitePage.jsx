@@ -1,8 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 
-// Khai báo Backend URL trên Render
-const BACKEND_URL = 'https://todo-app-1112.onrender.com';
+// Tự động nhận diện môi trường:
+// - Nếu chạy trên máy cá nhân (localhost) -> dùng cổng 5001
+// - Nếu chạy trên web công khai -> dùng link Render
+const BACKEND_URL = 
+  window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:5001'
+    : 'https://todo-app-1112.onrender.com';
 
 const CreateInvitePage = () => {
   const navigate = useNavigate();
