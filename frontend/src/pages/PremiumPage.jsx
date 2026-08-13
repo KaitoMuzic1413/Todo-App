@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
+import { createInvite } from '@/lib/api';
 
 const PLANS = [
   { id: 'weekly', label: '1$/week', desc: '+400 lượt', extra: 400, priceVND: 25000 },
@@ -38,6 +39,34 @@ const handlePurchase = async () => {
 };
 
 const [inviteCode, setInviteCode] = useState('');
+const [adminMode, setAdminMode] = useState(false);
+const [createCode, setCreateCode] = useState('');
+const [createExpires, setCreateExpires] = useState(30);
+const [adminMessage, setAdminMessage] = useState('');
+
+useEffect(() => {
+  try {
+    const u = JSON.parse(localStorage.getItem('todo-user') || 'null');
+    setAdminMode(!!u?.isAdmin);
+  } catch (e) {
+    setAdminMode(false);
+  }
+}, []);
+
+const handleCreateInvite = async () => {
+  if (!createCode.trim()) return setAdminMessage('Mã không được rỗng');
+  setAdminMessage('');
+  try {
+    const user = JSON.parse(localStorage.getItem('todo-user') || 'null');
+    const res = await createInvite(user._id, createCode.trim(), Number(createExpires || 30));
+    setAdminMessage('Tạo mã thành công: ' + res.data.invite.code);
+    setCreateCode('');
+  } catch (err) {
+    console.error(err);
+    setAdminMessage(err?.response?.data?.message || 'Lỗi khi tạo mã');
+  }
+};
+
 const handleRedeem = async () => {
   if (!inviteCode.trim()) return;
   setProcessing(true);
@@ -102,6 +131,18 @@ const handleRedeem = async () => {
       </section>
 
       <div className='mt-6 space-y-4'>
+        {adminMode ? (
+          <div className='rounded-2xl border p-4'>
+            <h4 className='mb-2 font-medium'>Tạo mã mời (Admin)</h4>
+            <div className='flex flex-col gap-2 sm:flex-row'>
+              <input value={createCode} onChange={(e) => setCreateCode(e.target.value)} placeholder='Mã (ví dụ: INVITE-ABC-123)' className='flex-1 rounded-2xl border px-3 py-2' />
+              <input type='number' value={createExpires} onChange={(e) => setCreateExpires(e.target.value)} className='w-28 rounded-2xl border px-3 py-2' />
+              <button onClick={handleCreateInvite} disabled={processing} className='rounded-2xl bg-blue-600 px-4 py-2 text-white'>Tạo mã</button>
+            </div>
+            {adminMessage ? <p className='mt-2 text-sm text-slate-600'>{adminMessage}</p> : null}
+          </div>
+        ) : null}
+
         <div className='rounded-2xl border p-4'>
           <h4 className='mb-2 font-medium'>Nhập mã mời</h4>
           <div className='flex gap-2'>

@@ -31,6 +31,7 @@ const HomePage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [quota, setQuota] = useState({ remaining: Infinity, allowed: 350, created: 0 });
   const [showQuotaModal, setShowQuotaModal] = useState(false);
+  const [filterKey, setFilterKey] = useState('all');
 
   useEffect(() => {
     const syncUser = () => setCurrentUser(getStoredUser());
@@ -73,12 +74,29 @@ const HomePage = () => {
     loadTasks();
   }, [currentUser, navigate]);
 
-  const totalPages = Math.max(1, Math.ceil(tasks.length / PAGE_SIZE));
+  // apply filter (all | today | important | pending | completed)
+  const filteredTasks = useMemo(() => {
+    if (!filterKey || filterKey === 'all') return tasks;
+    if (filterKey === 'important') return tasks.filter((t) => !!t.important);
+    if (filterKey === 'completed') return tasks.filter((t) => t.status === 'complete');
+    if (filterKey === 'pending') return tasks.filter((t) => t.status !== 'complete');
+    if (filterKey === 'today') {
+      const start = new Date();
+      start.setHours(0, 0, 0, 0);
+      return tasks.filter((t) => new Date(t.createdAt) >= start);
+    }
+    return tasks;
+  }, [tasks, filterKey]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredTasks.length / PAGE_SIZE));
   const safeCurrentPage = Math.min(Math.max(currentPage, 1), totalPages);
   const visibleTasks = useMemo(
-    () => tasks.slice((safeCurrentPage - 1) * PAGE_SIZE, safeCurrentPage * PAGE_SIZE),
-    [safeCurrentPage, tasks]
+    () => filteredTasks.slice((safeCurrentPage - 1) * PAGE_SIZE, safeCurrentPage * PAGE_SIZE),
+    [safeCurrentPage, filteredTasks]
   );
+
+  const pendingVisible = visibleTasks.filter((t) => t.status !== 'complete');
+  const completedVisible = visibleTasks.filter((t) => t.status === 'complete');
 
   const handleAddTask = async (title) => {
     if (!currentUser?._id) return;
@@ -167,7 +185,7 @@ const HomePage = () => {
 
         <AddTask onAdd={handleAddTask} />
 
-        <StatsAndFilters tasks={tasks} />
+        <StatsAndFilters tasks={tasks} onFilterChange={setFilterKey} />
 
         {loading ? (
           <div className='rounded-[28px] border border-slate-200 bg-white/80 p-5 text-slate-500 dark:border-slate-800 dark:bg-slate-900/70'>
@@ -181,7 +199,10 @@ const HomePage = () => {
               </div>
             ) : null}
 
-            <TaskList tasks={visibleTasks} onToggle={handleToggleTask} onDelete={handleDeleteTask} onUpdate={handleUpdateTask} />
+            <div className='space-y-4'>
+              <TaskList title='Pending' tasks={pendingVisible} onToggle={handleToggleTask} onDelete={handleDeleteTask} onUpdate={handleUpdateTask} />
+              <TaskList title='Completed' tasks={completedVisible} onToggle={handleToggleTask} onDelete={handleDeleteTask} onUpdate={handleUpdateTask} />
+            </div>
           </>
         )}
 

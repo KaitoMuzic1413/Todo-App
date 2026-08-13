@@ -2,7 +2,7 @@ import { CheckCircle2, Circle, PencilLine, Star, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { useLanguage } from '@/lib/i18n';
 
-const TaskList = ({ tasks = [], onToggle, onDelete, onUpdate }) => {
+const TaskList = ({ title, tasks = [], onToggle, onDelete, onUpdate }) => {
   const { t } = useLanguage();
   const [editingTaskId, setEditingTaskId] = useState(null);
   const [draftValue, setDraftValue] = useState('');
@@ -33,7 +33,7 @@ const TaskList = ({ tasks = [], onToggle, onDelete, onUpdate }) => {
   return (
     <div className='rounded-[28px] border border-slate-200/80 bg-white/80 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/70'>
       <div className='mb-4 flex items-center justify-between'>
-        <h3 className='text-xl font-semibold text-slate-900 dark:text-white'>{t.todayTasks}</h3>
+        <h3 className='text-xl font-semibold text-slate-900 dark:text-white'>{title || t.todayTasks}</h3>
         <button type='button' className='inline-flex cursor-default items-center gap-2 rounded-full bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-200'>
           <PencilLine className='h-3.5 w-3.5' />
           {t.manage}
