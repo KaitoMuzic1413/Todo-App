@@ -11,7 +11,6 @@ import CreateInvitePage from './pages/CreateInvitePage';
 function App() {
   return (
     <>
-      <Toaster />
       <BrowserRouter>
         <Routes>
           <Route path='/' element={<HomePages />} />
