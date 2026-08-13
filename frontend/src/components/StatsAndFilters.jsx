@@ -5,7 +5,6 @@ import { useState } from 'react';
 
 const filters = [
   { key: 'all', label: 'All tasks' },
-  { key: 'today', label: 'Today' },
   { key: 'important', label: 'Important' },
   { key: 'pending', label: 'Pending' },
   { key: 'completed', label: 'Completed' },
@@ -66,5 +65,4 @@ const StatsAndFilters = ({ tasks = [], onFilterChange }) => {
   );
 };
 
-export default StatsAndFilters;
 export default StatsAndFilters;

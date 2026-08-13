@@ -80,11 +80,6 @@ const HomePage = () => {
     if (filterKey === 'important') return tasks.filter((t) => !!t.important);
     if (filterKey === 'completed') return tasks.filter((t) => t.status === 'complete');
     if (filterKey === 'pending') return tasks.filter((t) => t.status !== 'complete');
-    if (filterKey === 'today') {
-      const start = new Date();
-      start.setHours(0, 0, 0, 0);
-      return tasks.filter((t) => new Date(t.createdAt) >= start);
-    }
     return tasks;
   }, [tasks, filterKey]);
 
