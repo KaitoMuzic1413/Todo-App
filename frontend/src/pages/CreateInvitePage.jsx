@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { createInvite } from '@/lib/api';
 
 const CreateInvitePage = () => {
   const navigate = useNavigate();
@@ -9,77 +8,165 @@ const CreateInvitePage = () => {
   const [expiresInDays, setExpiresInDays] = useState(30);
   const [message, setMessage] = useState('');
   const [processing, setProcessing] = useState(false);
+  const [invites, setInvites] = useState([]);
+
+  // Hàm tải danh sách mã từ server
+  const loadInvites = async (userId) => {
+    try {
+      const res = await fetch(`http://localhost:5001/api/premium/invite/list?userId=${userId}`);
+      const data = await res.json();
+      if (res.ok) {
+        setInvites(data.invites || []);
+      }
+    } catch (err) {
+      console.error('Không thể tải danh sách mã:', err);
+    }
+  };
 
   useEffect(() => {
-    try {
-      const u = JSON.parse(localStorage.getItem('todo-user') || 'null');
-      setIsAdmin(!!u?.isAdmin);
-      if (!u?.isAdmin) {
-        // redirect non-admins away
-        // keep simple: navigate back
-        // eslint-disable-next-line no-console
-        console.warn('Non-admin tried to access create invite page');
-      }
-    } catch (e) {
-      setIsAdmin(false);
+    const u = JSON.parse(localStorage.getItem('todo-user') || 'null');
+    if (u?.isAdmin) {
+      setIsAdmin(true);
+      loadInvites(u._id);
     }
   }, []);
 
   const handleCreate = async () => {
     setMessage('');
     if (!code.trim()) return setMessage('Mã không được để trống');
+    
+    const user = JSON.parse(localStorage.getItem('todo-user') || 'null');
+    if (!user) return setMessage('Vui lòng đăng nhập!');
+
+    setProcessing(true);
     try {
-      setProcessing(true);
-      const user = JSON.parse(localStorage.getItem('todo-user') || 'null');
-      const res = await createInvite(user._id, code.trim(), Number(expiresInDays || 30));
-      setMessage('Tạo mã thành công: ' + res.data.invite.code);
+      const res = await fetch('http://localhost:5001/api/premium/invite/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          userId: user._id, 
+          code: code.trim(), 
+          expiresInDays: Number(expiresInDays) 
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Lỗi hệ thống');
+
+      setMessage('Tạo mã thành công: ' + data.invite.code);
       setCode('');
+      loadInvites(user._id); // Refresh bảng
     } catch (err) {
-      setMessage(err?.response?.data?.message || 'Lỗi khi tạo mã');
+      setMessage(err.message);
     } finally {
       setProcessing(false);
     }
   };
 
+  // Hàm xóa mã
+  const handleDelete = async (inviteId) => {
+    if (!confirm('Bạn có chắc chắn muốn xóa mã này không?')) return;
+
+    const user = JSON.parse(localStorage.getItem('todo-user') || 'null');
+    if (!user) return;
+
+    try {
+      const res = await fetch('http://localhost:5001/api/premium/invite/delete', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user._id, inviteId }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Lỗi khi xóa');
+
+      // Tải lại danh sách sau khi xóa thành công
+      loadInvites(user._id);
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
   if (!isAdmin) {
     return (
-      <div className='rounded-[28px] border border-slate-200/80 bg-white/80 p-6 text-slate-500 dark:border-slate-800 dark:bg-slate-900/70'>
-        <h2 className='text-lg font-semibold'>Bạn không có quyền truy cập</h2>
-        <p className='mt-2 text-sm'>Trang này chỉ dành cho quản trị viên.</p>
+      <div className='p-6 text-center'>
+        <h2 className='text-xl font-bold'>Quyền truy cập bị từ chối</h2>
+        <p>Bạn không phải là quản trị viên.</p>
       </div>
     );
   }
 
   return (
-    <div className='space-y-6'>
-      <header className='rounded-[16px] border border-slate-200/80 bg-white/80 p-6 dark:border-slate-800 dark:bg-slate-900/70 flex items-start justify-between'>
-        <div>
-          <h1 className='text-2xl font-bold'>Tạo mã mời</h1>
-          <p className='mt-2 text-sm text-slate-500'>Tạo mã mời để cấp quyền Premium cho người dùng.</p>
-        </div>
-        <div className='ml-4 flex-shrink-0'>
-          <button
-            type='button'
-            onClick={() => navigate(-1)}
-            className='inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800'
-          >
-            Quay về
-          </button>
-        </div>
+    <div className='max-w-4xl mx-auto p-6 space-y-6'>
+      <header className='flex justify-between items-center'>
+        <h1 className='text-2xl font-bold'>Quản lý mã mời Premium</h1>
+        <button onClick={() => navigate(-1)} className='px-4 py-2 border rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition'>Quay về</button>
       </header>
 
-      <div className='rounded-2xl border p-4'>
-        <label className='block text-sm font-medium text-slate-700'>Mã mời</label>
-        <input value={code} onChange={(e) => setCode(e.target.value)} placeholder='INVITE-ABC-123' className='mt-2 w-full rounded-2xl border px-3 py-2' />
-        <label className='mt-3 block text-sm font-medium text-slate-700'>Hết hạn (ngày)</label>
-        <input type='number' value={expiresInDays} onChange={(e) => setExpiresInDays(e.target.value)} className='mt-2 w-28 rounded-2xl border px-3 py-2' />
-        <div className='mt-4 flex gap-2'>
-          <button onClick={handleCreate} disabled={processing} className='rounded-2xl bg-blue-600 px-4 py-2 text-white'>
-            {processing ? 'Đang tạo...' : 'Tạo mã'}
-          </button>
-          <button onClick={() => { setCode(''); setExpiresInDays(30); setMessage(''); }} className='rounded-2xl border px-4 py-2'>Reset</button>
-        </div>
-        {message ? <p className='mt-3 text-sm text-slate-600'>{message}</p> : null}
+      {/* Form tạo mã */}
+      <div className='bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4'>
+        <input 
+          value={code} onChange={(e) => setCode(e.target.value)} 
+          placeholder='Nhập mã mời (vd: PRO-2026)' 
+          className='w-full p-3 border rounded-xl bg-transparent' 
+        />
+        <input 
+          type='number' value={expiresInDays} onChange={(e) => setExpiresInDays(e.target.value)} 
+          className='w-full p-3 border rounded-xl bg-transparent' 
+        />
+        <button 
+          onClick={handleCreate} disabled={processing}
+          className='w-full bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-xl disabled:opacity-50 font-medium transition'
+        >
+          {processing ? 'Đang tạo...' : 'Tạo mã mời'}
+        </button>
+        {message && <p className='text-sm font-medium text-blue-600'>{message}</p>}
+      </div>
+
+      {/* Bảng danh sách */}
+      <div className='bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm'>
+        <h2 className='font-semibold mb-4 text-lg'>Danh sách mã</h2>
+        <table className='w-full text-left border-collapse'>
+          <thead>
+            <tr className='text-sm text-slate-500 border-b border-slate-100 dark:border-slate-800'>
+              <th className='p-3'>Mã</th>
+              <th className='p-3'>Trạng thái</th>
+              <th className='p-3'>Ngày tạo</th>
+              <th className='p-3 text-right'>Hành động</th>
+            </tr>
+          </thead>
+          <tbody>
+            {invites.length === 0 ? (
+              <tr>
+                <td colSpan='4' className='p-4 text-center text-slate-400'>Chưa có mã mời nào.</td>
+              </tr>
+            ) : (
+              invites.map((item) => (
+                <tr key={item._id} className='border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50/50 dark:hover:bg-slate-800/30'>
+                  <td className='p-3 font-mono text-blue-600 font-medium'>{item.code}</td>
+                  <td className='p-3'>
+                    {item.redeemedBy?.length > 0 ? (
+                      <span className='bg-red-100 text-red-600 dark:bg-red-950 dark:text-red-400 text-xs px-2.5 py-1 rounded-md font-semibold'>Đã dùng</span>
+                    ) : (
+                      <span className='bg-green-100 text-green-600 dark:bg-green-950 dark:text-green-400 text-xs px-2.5 py-1 rounded-md font-semibold'>Sẵn sàng</span>
+                    )}
+                  </td>
+                  <td className='p-3 text-slate-500 text-sm'>
+                    {new Date(item.createdAt).toLocaleDateString()}
+                  </td>
+                  <td className='p-3 text-right'>
+                    <button 
+                      onClick={() => handleDelete(item._id)}
+                      className='px-3 py-1 bg-red-50 hover:bg-red-100 text-red-600 dark:bg-red-950/50 dark:hover:bg-red-900 text-xs font-semibold rounded-lg transition'
+                    >
+                      Xóa
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
