@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router';
-import { ChevronLeft, Crown, Globe, LogIn, LogOut, Mail, Moon, Phone, Search, SunMedium, UserCircle2, X } from 'lucide-react';
+import { ChevronLeft, Crown, Globe, LogIn, LogOut, Mail, Moon, Phone, Search, SunMedium, UserCircle2, X, Key } from 'lucide-react';
 import { loginWithEmail } from '@/lib/api';
 import { useLanguage } from '@/lib/i18n';
 
@@ -221,6 +221,21 @@ export function LayoutShell({ children }) {
                 <span>{t.language}: {language === 'en' ? t.english : t.vietnamese}</span>
                 <Globe className='h-4 w-4' />
               </button>
+
+              {/* Admin only: Create invite key link */}
+              {currentUser?.isAdmin ? (
+                <NavLink
+                  to='/invite/create'
+                  onClick={() => { if (window.innerWidth < 1024) setIsSidebarOpen(false); }}
+                  className={({ isActive }) => `mt-2 flex cursor-default items-center justify-between rounded-2xl px-3 py-2.5 text-left text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-900 ${isActive ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-200' : ''}`}
+                >
+                  <span className='flex items-center gap-2'>
+                    <Key className='h-4 w-4' />
+                    Tạo mã mời
+                  </span>
+                  <span className='text-xs text-slate-400'>→</span>
+                </NavLink>
+              ) : null}
             </nav>
           </div>
 
