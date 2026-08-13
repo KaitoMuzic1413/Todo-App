@@ -7,6 +7,7 @@ import { cleanupExpiredTrashTasks } from "./controllers/tasksControllers.js";
 import { connectDB } from "./config/db.js";
 import taskRoute from "./routes/tasksRouters.js";
 import userRoute from "./routes/usersRoutes.js";
+import premiumRoute from "./routes/premiumRoutes.js";
 
 dotenv.config();
 
@@ -19,9 +20,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Routes API
+// Routes API (Chỉ khai báo 1 lần duy nhất)
 app.use("/api/users", userRoute);
 app.use("/api/tasks", taskRoute);
+app.use("/api/premium", premiumRoute);
 
 // Cấu hình phục vụ Frontend (cho môi trường Production trên Render)
 const __dirname = path.resolve();

@@ -30,7 +30,6 @@ const HomePage = () => {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [quota, setQuota] = useState({ remaining: Infinity, allowed: 350, created: 0 });
-  const [showQuotaModal, setShowQuotaModal] = useState(false);
   const [filterKey, setFilterKey] = useState('all');
 
   useEffect(() => {
@@ -74,7 +73,7 @@ const HomePage = () => {
     loadTasks();
   }, [currentUser, navigate]);
 
-  // apply filter (all | today | important | pending | completed)
+  // apply filter (all | important | pending | completed) - Bỏ lọc today
   const filteredTasks = useMemo(() => {
     if (!filterKey || filterKey === 'all') return tasks;
     if (filterKey === 'important') return tasks.filter((t) => !!t.important);
@@ -90,15 +89,10 @@ const HomePage = () => {
     [safeCurrentPage, filteredTasks]
   );
 
-  const pendingVisible = visibleTasks.filter((t) => t.status !== 'complete');
-  const completedVisible = visibleTasks.filter((t) => t.status === 'complete');
-
   const handleAddTask = async (title) => {
     if (!currentUser?._id) return;
 
-    // client-side check using quota state
     if (quota.remaining !== Infinity && quota.remaining <= 0) {
-      // show premium modal
       const go = window.confirm('Bạn đã hết lượt tạo task trong tuần. Muốn nâng cấp lên Premium?');
       if (go) navigate('/premium');
       return;
@@ -109,7 +103,6 @@ const HomePage = () => {
       setTasks((previous) => [response.data, ...previous]);
       setCurrentPage(1);
 
-      // update quota after creation
       try {
         const q = await getUserQuota(currentUser._id);
         setQuota(q.data || quota);
@@ -180,7 +173,8 @@ const HomePage = () => {
 
         <AddTask onAdd={handleAddTask} />
 
-        <StatsAndFilters tasks={tasks} onFilterChange={setFilterKey} />
+        {/* Component StatsAndFilters cần đảm bảo ở bên trong nó đã ẩn nút Today */}
+        <StatsAndFilters tasks={tasks} onFilterChange={(key) => { setFilterKey(key); setCurrentPage(1); }} />
 
         {loading ? (
           <div className='rounded-[28px] border border-slate-200 bg-white/80 p-5 text-slate-500 dark:border-slate-800 dark:bg-slate-900/70'>
@@ -195,8 +189,13 @@ const HomePage = () => {
             ) : null}
 
             <div className='space-y-4'>
-              <TaskList title='Pending' tasks={pendingVisible} onToggle={handleToggleTask} onDelete={handleDeleteTask} onUpdate={handleUpdateTask} />
-              <TaskList title='Completed' tasks={completedVisible} onToggle={handleToggleTask} onDelete={handleDeleteTask} onUpdate={handleUpdateTask} />
+              {filterKey === 'all' || filterKey === 'important' ? (
+                // Nếu ở All tasks hoặc Important: hiển thị gộp chung vào 1 danh sách duy nhất
+                <TaskList title={filterKey === 'important' ? 'Important Tasks' : 'All Tasks'} tasks={visibleTasks} onToggle={handleToggleTask} onDelete={handleDeleteTask} onUpdate={handleUpdateTask} />
+              ) : (
+                // Nếu lọc riêng Pending hoặc Completed: hiển thị theo từng nhóm cụ thể
+                <TaskList title={filterKey === 'completed' ? 'Completed Tasks' : 'Pending Tasks'} tasks={visibleTasks} onToggle={handleToggleTask} onDelete={handleDeleteTask} onUpdate={handleUpdateTask} />
+              )}
             </div>
           </>
         )}
