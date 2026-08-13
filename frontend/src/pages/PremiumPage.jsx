@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { createInvite, redeemInvite, listInvites } from '@/lib/api';
 
 const PLANS = [
   { id: 'weekly', label: '1$/week', desc: '+400 lượt', extra: 400, priceVND: 25000 },
@@ -13,113 +12,86 @@ const PremiumPage = () => {
   const [selected, setSelected] = useState(null);
   const [processing, setProcessing] = useState(false);
   const [message, setMessage] = useState('');
+const [showPurchaseModal, setShowPurchaseModal] = useState(false);
 
-  const handlePurchase = async () => {
-    if (!selected) return;
-    setProcessing(true);
-    setMessage('');
+const handlePurchase = async () => {
+  if (!selected) return;
+  setProcessing(true);
+  setMessage('');
 
-    await new Promise((r) => setTimeout(r, 1200));
+  await new Promise((r) => setTimeout(r, 1200));
 
-    const now = Date.now();
-    const plan = PLANS.find((p) => p.id === selected);
-    const premium = {
-      purchasedAt: now,
-      extraQuota: plan.extra,
-      expiresAt: now + 1000 * 60 * 60 * 24 * 30, // 30 days for demo
-    };
+  const now = Date.now();
+  const plan = PLANS.find((p) => p.id === selected);
+  const premium = {
+    purchasedAt: now,
+    extraQuota: plan.extra,
+    expiresAt: now + 1000 * 60 * 60 * 24 * 30, // 30 days for demo
+  };
 
-    // Save via backend ideally — for now, store and keep UI updated
-    localStorage.setItem('todo-premium', JSON.stringify(premium));
+  // Save via backend ideally — for now, store and keep UI updated
+  localStorage.setItem('todo-premium', JSON.stringify(premium));
+  setProcessing(false);
+  setMessage('Thanh toán mô phỏng thành công. Quota đã được cập nhật.');
+
+  setTimeout(() => navigate('/'), 1200);
+};
+
+const [inviteCode, setInviteCode] = useState('');
+const handleRedeem = async () => {
+  if (!inviteCode.trim()) return;
+  setProcessing(true);
+  try {
+    const user = JSON.parse(localStorage.getItem('todo-user') || 'null');
+    if (!user?._id) throw new Error('Bạn cần đăng nhập để nhập mã mời');
+    const res = await fetch('/api/premium/invite/redeem', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: user._id, code: inviteCode.trim() }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Lỗi');
+    setMessage('Mã mời áp dụng thành công. Bạn nhận được premium 1 tháng.');
+    // refresh local user premium
+    const stored = JSON.parse(localStorage.getItem('todo-user') || 'null');
+    if (stored) stored.premium = data.premium || stored.premium;
+    localStorage.setItem('todo-user', JSON.stringify(stored));
+  } catch (err) {
+    setMessage(err.message || 'Lỗi khi áp dụng mã');
+  } finally {
     setProcessing(false);
-    setMessage('Thanh toán mô phỏng thành công. Quota đã được cập nhật.');
+  }
+};
 
-    setTimeout(() => navigate('/'), 1200);
-  };
-
-  const [inviteCode, setInviteCode] = useState('');
-  const handleRedeem = async () => {
-    if (!inviteCode.trim()) return;
-    setProcessing(true);
-    try {
-      const user = JSON.parse(localStorage.getItem('todo-user') || 'null');
-      if (!user?._id) throw new Error('Bạn cần đăng nhập để nhập mã mời');
-      const res = await fetch('/api/premium/invite/redeem', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user._id, code: inviteCode.trim() }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Lỗi');
-      setMessage('Mã mời áp dụng thành công. Bạn nhận được premium 1 tháng.');
-      // refresh local user premium
-      const stored = JSON.parse(localStorage.getItem('todo-user') || 'null');
-      if (stored) stored.premium = data.premium || stored.premium;
-      localStorage.setItem('todo-user', JSON.stringify(stored));
-    } catch (err) {
-      setMessage(err.message || 'Lỗi khi áp dụng mã');
-    } finally {
-      setProcessing(false);
-    }
-  };
-
-  // admin create invite
-  const [newCode, setNewCode] = useState('');
-  const [adminList, setAdminList] = useState([]);
-  const handleCreateCode = async () => {
-    if (!newCode.trim()) return;
-    try {
-      const user = JSON.parse(localStorage.getItem('todo-user') || 'null');
-      const res = await fetch('/api/premium/invite/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user._id, code: newCode.trim(), expiresInDays: 30 }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Lỗi');
-      setMessage('Tạo mã thành công');
-      setNewCode('');
-      // refresh list
-      loadAdminInvites();
-    } catch (err) {
-      setMessage(err.message || 'Lỗi tạo mã');
-    }
-  };
-
-  const loadAdminInvites = async () => {
-    try {
-      const user = JSON.parse(localStorage.getItem('todo-user') || 'null');
-      if (!user?._id) return;
-      const res = await fetch(`/api/premium/invite/list?userId=${user._id}`);
-      const data = await res.json();
-      if (res.ok) setAdminList(data.invites || []);
-    } catch (err) {
-      // ignore
-    }
-  };
-
-  useEffect(() => {
-    loadAdminInvites();
-  }, []);
 
   return (
     <div className='space-y-6'>
-      <header className='rounded-[16px] border border-slate-200/80 bg-white/80 p-6 dark:border-slate-800 dark:bg-slate-900/70'>
-        <h1 className='text-2xl font-bold'>Nâng cấp tài khoản</h1>
-        <p className='mt-2 text-sm text-slate-500'>Chọn gói để nhận thêm lượt tạo task. (Thanh toán giả lập)</p>
+      <header className='rounded-[16px] border border-slate-200/80 bg-white/80 p-6 dark:border-slate-800 dark:bg-slate-900/70 flex items-start justify-between'>
+        <div>
+          <h1 className='text-2xl font-bold'>Nâng cấp tài khoản</h1>
+          <p className='mt-2 text-sm text-slate-500'>Chọn gói để nhận thêm lượt tạo task. (Thanh toán giả lập)</p>
+        </div>
+        <div className='ml-4 flex-shrink-0'>
+          <button
+            type='button'
+            onClick={() => navigate('/')}
+            className='inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800'
+          >
+            Quay về
+          </button>
+        </div>
       </header>
 
       <section className='grid gap-4 md:grid-cols-3'>
         {PLANS.map((plan) => (
           <div key={plan.id} className='rounded-2xl border p-4'>
-            <img src='/Bank.jpg' alt='Bank' className='h-28 w-full object-cover rounded-md' />
-            <h3 className='mt-3 text-lg font-semibold'>{plan.label}</h3>
+            <h3 className='mt-1 text-lg font-semibold'>{plan.label}</h3>
             <p className='text-sm text-slate-500'>{plan.desc}</p>
             <p className='mt-2 font-medium'>{plan.priceVND.toLocaleString('vi-VN')} ₫</p>
             <div className='mt-3 flex gap-2'>
               <button
                 type='button'
-                onClick={() => setSelected(plan.id)}
+                onClick={() => { setSelected(plan.id); setShowPurchaseModal(true); }}
                 className={`rounded-full px-3 py-2 text-sm ${selected === plan.id ? 'bg-violet-600 text-white' : 'bg-slate-100 text-slate-700'}`}
               >
                 Chọn
@@ -129,17 +101,33 @@ const PremiumPage = () => {
         ))}
       </section>
 
-      <div className='flex items-center gap-3'>
-        <button
-          type='button'
-          onClick={handlePurchase}
-          disabled={!selected || processing}
-          className={`rounded-2xl px-4 py-2 text-white ${!selected ? 'bg-slate-300' : 'bg-emerald-600'}`}
-        >
-          {processing ? 'Đang xử lý...' : 'Thanh toán (mô phỏng)'}
-        </button>
-        <button type='button' onClick={() => navigate('/')} className='rounded-2xl px-4 py-2 border'>Hủy</button>
+      <div className='mt-6 space-y-4'>
+        <div className='rounded-2xl border p-4'>
+          <h4 className='mb-2 font-medium'>Nhập mã mời</h4>
+          <div className='flex gap-2'>
+            <input value={inviteCode} onChange={(e) => setInviteCode(e.target.value)} placeholder='Nhập mã mời' className='flex-1 rounded-2xl border px-3 py-2' />
+            <button onClick={handleRedeem} disabled={processing || !inviteCode.trim()} className='rounded-2xl bg-emerald-600 px-4 py-2 text-white'>Áp dụng</button>
+          </div>
+        </div>
+
       </div>
+
+      {showPurchaseModal ? (
+        <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/40'>
+          <div className='relative w-full max-w-md rounded-2xl bg-white p-6 shadow-lg dark:bg-slate-900'>
+            <button className='absolute right-3 top-3 rounded-full p-1' onClick={() => setShowPurchaseModal(false)} aria-label='Close'>
+              Đóng
+            </button>
+            <img src='/Bank.jpg' alt='Bank' className='mx-auto mb-4 h-36 w-full object-cover rounded-md' />
+            <h3 className='text-lg font-semibold mb-2'>Bạn chọn: {PLANS.find(p => p.id === selected)?.label}</h3>
+            <p className='text-sm text-slate-500 mb-4'>{PLANS.find(p => p.id === selected)?.desc}</p>
+            <div className='flex justify-end gap-3'>
+              <button onClick={() => { setShowPurchaseModal(false); setSelected(null); }} className='rounded-2xl px-4 py-2 border'>Hủy</button>
+              <button onClick={async () => { await handlePurchase(); setShowPurchaseModal(false); }} disabled={!selected || processing} className='rounded-2xl bg-emerald-600 px-4 py-2 text-white'>{processing ? 'Đang xử lý...' : 'Xác nhận thanh toán'}</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {message ? <p className='mt-2 text-sm text-emerald-600'>{message}</p> : null}
     </div>
