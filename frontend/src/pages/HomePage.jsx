@@ -165,6 +165,19 @@ const HomePage = () => {
           setTimeout(() => setHighlightTaskId(null), 3000);
         }, 200);
 
+        // remove the search param so subsequent user actions are not overridden
+        try {
+          const url = new URL(window.location.href);
+          url.searchParams.delete('search');
+          window.history.replaceState({}, '', url.pathname + url.search + url.hash);
+        } catch (e) {
+          try {
+            window.history.replaceState({}, '', window.location.pathname + window.location.hash);
+          } catch (e2) {
+            /* ignore */
+          }
+        }
+
         return;
       }
 
@@ -188,12 +201,38 @@ const HomePage = () => {
           setTimeout(() => setHighlightTaskId(null), 3000);
         }, 300);
 
+        // remove the search param so it doesn't keep forcing the view
+        try {
+          const url = new URL(window.location.href);
+          url.searchParams.delete('search');
+          window.history.replaceState({}, '', url.pathname + url.search + url.hash);
+        } catch (e) {
+          try {
+            window.history.replaceState({}, '', window.location.pathname + window.location.hash);
+          } catch (e2) {
+            /* ignore */
+          }
+        }
+
         return;
       }
 
       // not found
       setHighlightTaskId(null);
       setSearchNotFound(true);
+
+      // clear search param even if not found so user can interact freely
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('search');
+        window.history.replaceState({}, '', url.pathname + url.search + url.hash);
+      } catch (e) {
+        try {
+          window.history.replaceState({}, '', window.location.pathname + window.location.hash);
+        } catch (e2) {
+          /* ignore */
+        }
+      }
     } catch (err) {
       console.error('Search handling failed', err);
     }
