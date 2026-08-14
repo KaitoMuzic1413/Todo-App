@@ -17,6 +17,7 @@ const getStoredUser = () => {
 
 export function LayoutShell({ children }) {
   const { language, setLanguage, t } = useLanguage();
+  const navigate = useNavigate();
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window === 'undefined') return false;
     return localStorage.getItem('todo-theme') === 'dark';
@@ -181,9 +182,14 @@ export function LayoutShell({ children }) {
                     if (val) {
                       const searchParam = encodeURIComponent(val);
                       try {
-                        window.location.href = `/?search=${searchParam}`;
+                        // navigate without full reload
+                        navigate(`/?search=${searchParam}`);
                       } catch (err) {
-                        /* fallback */
+                        try {
+                          window.location.href = `/?search=${searchParam}`;
+                        } catch (err2) {
+                          /* fallback */
+                        }
                       }
                     }
                   }

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useLocation } from 'react-router';
 import AddTask from '@/components/AddTask';
 import DateTimeFilter from '@/components/DateTimeFilter';
 import Footer from '@/components/Footer';
@@ -67,6 +67,7 @@ const taskMatchesDateRange = (task, value) => {
 
 const HomePage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [currentUser, setCurrentUser] = useState(getStoredUser);
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -138,7 +139,7 @@ const HomePage = () => {
   // -- handle search via URL ?search=term
   useEffect(() => {
     try {
-      const params = new URLSearchParams(window.location.search);
+      const params = new URLSearchParams(location.search || window.location.search);
       const q = params.get('search')?.trim();
       if (!q) {
         setHighlightTaskId(null);
@@ -236,7 +237,7 @@ const HomePage = () => {
     } catch (err) {
       console.error('Search handling failed', err);
     }
-  }, [filteredTasks, tasks]);
+  }, [filteredTasks, tasks, location.search]);
 
   const totalPages = Math.max(1, Math.ceil(filteredTasks.length / PAGE_SIZE));
   const safeCurrentPage = Math.min(Math.max(currentPage, 1), totalPages);
