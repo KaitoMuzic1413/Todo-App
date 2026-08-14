@@ -17,7 +17,7 @@ const formatTaskCreatedAt = (value) => {
   });
 };
 
-const TaskList = ({ title, tasks = [], onToggle, onDelete, onUpdate }) => {
+const TaskList = ({ title, tasks = [], onToggle, onDelete, onUpdate, highlightTaskId = null }) => {
   const { t } = useLanguage();
   const [editingTaskId, setEditingTaskId] = useState(null);
   const [draftValue, setDraftValue] = useState('');
@@ -68,7 +68,10 @@ const TaskList = ({ title, tasks = [], onToggle, onDelete, onUpdate }) => {
             return (
               <div
                 key={task._id}
-                className='flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950/50'
+                id={`task-${task._id}`}
+                className={`flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950/50 ${
+                  highlightTaskId === task._id ? 'ring-2 ring-violet-300 dark:ring-violet-600 animate-pulse' : ''
+                }`}
               >
                 <div className='flex min-w-0 flex-1 items-center gap-3'>
                   <button

@@ -74,6 +74,8 @@ const HomePage = () => {
   const [quota, setQuota] = useState({ remaining: Infinity, allowed: 350, created: 0 });
   const [filterKey, setFilterKey] = useState('all');
   const [timeFilter, setTimeFilter] = useState('today');
+  const [highlightTaskId, setHighlightTaskId] = useState(null);
+  const [searchNotFound, setSearchNotFound] = useState(false);
 
   useEffect(() => {
     const syncUser = () => setCurrentUser(getStoredUser());
@@ -132,6 +134,70 @@ const HomePage = () => {
 
     return nextTasks;
   }, [tasks, filterKey, timeFilter]);
+
+  // -- handle search via URL ?search=term
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const q = params.get('search')?.trim();
+      if (!q) {
+        setHighlightTaskId(null);
+        setSearchNotFound(false);
+        return;
+      }
+
+      const term = q.toLowerCase();
+
+      // 1) try to find within current filteredTasks
+      const idxInFiltered = filteredTasks.findIndex((t) => (t.title || '').toLowerCase().includes(term));
+      if (idxInFiltered >= 0) {
+        const page = Math.floor(idxInFiltered / PAGE_SIZE) + 1;
+        setCurrentPage(page);
+        const id = filteredTasks[idxInFiltered]._id;
+        setHighlightTaskId(id);
+        setSearchNotFound(false);
+
+        // scroll to element after render
+        setTimeout(() => {
+          const el = document.getElementById(`task-${id}`);
+          if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          // remove highlight after 3s
+          setTimeout(() => setHighlightTaskId(null), 3000);
+        }, 200);
+
+        return;
+      }
+
+      // 2) broaden: find in all tasks regardless of filters
+      const idxInAll = tasks.findIndex((t) => (t.title || '').toLowerCase().includes(term));
+      if (idxInAll >= 0) {
+        // switch to All view and no time filter so user sees it in All
+        setFilterKey('all');
+        setTimeFilter('all');
+
+        // compute index within all tasks (after setting filters we'll rely on tasks ordering)
+        const page = Math.floor(idxInAll / PAGE_SIZE) + 1;
+        setCurrentPage(page);
+        const id = tasks[idxInAll]._id;
+        setHighlightTaskId(id);
+        setSearchNotFound(false);
+
+        setTimeout(() => {
+          const el = document.getElementById(`task-${id}`);
+          if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          setTimeout(() => setHighlightTaskId(null), 3000);
+        }, 300);
+
+        return;
+      }
+
+      // not found
+      setHighlightTaskId(null);
+      setSearchNotFound(true);
+    } catch (err) {
+      console.error('Search handling failed', err);
+    }
+  }, [filteredTasks, tasks]);
 
   const totalPages = Math.max(1, Math.ceil(filteredTasks.length / PAGE_SIZE));
   const safeCurrentPage = Math.min(Math.max(currentPage, 1), totalPages);

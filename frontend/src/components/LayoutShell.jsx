@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { NavLink } from 'react-router';
+import { NavLink, useNavigate, useLocation } from 'react-router';
 import { ChevronLeft, Crown, Globe, LogIn, LogOut, Mail, Moon, Phone, Search, SunMedium, UserCircle2, X, Key, Home, Trash2 } from 'lucide-react';
 import { loginWithEmail } from '@/lib/api';
 import { useLanguage } from '@/lib/i18n';
@@ -173,7 +173,24 @@ export function LayoutShell({ children }) {
               <Search className='h-4 w-4' />
               <input
                 type='text'
+                value={undefined}
                 placeholder={t.searchTask}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const val = e.target.value?.trim();
+                    if (val) {
+                      const searchParam = encodeURIComponent(val);
+                      // navigate to home with search param
+                      try {
+                        // use window.location to keep simple router behavior
+                        window.location.href = `/?search=${searchParam}`;
+                      } catch (err) {
+                        /* fallback */
+                      }
+                    }
+                  }
+                }}
                 className='w-full border-0 bg-transparent text-sm text-slate-700 placeholder:text-slate-400 outline-none dark:text-slate-200 dark:placeholder:text-slate-500'
               />
             </label>
