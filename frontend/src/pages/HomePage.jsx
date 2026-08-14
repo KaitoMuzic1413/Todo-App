@@ -336,6 +336,8 @@ const HomePage = () => {
           onFilterChange={(key) => {
             setFilterKey(key);
             setCurrentPage(1);
+            setHighlightTaskId(null);
+            setSearchNotFound(false);
           }}
         />
 
@@ -379,13 +381,19 @@ const HomePage = () => {
           <TaskListPagination
             currentPage={safeCurrentPage}
             totalPages={totalPages}
-            onPageChange={setCurrentPage}
+            onPageChange={(p) => {
+              setCurrentPage(p);
+              setHighlightTaskId(null);
+              setSearchNotFound(false);
+            }}
           />
           <DateTimeFilter
             value={timeFilter}
             onChange={(value) => {
               setTimeFilter(value);
               setCurrentPage(1);
+              setHighlightTaskId(null);
+              setSearchNotFound(false);
             }}
           />
         </div>
