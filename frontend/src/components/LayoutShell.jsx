@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router';
-import { ChevronLeft, Crown, Globe, LogIn, LogOut, Mail, Moon, Phone, Search, SunMedium, UserCircle2, X, Key } from 'lucide-react';
+import { ChevronLeft, Crown, Globe, LogIn, LogOut, Mail, Moon, Phone, Search, SunMedium, UserCircle2, X, Key, Home, Trash2 } from 'lucide-react';
 import { loginWithEmail } from '@/lib/api';
 import { useLanguage } from '@/lib/i18n';
 
@@ -197,8 +197,11 @@ export function LayoutShell({ children }) {
                   }
                 >
                   <span className='flex items-center gap-2'>
+                    {item.to === '/' ? <Home className='h-4 w-4' /> : null}
                     {item.to === '/premium' ? <Crown className='h-4 w-4' /> : null}
-                    {item.name}
+                    {item.to === '/trash' ? <Trash2 className='h-4 w-4' /> : null}
+                    {item.to === '/about' ? <Mail className='h-4 w-4' /> : null}
+                    <span>{item.name}</span>
                   </span>
                   <span className='text-xs text-slate-400'>→</span>
                 </NavLink>

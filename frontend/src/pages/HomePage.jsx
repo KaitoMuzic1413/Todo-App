@@ -23,6 +23,48 @@ const getStoredUser = () => {
   }
 };
 
+const getDateRangeStart = (value) => {
+  const now = new Date();
+
+  if (!value || value === 'all') {
+    return null;
+  }
+
+  if (value === 'today') {
+    const start = new Date(now);
+    start.setHours(0, 0, 0, 0);
+    return start;
+  }
+
+  if (value === 'week') {
+    const start = new Date(now);
+    start.setDate(now.getDate() - 6);
+    start.setHours(0, 0, 0, 0);
+    return start;
+  }
+
+  if (value === 'month') {
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  }
+
+  return null;
+};
+
+const taskMatchesDateRange = (task, value) => {
+  const minDate = getDateRangeStart(value);
+  if (!minDate) return true;
+
+  const candidateDates = [task?.createdAt, task?.updatedAt, task?.completedAt].filter(Boolean);
+
+  return candidateDates.some((dateValue) => {
+    const date = new Date(dateValue);
+    if (Number.isNaN(date.getTime())) {
+      return false;
+    }
+    return date >= minDate;
+  });
+};
+
 const HomePage = () => {
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(getStoredUser);
@@ -31,6 +73,7 @@ const HomePage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [quota, setQuota] = useState({ remaining: Infinity, allowed: 350, created: 0 });
   const [filterKey, setFilterKey] = useState('all');
+  const [timeFilter, setTimeFilter] = useState('today');
 
   useEffect(() => {
     const syncUser = () => setCurrentUser(getStoredUser());
@@ -56,7 +99,6 @@ const HomePage = () => {
         setTasks(response.data || []);
         setCurrentPage(1);
 
-        // fetch quota
         try {
           const q = await getUserQuota(currentUser._id);
           setQuota(q.data || { remaining: Infinity });
@@ -73,14 +115,23 @@ const HomePage = () => {
     loadTasks();
   }, [currentUser, navigate]);
 
-  // apply filter (all | important | pending | completed) - Bỏ lọc today
   const filteredTasks = useMemo(() => {
-    if (!filterKey || filterKey === 'all') return tasks;
-    if (filterKey === 'important') return tasks.filter((t) => !!t.important);
-    if (filterKey === 'completed') return tasks.filter((t) => t.status === 'complete');
-    if (filterKey === 'pending') return tasks.filter((t) => t.status !== 'complete');
-    return tasks;
-  }, [tasks, filterKey]);
+    let nextTasks = [...tasks];
+
+    if (filterKey === 'important') {
+      nextTasks = nextTasks.filter((task) => !!task.important);
+    } else if (filterKey === 'completed') {
+      nextTasks = nextTasks.filter((task) => task.status === 'complete');
+    } else if (filterKey === 'pending') {
+      nextTasks = nextTasks.filter((task) => task.status !== 'complete');
+    }
+
+    if (timeFilter !== 'all') {
+      nextTasks = nextTasks.filter((task) => taskMatchesDateRange(task, timeFilter));
+    }
+
+    return nextTasks;
+  }, [tasks, filterKey, timeFilter]);
 
   const totalPages = Math.max(1, Math.ceil(filteredTasks.length / PAGE_SIZE));
   const safeCurrentPage = Math.min(Math.max(currentPage, 1), totalPages);
@@ -173,8 +224,14 @@ const HomePage = () => {
 
         <AddTask onAdd={handleAddTask} />
 
-        {/* Component StatsAndFilters cần đảm bảo ở bên trong nó đã ẩn nút Today */}
-        <StatsAndFilters tasks={tasks} onFilterChange={(key) => { setFilterKey(key); setCurrentPage(1); }} />
+        <StatsAndFilters
+          tasks={filteredTasks}
+          activeFilter={filterKey}
+          onFilterChange={(key) => {
+            setFilterKey(key);
+            setCurrentPage(1);
+          }}
+        />
 
         {loading ? (
           <div className='rounded-[28px] border border-slate-200 bg-white/80 p-5 text-slate-500 dark:border-slate-800 dark:bg-slate-900/70'>
@@ -190,23 +247,39 @@ const HomePage = () => {
 
             <div className='space-y-4'>
               {filterKey === 'all' || filterKey === 'important' ? (
-                // Nếu ở All tasks hoặc Important: hiển thị gộp chung vào 1 danh sách duy nhất
-                <TaskList title={filterKey === 'important' ? 'Important Tasks' : 'All Tasks'} tasks={visibleTasks} onToggle={handleToggleTask} onDelete={handleDeleteTask} onUpdate={handleUpdateTask} />
+                <TaskList
+                  title={filterKey === 'important' ? 'Important Tasks' : 'All Tasks'}
+                  tasks={visibleTasks}
+                  onToggle={handleToggleTask}
+                  onDelete={handleDeleteTask}
+                  onUpdate={handleUpdateTask}
+                />
               ) : (
-                // Nếu lọc riêng Pending hoặc Completed: hiển thị theo từng nhóm cụ thể
-                <TaskList title={filterKey === 'completed' ? 'Completed Tasks' : 'Pending Tasks'} tasks={visibleTasks} onToggle={handleToggleTask} onDelete={handleDeleteTask} onUpdate={handleUpdateTask} />
+                <TaskList
+                  title={filterKey === 'completed' ? 'Completed Tasks' : 'Pending Tasks'}
+                  tasks={visibleTasks}
+                  onToggle={handleToggleTask}
+                  onDelete={handleDeleteTask}
+                  onUpdate={handleUpdateTask}
+                />
               )}
             </div>
           </>
         )}
 
-        <div className='flex flex-col items-center justify-between gap-6 sm:flex-row'>
+        <div className='flex w-full flex-col items-stretch justify-between gap-4 sm:flex-row sm:items-center'>
           <TaskListPagination
             currentPage={safeCurrentPage}
             totalPages={totalPages}
             onPageChange={setCurrentPage}
           />
-          <DateTimeFilter />
+          <DateTimeFilter
+            value={timeFilter}
+            onChange={(value) => {
+              setTimeFilter(value);
+              setCurrentPage(1);
+            }}
+          />
         </div>
 
         <Footer />

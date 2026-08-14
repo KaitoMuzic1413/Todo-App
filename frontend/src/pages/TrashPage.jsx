@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router';
 import { LayoutShell } from '@/components/LayoutShell';
 import { clearTrash, deleteTaskPermanently, fetchTrashTasks, restoreTask } from '@/lib/api';
 import { useLanguage } from '@/lib/i18n';
+import { Trash2 } from 'lucide-react';
+import TaskListPagination from '@/components/TaskListPagination';
 
 const PAGE_SIZE = 5;
 
@@ -122,9 +124,9 @@ const TrashPage = () => {
       <div className='space-y-6'>
         <header className='flex flex-col gap-4 rounded-[28px] border border-slate-200/80 bg-white/80 p-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/70'>
           <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
-            <div>
-              <p className='text-sm font-medium uppercase tracking-[0.22em] text-violet-500'>Trash</p>
-              <h1 className='mt-2 text-3xl font-bold text-slate-900 dark:text-white'>{t.trashTitle}</h1>
+            <div className='flex items-center gap-3 justify-center sm:justify-start w-full sm:w-auto'>
+              <Trash2 className='h-8 w-8 text-violet-600' />
+              <h1 className='text-2xl font-bold text-slate-900 dark:text-white'>{t.trashTitle}</h1>
             </div>
 
             <button
@@ -142,16 +144,24 @@ const TrashPage = () => {
               <p className='mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400'>
                 {t.status}
               </p>
-              <div className='flex flex-wrap gap-2'>
-                {statusOptions.map(({ key, label }) => (
+              <div className='relative inline-grid w-full grid-cols-3 gap-2 rounded-full bg-slate-100 p-1 dark:bg-slate-800 sm:w-auto'>
+                <div
+                  className='pointer-events-none absolute inset-y-1 rounded-full bg-violet-600 shadow-[0_12px_30px_rgba(124,58,237,0.35)] transition-all duration-300 ease-out'
+                  style={{
+                    width: `calc(${100 / 3}% - 0.5rem)`,
+                    left: `calc(${Math.max(0, ['all','complete','active'].indexOf(statusFilter)) * (100 / 3)}% + 0.25rem)`,
+                  }}
+                />
+
+                {statusOptions.map(({ key, label }, idx) => (
                   <button
                     key={key}
                     type='button'
                     onClick={() => setStatusFilter(key)}
-                    className={`rounded-full px-3 py-1.5 text-sm font-medium ${
+                    className={`relative z-10 rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
                       statusFilter === key
-                        ? 'bg-violet-600 text-white'
-                        : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-200'
+                        ? 'text-white'
+                        : 'text-slate-600 dark:text-slate-200'
                     }`}
                   >
                     {label}
@@ -164,16 +174,24 @@ const TrashPage = () => {
               <p className='mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400'>
                 {t.today}
               </p>
-              <div className='flex flex-wrap gap-2'>
+              <div className='relative inline-grid w-full grid-cols-4 gap-2 rounded-full bg-slate-100 p-1 dark:bg-slate-800 sm:w-auto'>
+                <div
+                  className='pointer-events-none absolute inset-y-1 rounded-full bg-violet-600 shadow-[0_12px_30px_rgba(124,58,237,0.35)] transition-all duration-300 ease-out'
+                  style={{
+                    width: `calc(${100 / 4}% - 0.5rem)`,
+                    left: `calc(${Math.max(0, ['all','today','week','month'].indexOf(periodFilter)) * (100 / 4)}% + 0.25rem)`,
+                  }}
+                />
+
                 {periodOptions.map(({ key, label }) => (
                   <button
                     key={key}
                     type='button'
                     onClick={() => setPeriodFilter(key)}
-                    className={`rounded-full px-3 py-1.5 text-sm font-medium ${
+                    className={`relative z-10 rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
                       periodFilter === key
-                        ? 'bg-slate-900 text-white dark:bg-violet-600'
-                        : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-200'
+                        ? 'text-white'
+                        : 'text-slate-600 dark:text-slate-200'
                     }`}
                   >
                     {label}
@@ -230,45 +248,11 @@ const TrashPage = () => {
         </section>
 
         <div className='flex flex-col items-center justify-between gap-4 rounded-[28px] border border-slate-200/80 bg-white/80 p-4 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/70 sm:flex-row'>
-          <div className='flex items-center gap-2'>
-            <button
-              type='button'
-              disabled={safePage <= 1}
-              onClick={() => setPage((current) => Math.max(1, current - 1))}
-              className='inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'
-            >
-              ←
-            </button>
-            <div className='rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'>
-              {t.page} {safePage} {t.of} {totalPages}
-            </div>
-            <button
-              type='button'
-              disabled={safePage >= totalPages}
-              onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
-              className='inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'
-            >
-              →
-            </button>
-          </div>
-
-          <div className='flex items-center gap-2'>
-            <input
-              type='number'
-              min='1'
-              max={totalPages}
-              value={safePage}
-              onChange={(event) => setPage(Number(event.target.value) || 1)}
-              className='h-10 w-20 rounded-full border border-slate-200 bg-white px-2 text-center text-sm text-slate-700 outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'
-            />
-            <button
-              type='button'
-              onClick={() => setPage((current) => Math.min(Math.max(current, 1), totalPages))}
-              className='rounded-full bg-violet-600 px-3 py-2 text-sm font-medium text-white'
-            >
-              {t.goToPage}
-            </button>
-          </div>
+          <TaskListPagination
+            currentPage={safePage}
+            totalPages={totalPages}
+            onPageChange={(p) => setPage(p)}
+          />
         </div>
       </div>
     </LayoutShell>

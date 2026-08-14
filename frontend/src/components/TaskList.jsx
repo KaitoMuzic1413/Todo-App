@@ -2,6 +2,21 @@ import { CheckCircle2, Circle, PencilLine, Star, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { useLanguage } from '@/lib/i18n';
 
+const formatTaskCreatedAt = (value) => {
+  if (!value) return 'Created recently';
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Created recently';
+
+  return date.toLocaleString('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
+
 const TaskList = ({ title, tasks = [], onToggle, onDelete, onUpdate }) => {
   const { t } = useLanguage();
   const [editingTaskId, setEditingTaskId] = useState(null);
@@ -107,7 +122,10 @@ const TaskList = ({ title, tasks = [], onToggle, onDelete, onUpdate }) => {
                         <p className={`task-content cursor-text font-medium ${done ? 'text-slate-400 line-through dark:text-slate-500' : 'text-slate-800 dark:text-slate-100'}`}>
                           {task.title}
                         </p>
-                        <p className='text-sm text-slate-500 dark:text-slate-300'>
+                        <p className='mt-1 text-[11px] text-slate-400 dark:text-slate-400'>
+                          {formatTaskCreatedAt(task.createdAt)}
+                        </p>
+                        <p className='text-xs text-slate-500 dark:text-slate-300'>
                           {done ? t.completed : t.pending}
                         </p>
                       </>
