@@ -319,6 +319,7 @@ const HomePage = () => {
                   onToggle={handleToggleTask}
                   onDelete={handleDeleteTask}
                   onUpdate={handleUpdateTask}
+                  highlightTaskId={highlightTaskId}
                 />
               ) : (
                 <TaskList
@@ -327,6 +328,7 @@ const HomePage = () => {
                   onToggle={handleToggleTask}
                   onDelete={handleDeleteTask}
                   onUpdate={handleUpdateTask}
+                  highlightTaskId={highlightTaskId}
                 />
               )}
             </div>

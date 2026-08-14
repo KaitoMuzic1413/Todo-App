@@ -173,7 +173,6 @@ export function LayoutShell({ children }) {
               <Search className='h-4 w-4' />
               <input
                 type='text'
-                value={undefined}
                 placeholder={t.searchTask}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
@@ -181,9 +180,7 @@ export function LayoutShell({ children }) {
                     const val = e.target.value?.trim();
                     if (val) {
                       const searchParam = encodeURIComponent(val);
-                      // navigate to home with search param
                       try {
-                        // use window.location to keep simple router behavior
                         window.location.href = `/?search=${searchParam}`;
                       } catch (err) {
                         /* fallback */
