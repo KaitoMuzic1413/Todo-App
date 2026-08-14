@@ -172,30 +172,54 @@ export function LayoutShell({ children }) {
           <div className='border-b border-slate-200/80 bg-white/60 p-4 dark:border-slate-800 dark:bg-slate-950/60'>
             <label className='flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-500 shadow-sm transition-colors focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:focus-within:ring-violet-900/40'>
               <Search className='h-4 w-4' />
-              <input
-                type='text'
-                placeholder={t.searchTask}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    const val = e.target.value?.trim();
-                    if (val) {
-                      const searchParam = encodeURIComponent(val);
-                      try {
-                        // navigate without full reload
-                        navigate(`/?search=${searchParam}`);
-                      } catch (err) {
-                        try {
-                          window.location.href = `/?search=${searchParam}`;
-                        } catch (err2) {
-                          /* fallback */
-                        }
+              <div className='relative flex w-full'>
+                <input
+                  type='text'
+                  defaultValue={''}
+                  placeholder={t.searchTask}
+                  id='sidebar-search-input'
+                  className='w-full border-0 bg-transparent text-sm text-slate-700 placeholder:text-slate-400 outline-none dark:text-slate-200 dark:placeholder:text-slate-500'
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      const val = e.target.value?.trim();
+                      if (val) {
+                        // explicitly commit search via event
+                        window.dispatchEvent(new CustomEvent('todo-search', { detail: { term: val } }));
+                      } else {
+                        // empty -> clear
+                        window.dispatchEvent(new CustomEvent('todo-clear-search'));
                       }
                     }
-                  }
-                }}
-                className='w-full border-0 bg-transparent text-sm text-slate-700 placeholder:text-slate-400 outline-none dark:text-slate-200 dark:placeholder:text-slate-500'
-              />
+                  }}
+                />
+
+                <button
+                  type='button'
+                  aria-label='Search'
+                  onClick={() => {
+                    const input = document.getElementById('sidebar-search-input');
+                    const val = input?.value?.trim();
+                    if (val) window.dispatchEvent(new CustomEvent('todo-search', { detail: { term: val } }));
+                  }}
+                  className='ml-2 hidden h-8 w-8 items-center justify-center rounded-md bg-violet-600 text-white sm:flex'
+                >
+                  <Search className='h-4 w-4' />
+                </button>
+
+                <button
+                  type='button'
+                  aria-label='Clear search'
+                  onClick={() => {
+                    const input = document.getElementById('sidebar-search-input');
+                    if (input) input.value = '';
+                    window.dispatchEvent(new CustomEvent('todo-clear-search'));
+                  }}
+                  className='absolute right-0 top-0 hidden h-8 w-8 items-center justify-center rounded-md text-slate-400 hover:text-slate-600 sm:flex'
+                >
+                  ×
+                </button>
+              </div>
             </label>
           </div>
 
