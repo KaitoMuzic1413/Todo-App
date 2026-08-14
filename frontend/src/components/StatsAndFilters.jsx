@@ -1,3 +1,5 @@
+import { Clipboard, CheckCircle2, Clock } from 'lucide-react';
+
 const filters = [
   { key: 'all', label: 'All tasks' },
   { key: 'important', label: 'Important' },
@@ -37,7 +39,15 @@ const StatsAndFilters = ({ tasks = [], onFilterChange, activeFilter = 'all' }) =
                 tone === 'emerald' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-200' :
                 'bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-200'
               }`}>
-                <span className='h-3 w-3' />
+                {
+                  tone === 'violet' ? (
+                    <Clipboard className='h-4 w-4' aria-hidden />
+                  ) : tone === 'emerald' ? (
+                    <CheckCircle2 className='h-4 w-4' aria-hidden />
+                  ) : (
+                    <Clock className='h-4 w-4' aria-hidden />
+                  )
+                }
               </div>
 
               <div className='min-w-0'>
