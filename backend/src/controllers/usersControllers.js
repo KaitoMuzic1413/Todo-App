@@ -6,7 +6,7 @@ const INACTIVE_ACCOUNT_DAYS = 90;
 // Cập nhật thời gian hoạt động gần nhất
 export const markUserActive = async (userId) => {
   if (!userId) return;
-  await User.findByIdAndUpdate(userId, { lastActiveAt: new Date() }, { new: false });
+  await User.findByIdAndUpdate(userId, { lastActiveAt: new Date() }, { returnDocument: 'after' });
 };
 
 // Dọn dẹp tài khoản không hoạt động > 90 ngày

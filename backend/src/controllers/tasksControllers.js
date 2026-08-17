@@ -10,7 +10,7 @@ const getUserFilter = (req) => {
 
 const touchUserActivity = async (userId) => {
   if (!userId) return;
-  await User.findByIdAndUpdate(userId, { lastActiveAt: new Date() }, { new: false });
+  await User.findByIdAndUpdate(userId, { lastActiveAt: new Date() }, { returnDocument: 'after' });
 };
 
 const getTrashDateFilter = (period) => {
@@ -150,7 +150,7 @@ export const updateTask = async (req, res) => {
       nextData.completedAt = null;
     }
 
-    const updatedTask = await Task.findByIdAndUpdate(req.params.id, nextData, { new: true });
+    const updatedTask = await Task.findByIdAndUpdate(req.params.id, nextData, { returnDocument: 'after' });
     await touchUserActivity(userId);
     return res.status(200).json(updatedTask);
   } catch (error) {
@@ -166,7 +166,7 @@ export const deleteTask = async (req, res) => {
     const task = await Task.findOneAndUpdate(
       { _id: req.params.id, userId, isDeleted: false },
       { isDeleted: true, deletedAt: new Date() },
-      { new: true }
+      { returnDocument: 'after' }
     );
 
     if (!task) {
@@ -198,7 +198,7 @@ export const toggleTaskStatus = async (req, res) => {
         status: nextStatus,
         completedAt: nextStatus === 'complete' ? new Date() : null,
       },
-      { new: true }
+      { returnDocument: 'after' }
     );
 
     await touchUserActivity(userId);
@@ -222,7 +222,7 @@ export const restoreTask = async (req, res) => {
     const restoredTask = await Task.findByIdAndUpdate(
       req.params.id,
       { isDeleted: false, deletedAt: null },
-      { new: true }
+      { returnDocument: 'after' }
     );
 
     await touchUserActivity(userId);
