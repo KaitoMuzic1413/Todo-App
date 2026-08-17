@@ -17,7 +17,7 @@ const formatTaskCreatedAt = (value) => {
   });
 };
 
-const TaskList = ({ title, tasks = [], onToggle, onDelete, onUpdate, highlightTaskId = null }) => {
+const TaskList = ({ title, tasks = [], onToggle, onDelete, onUpdate }) => {
   const { t } = useLanguage();
   const [editingTaskId, setEditingTaskId] = useState(null);
   const [draftValue, setDraftValue] = useState('');
@@ -41,7 +41,6 @@ const TaskList = ({ title, tasks = [], onToggle, onDelete, onUpdate, highlightTa
   };
 
   const toggleImportant = async (task) => {
-    // flip important flag
     await onUpdate?.(task._id, undefined, { important: !task.important });
   };
 
@@ -68,17 +67,14 @@ const TaskList = ({ title, tasks = [], onToggle, onDelete, onUpdate, highlightTa
             return (
               <div
                 key={task._id}
-                id={`task-${task._id}`}
-                className={`flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950/50 ${
-                  highlightTaskId === task._id ? 'ring-2 ring-violet-300 dark:ring-violet-600 animate-pulse' : ''
-                }`}
+                className='flex items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950/50'
               >
                 <div className='flex min-w-0 flex-1 items-center gap-3'>
                   <button
                     type='button'
                     onClick={() => onToggle?.(task._id)}
                     disabled={editingTaskId !== null}
-                    className={`flex h-9 w-9 ${editingTaskId !== null ? 'cursor-not-allowed opacity-60' : 'cursor-default'} items-center justify-center rounded-full bg-white text-slate-400 shadow-sm transition-transform dark:bg-slate-900`}
+                    className={`flex h-9 w-9 ${editingTaskId !== null ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} items-center justify-center rounded-full bg-white text-slate-400 shadow-sm transition-transform dark:bg-slate-900`}
                     aria-label={done ? 'Mark task as active' : 'Mark task as complete'}
                   >
                     {done ? <CheckCircle2 className='h-4 w-4 text-emerald-500' /> : <Circle className='h-4 w-4 text-slate-400' />}
@@ -107,14 +103,14 @@ const TaskList = ({ title, tasks = [], onToggle, onDelete, onUpdate, highlightTa
                           <button
                             type='button'
                             onClick={() => saveEditing(task._id)}
-                            className='cursor-default rounded-full bg-violet-600 px-2.5 py-1 text-[11px] font-medium text-white'
+                            className='cursor-pointer rounded-full bg-violet-600 px-2.5 py-1 text-[11px] font-medium text-white'
                           >
                             {t.save}
                           </button>
                           <button
                             type='button'
                             onClick={cancelEditing}
-                            className='cursor-default rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'
+                            className='cursor-pointer rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'
                           >
                             {t.cancel}
                           </button>
@@ -128,9 +124,6 @@ const TaskList = ({ title, tasks = [], onToggle, onDelete, onUpdate, highlightTa
                         <p className='mt-1 text-[11px] text-slate-400 dark:text-slate-400'>
                           {formatTaskCreatedAt(task.createdAt)}
                         </p>
-                        <p className='text-xs text-slate-500 dark:text-slate-300'>
-                          {done ? t.completed : t.pending}
-                        </p>
                       </>
                     )}
                   </div>
@@ -141,7 +134,7 @@ const TaskList = ({ title, tasks = [], onToggle, onDelete, onUpdate, highlightTa
                     type='button'
                     onClick={() => toggleImportant(task)}
                     disabled={editingTaskId !== null}
-                    className={`cursor-default rounded-full border ${task.important ? 'border-amber-300 bg-amber-50 text-amber-600' : 'border-slate-200 bg-white text-slate-600'} px-2 py-1 text-xs font-medium dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200`}
+                    className={`cursor-pointer rounded-full border ${task.important ? 'border-amber-300 bg-amber-50 text-amber-600' : 'border-slate-200 bg-white text-slate-600'} px-2 py-1 text-xs font-medium dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200`}
                     aria-label='Toggle important'
                   >
                     <Star className='h-3.5 w-3.5' />
@@ -151,7 +144,7 @@ const TaskList = ({ title, tasks = [], onToggle, onDelete, onUpdate, highlightTa
                     type='button'
                     onClick={() => (isEditing ? saveEditing(task._id) : startEditing(task))}
                     disabled={editingTaskId !== null && !isEditing}
-                    className={`cursor-default rounded-full border px-2.5 py-1 text-xs font-medium ${editingTaskId !== null && !isEditing ? 'border-slate-200/50 bg-slate-100 text-slate-400 cursor-not-allowed' : 'border-slate-200 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'}`}
+                    className={`cursor-pointer rounded-full border px-2.5 py-1 text-xs font-medium ${editingTaskId !== null && !isEditing ? 'border-slate-200/50 bg-slate-100 text-slate-400 cursor-not-allowed' : 'border-slate-200 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'}`}
                   >
                     {isEditing ? t.save : t.edit}
                   </button>
@@ -160,7 +153,7 @@ const TaskList = ({ title, tasks = [], onToggle, onDelete, onUpdate, highlightTa
                     type='button'
                     onClick={() => onDelete?.(task._id)}
                     disabled={editingTaskId !== null}
-                    className={`flex h-8 w-8 ${editingTaskId !== null ? 'cursor-not-allowed opacity-60' : 'cursor-default'} items-center justify-center rounded-full border border-rose-200 bg-rose-50 text-rose-500 dark:border-rose-900/60 dark:bg-rose-500/10 dark:text-rose-200`}
+                    className={`flex h-8 w-8 ${editingTaskId !== null ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} items-center justify-center rounded-full border border-rose-200 bg-rose-50 text-rose-500 dark:border-rose-900/60 dark:bg-rose-500/10 dark:text-rose-200`}
                     aria-label='Delete task'
                   >
                     <Trash2 className='h-3.5 w-3.5' />

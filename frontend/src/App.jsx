@@ -5,8 +5,6 @@ import HomePages from './pages/HomePage';
 import Login from './pages/LoginPage';
 import NotFound from './pages/NotFound';
 import TrashPage from './pages/TrashPage';
-import PremiumPage from './pages/PremiumPage';
-import CreateInvitePage from './pages/CreateInvitePage';
 
 function App() {
   return (
@@ -16,8 +14,6 @@ function App() {
           <Route path='/' element={<HomePages />} />
           <Route path='/about' element={<AboutPage />} />
           <Route path='/trash' element={<TrashPage />} />
-          <Route path='/premium' element={<PremiumPage />} />
-          <Route path='/invite/create' element={<CreateInvitePage />} />
           <Route path='/login' element={<Login />} />
           <Route path='*' element={<NotFound />} />
         </Routes>

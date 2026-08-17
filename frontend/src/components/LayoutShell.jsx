@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { NavLink, useNavigate, useLocation } from 'react-router';
-import { ChevronLeft, Crown, Globe, LogIn, LogOut, Mail, Moon, Phone, Search, SunMedium, UserCircle2, X, Key, Home, Trash2 } from 'lucide-react';
+import { NavLink} from 'react-router';
+import { ChevronLeft, Globe, LogIn, LogOut, Mail, Moon, Phone, SunMedium, UserCircle2, X, Home, Trash2 } from 'lucide-react';
 import { loginWithEmail } from '@/lib/api';
 import { useLanguage } from '@/lib/i18n';
 
@@ -17,7 +17,6 @@ const getStoredUser = () => {
 
 export function LayoutShell({ children }) {
   const { language, setLanguage, t } = useLanguage();
-  const navigate = useNavigate();
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window === 'undefined') return false;
     return localStorage.getItem('todo-theme') === 'dark';
@@ -33,7 +32,6 @@ export function LayoutShell({ children }) {
 
   const navItems = [
     { name: t.home, to: '/' },
-    { name: t.premium, to: '/premium' },
     { name: t.trash, to: '/trash' },
     { name: t.contact, to: '/about' },
   ];
@@ -169,60 +167,6 @@ export function LayoutShell({ children }) {
             </button>
           </div>
 
-          <div className='border-b border-slate-200/80 bg-white/60 p-4 dark:border-slate-800 dark:bg-slate-950/60'>
-            <label className='flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-500 shadow-sm transition-colors focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:focus-within:ring-violet-900/40'>
-              <Search className='h-4 w-4' />
-              <div className='relative flex w-full'>
-                <input
-                  type='text'
-                  defaultValue={''}
-                  placeholder={t.searchTask}
-                  id='sidebar-search-input'
-                  className='w-full border-0 bg-transparent text-sm text-slate-700 placeholder:text-slate-400 outline-none dark:text-slate-200 dark:placeholder:text-slate-500'
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      const val = e.target.value?.trim();
-                      if (val) {
-                        // explicitly commit search via event
-                        window.dispatchEvent(new CustomEvent('todo-search', { detail: { term: val } }));
-                      } else {
-                        // empty -> clear
-                        window.dispatchEvent(new CustomEvent('todo-clear-search'));
-                      }
-                    }
-                  }}
-                />
-
-                <button
-                  type='button'
-                  aria-label='Search'
-                  onClick={() => {
-                    const input = document.getElementById('sidebar-search-input');
-                    const val = input?.value?.trim();
-                    if (val) window.dispatchEvent(new CustomEvent('todo-search', { detail: { term: val } }));
-                  }}
-                  className='ml-2 hidden h-8 w-8 items-center justify-center rounded-md bg-violet-600 text-white sm:flex'
-                >
-                  <Search className='h-4 w-4' />
-                </button>
-
-                <button
-                  type='button'
-                  aria-label='Clear search'
-                  onClick={() => {
-                    const input = document.getElementById('sidebar-search-input');
-                    if (input) input.value = '';
-                    window.dispatchEvent(new CustomEvent('todo-clear-search'));
-                  }}
-                  className='absolute right-0 top-0 hidden h-8 w-8 items-center justify-center rounded-md text-slate-400 hover:text-slate-600 sm:flex'
-                >
-                  ×
-                </button>
-              </div>
-            </label>
-          </div>
-
           <div className='flex-1 overflow-y-auto px-4 py-5'>
             <nav className='space-y-2'>
               {navItems.map((item) => (
@@ -242,7 +186,6 @@ export function LayoutShell({ children }) {
                 >
                   <span className='flex items-center gap-2'>
                     {item.to === '/' ? <Home className='h-4 w-4' /> : null}
-                    {item.to === '/premium' ? <Crown className='h-4 w-4' /> : null}
                     {item.to === '/trash' ? <Trash2 className='h-4 w-4' /> : null}
                     {item.to === '/about' ? <Mail className='h-4 w-4' /> : null}
                     <span>{item.name}</span>
@@ -256,8 +199,11 @@ export function LayoutShell({ children }) {
                 onClick={() => setDarkMode((current) => !current)}
                 className='flex w-full cursor-default items-center justify-between rounded-2xl px-3 py-2.5 text-left text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-900'
               >
-                <span>{darkMode ? t.lightMode : t.darkMode}</span>
-                {darkMode ? <SunMedium className='h-4 w-4' /> : <Moon className='h-4 w-4' />}
+                <span className='flex items-center gap-2'>
+                  {darkMode ? <SunMedium className='h-4 w-4' /> : <Moon className='h-4 w-4' />}
+                  <span>{darkMode ? t.lightMode : t.darkMode}</span>
+                </span>
+                <span className='text-xs text-slate-400'>→</span>
               </button>
 
               <button
@@ -265,24 +211,12 @@ export function LayoutShell({ children }) {
                 onClick={() => setLanguage(language === 'en' ? 'vi' : 'en')}
                 className='flex w-full cursor-default items-center justify-between rounded-2xl px-3 py-2.5 text-left text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-900'
               >
-                <span>{t.language}: {language === 'en' ? t.english : t.vietnamese}</span>
-                <Globe className='h-4 w-4' />
+                <span className='flex items-center gap-2'>
+                  <Globe className='h-4 w-4' />
+                  <span>{t.language}: {language === 'en' ? t.english : t.vietnamese}</span>
+                </span>
+                <span className='text-xs text-slate-400'>→</span>
               </button>
-
-              {/* Admin only: Create invite key link */}
-              {currentUser?.isAdmin ? (
-                <NavLink
-                  to='/invite/create'
-                  onClick={() => { if (window.innerWidth < 1024) setIsSidebarOpen(false); }}
-                  className={({ isActive }) => `mt-2 flex cursor-default items-center justify-between rounded-2xl px-3 py-2.5 text-left text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-900 ${isActive ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-200' : ''}`}
-                >
-                  <span className='flex items-center gap-2'>
-                    <Key className='h-4 w-4' />
-                    Tạo mã mời
-                  </span>
-                  <span className='text-xs text-slate-400'>→</span>
-                </NavLink>
-              ) : null}
             </nav>
           </div>
 
@@ -351,11 +285,11 @@ export function SidebarContactDetails() {
     <div className='flex flex-wrap items-center justify-center gap-3 text-sm text-slate-600 dark:text-slate-300'>
       <span className='inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1.5 shadow-sm dark:border-slate-700 dark:bg-slate-900/60'>
         <Phone className='h-3.5 w-3.5 text-violet-500' />
-        +84 123 456 789
+        +84 793 903 870
       </span>
       <span className='inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1.5 shadow-sm dark:border-slate-700 dark:bg-slate-900/60'>
         <Mail className='h-3.5 w-3.5 text-violet-500' />
-        hello@redhat.dev
+        kaitomuzicvn@gmail.com
       </span>
       <a
         href='https://facebook.com'
