@@ -1,7 +1,6 @@
 import Task from '../models/Task.js';
 import User from '../models/User.js';
 
-// Helpers nội bộ
 const getUserFilter = (req) => {
   const { userId } = req.query;
   if (!userId) return null;
@@ -37,7 +36,6 @@ const getTrashDateFilter = (period) => {
   return null;
 };
 
-// 1. Tự động dọn dẹp task trong thùng rác > 30 ngày
 export const cleanupExpiredTrashTasks = async () => {
   try {
     const cutoff = new Date();
@@ -55,7 +53,6 @@ export const cleanupExpiredTrashTasks = async () => {
   }
 };
 
-// 2. Lấy toàn bộ danh sách task
 export const getAllTasks = async (req, res) => {
   try {
     const userFilter = getUserFilter(req);
@@ -74,7 +71,6 @@ export const getAllTasks = async (req, res) => {
   }
 };
 
-// 3. Trả về thông tin Quota (Không giới hạn)
 export const getUserQuota = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -90,7 +86,6 @@ export const getUserQuota = async (req, res) => {
   }
 };
 
-// 4. Tạo task mới (Không bị giới hạn số lượng)
 export const createTask = async (req, res) => {
   try {
     const { title, userId } = req.body;
@@ -106,9 +101,30 @@ export const createTask = async (req, res) => {
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
+    const trimmedTitle = title.trim();
+
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const existingPendingTaskToday = await Task.findOne({
+      userId,
+      isDeleted: false,
+      status: 'active',
+      createdAt: { $gte: startOfToday },
+      title: { $regex: new RegExp(`^${trimmedTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') },
+    });
+
+    if (existingPendingTaskToday) {
+      existingPendingTaskToday.createdAt = new Date();
+      await existingPendingTaskToday.save();
+      await touchUserActivity(userId);
+
+      return res.status(200).json(existingPendingTaskToday);
+    }
+
     const task = new Task({
       userId,
-      title: title.trim(),
+      title: trimmedTitle,
       status: 'active',
       completedAt: null,
     });
@@ -122,7 +138,6 @@ export const createTask = async (req, res) => {
   }
 };
 
-// 5. Cập nhật nội dung/trạng thái task
 export const updateTask = async (req, res) => {
   try {
     const { title, status, completedAt, userId } = req.body;
@@ -159,7 +174,6 @@ export const updateTask = async (req, res) => {
   }
 };
 
-// 6. Chuyển task vào thùng rác
 export const deleteTask = async (req, res) => {
   try {
     const { userId } = req.body;
@@ -181,7 +195,6 @@ export const deleteTask = async (req, res) => {
   }
 };
 
-// 7. Bật/tắt hoàn thành task
 export const toggleTaskStatus = async (req, res) => {
   try {
     const { userId } = req.body;
@@ -209,7 +222,6 @@ export const toggleTaskStatus = async (req, res) => {
   }
 };
 
-// 8. Khôi phục task từ thùng rác
 export const restoreTask = async (req, res) => {
   try {
     const { userId } = req.body;
@@ -233,7 +245,6 @@ export const restoreTask = async (req, res) => {
   }
 };
 
-// 9. Xóa vĩnh viễn 1 task
 export const deletePermanentTask = async (req, res) => {
   try {
     const { userId } = req.body;
@@ -251,7 +262,6 @@ export const deletePermanentTask = async (req, res) => {
   }
 };
 
-// 10. Dọn sạch toàn bộ thùng rác
 export const clearTrash = async (req, res) => {
   try {
     const { userId } = req.body;
@@ -268,7 +278,6 @@ export const clearTrash = async (req, res) => {
   }
 };
 
-// 11. Lấy danh sách task trong thùng rác
 export const getTrashTasks = async (req, res) => {
   try {
     const { userId, status, period } = req.query;

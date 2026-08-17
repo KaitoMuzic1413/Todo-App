@@ -119,12 +119,24 @@ const TrashPage = () => {
     { key: 'month', label: t.thisMonth },
   ];
 
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
   return (
     <LayoutShell>
       <div className='space-y-6'>
         <header className='flex flex-col gap-4 rounded-[28px] border border-slate-200/80 bg-white/80 p-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/70'>
           <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
-            <div className='flex items-center gap-3 justify-center sm:justify-start w-full sm:w-auto'>
+            <div className='flex w-full items-center justify-center gap-3 sm:w-auto sm:justify-start'>
               <Trash2 className='h-8 w-8 text-violet-600' />
               <h1 className='text-2xl font-bold text-slate-900 dark:text-white'>{t.trashTitle}</h1>
             </div>
@@ -149,11 +161,11 @@ const TrashPage = () => {
                   className='pointer-events-none absolute inset-y-1 rounded-full bg-violet-600 shadow-[0_12px_30px_rgba(124,58,237,0.35)] transition-all duration-300 ease-out'
                   style={{
                     width: `calc(${100 / 3}% - 0.5rem)`,
-                    left: `calc(${Math.max(0, ['all','complete','active'].indexOf(statusFilter)) * (100 / 3)}% + 0.25rem)`,
+                    left: `calc(${Math.max(0, ['all', 'complete', 'active'].indexOf(statusFilter)) * (100 / 3)}% + 0.25rem)`,
                   }}
                 />
 
-                {statusOptions.map(({ key, label }, idx) => (
+                {statusOptions.map(({ key, label }) => (
                   <button
                     key={key}
                     type='button'
@@ -179,7 +191,7 @@ const TrashPage = () => {
                   className='pointer-events-none absolute inset-y-1 rounded-full bg-violet-600 shadow-[0_12px_30px_rgba(124,58,237,0.35)] transition-all duration-300 ease-out'
                   style={{
                     width: `calc(${100 / 4}% - 0.5rem)`,
-                    left: `calc(${Math.max(0, ['all','today','week','month'].indexOf(periodFilter)) * (100 / 4)}% + 0.25rem)`,
+                    left: `calc(${Math.max(0, ['all', 'today', 'week', 'month'].indexOf(periodFilter)) * (100 / 4)}% + 0.25rem)`,
                   }}
                 />
 
@@ -220,9 +232,26 @@ const TrashPage = () => {
                     <p className={`truncate font-medium ${task.status === 'complete' ? 'text-slate-400 line-through dark:text-slate-500' : 'text-slate-800 dark:text-slate-100'}`}>
                       {task.title}
                     </p>
-                    <p className='mt-1 text-xs text-slate-500 dark:text-slate-300'>
-                      {task.status === 'complete' ? t.statusCompleted : t.statusPending}
-                    </p>
+                    
+                    <div className='mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500 dark:text-slate-300'>
+                      <span>{task.status === 'complete' ? t.statusCompleted : t.statusPending}</span>
+                      
+                      {task.createdAt && (
+                        <>
+                          <span>•</span>
+                          <span>Created at: {formatDate(task.createdAt)}</span>
+                        </>
+                      )}
+
+                      {task.deletedAt && (
+                        <>
+                          <span>•</span>
+                          <span className='text-rose-500 dark:text-rose-400'>
+                            Deleted at: {formatDate(task.deletedAt)}
+                          </span>
+                        </>
+                      )}
+                    </div>
                   </div>
 
                   <div className='flex flex-wrap gap-2'>

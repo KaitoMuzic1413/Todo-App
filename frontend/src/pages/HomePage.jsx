@@ -23,36 +23,67 @@ const getStoredUser = () => {
   }
 };
 
-const getDateRangeStart = (value) => {
+const getDateRange = (value) => {
   const now = new Date();
+
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+  const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+  const endOfYesterday = new Date(startOfToday.getTime() - 1);
 
   if (!value || value === 'all') {
     return null;
   }
 
   if (value === 'today') {
-    const start = new Date(now);
-    start.setHours(0, 0, 0, 0);
-    return start;
+    return { start: startOfToday, end: endOfToday };
   }
 
+  const dayOfWeek = now.getDay();
   if (value === 'week') {
-    const start = new Date(now);
-    start.setDate(now.getDate() - 6);
-    start.setHours(0, 0, 0, 0);
-    return start;
+    if (dayOfWeek === 1) {
+      const startOfLastWeek = new Date(startOfToday);
+      startOfLastWeek.setDate(startOfToday.getDate() - 7);
+
+      return { start: startOfLastWeek, end: endOfYesterday };
+    }
+
+    const diffToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    const startOfWeek = new Date(startOfToday);
+    startOfWeek.setDate(startOfToday.getDate() - diffToMonday);
+
+    return { start: startOfWeek, end: endOfYesterday };
   }
 
   if (value === 'month') {
-    return new Date(now.getFullYear(), now.getMonth(), 1);
+    const isFirstDayOfMonth = now.getDate() === 1;
+
+    if (isFirstDayOfMonth) {
+      const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0);
+      return { start: startOfLastMonth, end: endOfYesterday };
+    }
+
+    const diffToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    const startOfWeek = new Date(startOfToday);
+    startOfWeek.setDate(startOfToday.getDate() - diffToMonday);
+
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+    const endOfPriorWeek = new Date(startOfWeek.getTime() - 1);
+
+    const endRange = endOfPriorWeek < startOfMonth ? endOfYesterday : endOfPriorWeek;
+
+    return { start: startOfMonth, end: endRange };
   }
 
   return null;
 };
 
 const taskMatchesDateRange = (task, value) => {
-  const minDate = getDateRangeStart(value);
-  if (!minDate) return true;
+  const range = getDateRange(value);
+  if (!range) return true;
+
+  const { start, end } = range;
+
+  if (start && end && start > end) return false;
 
   const candidateDates = [task?.createdAt, task?.updatedAt, task?.completedAt].filter(Boolean);
 
@@ -61,7 +92,7 @@ const taskMatchesDateRange = (task, value) => {
     if (Number.isNaN(date.getTime())) {
       return false;
     }
-    return date >= minDate;
+    return date >= start && date <= end;
   });
 };
 
@@ -136,11 +167,17 @@ const HomePage = () => {
     if (!currentUser?._id) return;
 
     try {
-      const response = await createTask({ userId: currentUser._id, title });
-      setTasks((previous) => [response.data, ...previous]);
+      const response = await createTask({ title, userId: currentUser._id });
+      const taskResult = response.data;
+
+      setTasks((prevTasks) => {
+        const otherTasks = prevTasks.filter((t) => t._id !== taskResult._id);
+        return [taskResult, ...otherTasks];
+      });
+
       setCurrentPage(1);
     } catch (error) {
-      console.error('Failed to create task', error);
+      console.error('Failed to create task:', error);
     }
   };
 

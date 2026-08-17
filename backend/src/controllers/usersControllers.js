@@ -3,13 +3,11 @@ import Task from '../models/Task.js';
 
 const INACTIVE_ACCOUNT_DAYS = 90;
 
-// Cập nhật thời gian hoạt động gần nhất
 export const markUserActive = async (userId) => {
   if (!userId) return;
   await User.findByIdAndUpdate(userId, { lastActiveAt: new Date() }, { returnDocument: 'after' });
 };
 
-// Dọn dẹp tài khoản không hoạt động > 90 ngày
 export const cleanupInactiveUsers = async () => {
   try {
     const cutoffDate = new Date();
@@ -37,7 +35,6 @@ export const cleanupInactiveUsers = async () => {
   }
 };
 
-// Đăng nhập bằng Email
 export const loginUserWithEmail = async (req, res) => {
   try {
     const { email } = req.body;
@@ -82,7 +79,6 @@ export const loginUserWithEmail = async (req, res) => {
   }
 };
 
-// Lấy thông tin user hiện tại
 export const getCurrentUser = async (req, res) => {
   try {
     const { email } = req.query;

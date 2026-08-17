@@ -12,19 +12,16 @@ import userRoute from "./routes/usersRoutes.js";
 dotenv.config();
 
 const PORT = process.env.PORT || 5001;
-const INACTIVE_ACCOUNT_CHECK_INTERVAL = 60 * 60 * 1000; // 1 giờ
+const INACTIVE_ACCOUNT_CHECK_INTERVAL = 60 * 60 * 1000;
 
 const app = express();
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Routes API
 app.use("/api/users", userRoute);
 app.use("/api/tasks", taskRoute);
 
-// Cấu hình phục vụ Frontend (An toàn cho cả Dev lẫn Production)
 const __dirname = path.resolve();
 const distPath = path.join(__dirname, "../frontend/dist");
 
@@ -40,7 +37,6 @@ if (fs.existsSync(distPath)) {
   });
 }
 
-// Chạy dọn dẹp định kỳ
 const runMaintenanceJobs = async () => {
   try {
     const { deletedUsers, deletedTasks } = await cleanupInactiveUsers();
@@ -61,7 +57,6 @@ const startMaintenanceJobs = () => {
   setInterval(runMaintenanceJobs, INACTIVE_ACCOUNT_CHECK_INTERVAL);
 };
 
-// Khởi động Database & Server
 connectDB()
   .then(() => {
     startMaintenanceJobs();
