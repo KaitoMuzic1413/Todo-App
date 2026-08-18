@@ -1,10 +1,15 @@
 import axios from 'axios';
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
+// Ưu tiên lấy VITE_API_URL, nếu không có sẽ trỏ thẳng tới Render
+const apiBaseUrl =
+  import.meta.env.VITE_API_URL ||
+  import.meta.env.VITE_API_BASE_URL ||
+  'https://todo-app-1112.onrender.com/api';
 
 const api = axios.create({
   baseURL: apiBaseUrl,
   timeout: 10000,
+  withCredentials: true,
 });
 
 export const loginWithEmail = (email) => api.post('/users/login', { email });
@@ -35,3 +40,5 @@ export const deleteTaskPermanently = (taskId, userId) => api.delete(`/tasks/${ta
 export const clearTrash = (userId) => api.delete('/tasks/trash/clear', { data: { userId } });
 
 export const getUserQuota = (userId) => api.get(`/tasks/quota/${userId}`);
+
+export default api;
