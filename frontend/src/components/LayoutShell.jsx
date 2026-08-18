@@ -281,7 +281,6 @@ export function LayoutShell({ children }) {
         </div>
       </aside>
 
-      {/* Main Content trượt mượt theo Sidebar */}
       <main className={`min-h-screen transition-all duration-300 ease-in-out ${isSidebarOpen ? 'lg:ml-[320px]' : 'lg:ml-0'}`}>
         <div className='mx-auto max-w-5xl px-4 py-8 sm:px-6'>{children}</div>
       </main>

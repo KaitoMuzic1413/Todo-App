@@ -1,18 +1,22 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n';
 
 const TaskListPagination = ({ currentPage = 1, totalPages = 1, onPageChange }) => {
   const { t } = useLanguage();
-  const [goToPageValue, setGoToPageValue] = useState('');
-  const [pageError, setPageError] = useState('');
 
   const safeTotalPages = Math.max(1, totalPages);
   const safePage = Math.min(Math.max(currentPage, 1), safeTotalPages);
 
-  useEffect(() => {
-    setGoToPageValue(String(safePage));
-  }, [safePage]);
+  // Đồng bộ state trực tiếp trong render khi safePage thay đổi
+  const [prevSafePage, setPrevSafePage] = useState(safePage);
+  const [goToPageValue, setGoToPageValue] = useState('');
+  const [pageError, setPageError] = useState('');
+
+  if (prevSafePage !== safePage) {
+    setPrevSafePage(safePage);
+    setGoToPageValue(''); // Reset ô nhập về rỗng khi chuyển trang thành công
+  }
 
   // Kiểm tra ô nhập có bị bỏ trống hay không
   const isInputEmpty = !String(goToPageValue ?? '').trim();
@@ -91,7 +95,6 @@ const TaskListPagination = ({ currentPage = 1, totalPages = 1, onPageChange }) =
         </button>
       </div>
 
-      {/* Ô nhập & Nút Đến trang */}
       <div className='flex flex-col items-start gap-1'>
         <div className='flex items-center gap-2'>
           <input
@@ -105,11 +108,6 @@ const TaskListPagination = ({ currentPage = 1, totalPages = 1, onPageChange }) =
               e.target.select();
               setPageError('');
             }}
-            onBlur={() => {
-              if (!String(goToPageValue).trim()) {
-                setGoToPageValue(String(safePage));
-              }
-            }}
             onChange={(e) => {
               setGoToPageValue(e.target.value);
               if (pageError) setPageError('');
@@ -121,17 +119,8 @@ const TaskListPagination = ({ currentPage = 1, totalPages = 1, onPageChange }) =
           <button
             type='button'
             disabled={isInputEmpty}
-            onMouseDown={(e) => {
-              if (!isInputEmpty) {
-                e.preventDefault();
-                handleGoToPage();
-              }
-            }}
-            className={`rounded-full px-3.5 py-2 text-sm font-medium text-white shadow-sm transition-all dark:shadow-violet-900/30 ${
-              isInputEmpty
-                ? '!cursor-not-allowed bg-slate-300 text-slate-500 shadow-none dark:bg-slate-800 dark:text-slate-500'
-                : 'cursor-pointer bg-violet-600 shadow-violet-200 hover:bg-violet-500 active:scale-95'
-            }`}
+            onClick={handleGoToPage}
+            className='inline-flex h-10 items-center justify-center rounded-full px-4 text-sm font-semibold transition-all cursor-pointer bg-gradient-to-r from-violet-500 to-indigo-500 text-white shadow-md shadow-violet-200 hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none disabled:hover:translate-y-0 dark:shadow-violet-900/30'
           >
             {t.goToPage || 'Go'}
           </button>

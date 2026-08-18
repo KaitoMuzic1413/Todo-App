@@ -8,6 +8,8 @@ const AddTask = ({ onAdd }) => {
   const { t } = useLanguage();
   const [title, setTitle] = useState('');
 
+  const isInputEmpty = !title.trim();
+
   const handleSubmit = (event) => {
     event.preventDefault();
     const nextTitle = title.trim();
@@ -31,10 +33,8 @@ const AddTask = ({ onAdd }) => {
 
         <button
           type='submit'
-          disabled={!title.trim()}
-          className={`inline-flex h-12 items-center justify-center gap-2 rounded-2xl px-6 text-sm font-semibold text-white shadow-md transition-all hover:-translate-y-0.5 dark:shadow-violet-900/30 ${
-            !title.trim() ? 'bg-slate-300 text-slate-500 cursor-not-allowed shadow-none' : 'bg-gradient-to-r from-violet-500 to-indigo-500 shadow-violet-200'
-          }`}
+          disabled={isInputEmpty}
+          className='inline-flex h-12 cursor-pointer items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-500 to-indigo-500 px-6 text-sm font-semibold text-white shadow-md shadow-violet-200 transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none disabled:hover:translate-y-0 dark:shadow-violet-900/30'
         >
           <Plus className='h-4 w-4' />
           {t.newTask}
