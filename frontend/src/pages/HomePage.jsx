@@ -103,7 +103,7 @@ const HomePage = () => {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [filterKey, setFilterKey] = useState('all');
-  const [timeFilter, setTimeFilter] = useState('today');
+  const [timeFilter, setTimeFilter] = useState('all');
 
   useEffect(() => {
     const syncUser = () => setCurrentUser(getStoredUser());

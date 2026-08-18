@@ -1,13 +1,14 @@
 import { CalendarDays } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n';
 
-const DateTimeFilter = ({ value = 'today', onChange }) => {
+const DateTimeFilter = ({ value = 'all', onChange }) => {
   const { t } = useLanguage();
 
   const filters = [
-    { key: 'today', label: t.today },
-    { key: 'week', label: t.thisWeek },
-    { key: 'month', label: t.thisMonth },
+    { key: 'all', label: t.allTime || t.all || 'All time' }, // Đã đổi 'All' thành 'All time'
+    { key: 'today', label: t.today || 'Today' },
+    { key: 'week', label: t.thisWeek || 'This Week' },
+    { key: 'month', label: t.thisMonth || 'This Month' },
   ];
 
   const activeIndex = filters.findIndex((filter) => filter.key === value);
@@ -15,7 +16,7 @@ const DateTimeFilter = ({ value = 'today', onChange }) => {
     activeIndex < 0
       ? { opacity: 0 }
       : {
-          width: 'calc((100% - 0.5rem) / 3)',
+          width: 'calc((100% - 0.5rem) / 4)',
           transform: `translateX(${activeIndex * 100}%)`,
           left: '0.25rem',
         };
@@ -30,7 +31,7 @@ const DateTimeFilter = ({ value = 'today', onChange }) => {
         <CalendarDays className='h-4 w-4 text-violet-500' />
       </div>
 
-      <div className='relative grid w-full grid-cols-3 gap-1 rounded-full bg-slate-100 p-1 text-sm sm:w-auto dark:bg-slate-800'>
+      <div className='relative grid w-full grid-cols-4 gap-1 rounded-full bg-slate-100 p-1 text-sm sm:w-auto dark:bg-slate-800'>
         <div
           className='pointer-events-none absolute inset-y-1 rounded-full bg-violet-600 shadow-[0_12px_30px_rgba(124,58,237,0.30)] transition-transform duration-300 ease-out'
           style={activeTrackStyle}
