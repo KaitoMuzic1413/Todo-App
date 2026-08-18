@@ -16,12 +16,37 @@ const INACTIVE_ACCOUNT_CHECK_INTERVAL = 60 * 60 * 1000;
 
 const app = express();
 
-app.use(cors());
+// Danh sách các tên miền được phép truy cập API
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "https://todo-app-seven-mocha-91.vercel.app", // Domain Frontend Vercel của bạn
+];
+
+// Cấu hình Middleware CORS
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // Cho phép request không có origin (như Postman hoặc mobile apps) hoặc thuộc allowedOrigins
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("CORS policy: Not allowed by CORS"));
+      }
+    },
+    credentials: true, // Cho phép gửi Cookie / Auth Header
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+
 app.use(express.json());
 
+// Routes API
 app.use("/api/users", userRoute);
 app.use("/api/tasks", taskRoute);
 
+// Phục vụ Static File (nếu chạy Monorepo trên cùng 1 server)
 const __dirname = path.resolve();
 const distPath = path.join(__dirname, "../frontend/dist");
 
@@ -37,6 +62,7 @@ if (fs.existsSync(distPath)) {
   });
 }
 
+// Xử lý các công việc bảo trì định kỳ
 const runMaintenanceJobs = async () => {
   try {
     const { deletedUsers, deletedTasks } = await cleanupInactiveUsers();
@@ -57,6 +83,7 @@ const startMaintenanceJobs = () => {
   setInterval(runMaintenanceJobs, INACTIVE_ACCOUNT_CHECK_INTERVAL);
 };
 
+// Kết nối Database & Khởi chạy Server
 connectDB()
   .then(() => {
     startMaintenanceJobs();
