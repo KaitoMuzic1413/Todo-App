@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-// Ưu tiên lấy VITE_API_URL, nếu không có sẽ trỏ thẳng tới Render
+// Lấy URL chuẩn không chứa dấu ngoặc vuông hay ký tự thừa
 const apiBaseUrl =
   import.meta.env.VITE_API_URL ||
   import.meta.env.VITE_API_BASE_URL ||
