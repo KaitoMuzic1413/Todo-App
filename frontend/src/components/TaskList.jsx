@@ -2,13 +2,15 @@ import { Check, CheckCircle2, Circle, PencilLine, Star, Trash2, X } from 'lucide
 import { useState } from 'react';
 import { useLanguage } from '@/lib/i18n';
 
-const formatTaskCreatedAt = (value) => {
-  if (!value) return 'Created recently';
+const formatTaskCreatedAt = (value, language) => {
+  if (!value) return '';
 
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'Created recently';
+  if (Number.isNaN(date.getTime())) return '';
 
-  return date.toLocaleString('vi-VN', {
+  const locale = language === 'vi' ? 'vi-VN' : 'en-US';
+
+  return date.toLocaleString(locale, {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
@@ -18,7 +20,7 @@ const formatTaskCreatedAt = (value) => {
 };
 
 const TaskList = ({ title, tasks = [], onToggle, onDelete, onUpdate, onDeleteMany }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [editingTaskId, setEditingTaskId] = useState(null);
   const [draftValue, setDraftValue] = useState('');
 
@@ -46,7 +48,7 @@ const TaskList = ({ title, tasks = [], onToggle, onDelete, onUpdate, onDeleteMan
   const toggleImportant = async (task) => {
     await onUpdate?.(task._id, undefined, { important: !task.important });
   };
-  
+
   const toggleSelectMode = () => {
     if (isSelectMode) {
       setIsSelectMode(false);
@@ -99,7 +101,7 @@ const TaskList = ({ title, tasks = [], onToggle, onDelete, onUpdate, onDeleteMan
                 onClick={handleSelectAll}
                 className='inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'
               >
-                {isAllSelected ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
+                {isAllSelected ? (t.deselectAll || 'Bỏ chọn tất cả') : (t.selectAll || 'Chọn tất cả')}
               </button>
 
               <button
@@ -109,7 +111,7 @@ const TaskList = ({ title, tasks = [], onToggle, onDelete, onUpdate, onDeleteMan
                 className='inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-rose-500 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-opacity disabled:cursor-not-allowed disabled:opacity-50'
               >
                 <Trash2 className='h-3.5 w-3.5' />
-                Xóa ({selectedTaskIds.length})
+                {(t.deleteSelected || 'Xóa')} ({selectedTaskIds.length})
               </button>
 
               <button
@@ -122,18 +124,16 @@ const TaskList = ({ title, tasks = [], onToggle, onDelete, onUpdate, onDeleteMan
               </button>
             </>
           ) : (
-            <>
-              <button
-                type='button'
-                onClick={toggleSelectMode}
-                disabled={tasks.length === 0}
-                className='inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-rose-900/60 dark:bg-rose-500/10 dark:text-rose-200'
-                title='Chọn nhiều task để xóa'
-              >
-                <Trash2 className='h-3.5 w-3.5' />
-                Quick remove task
-              </button>
-            </>
+            <button
+              type='button'
+              onClick={toggleSelectMode}
+              disabled={tasks.length === 0}
+              className='inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-rose-900/60 dark:bg-rose-500/10 dark:text-rose-200'
+              title='Quick remove task'
+            >
+              <Trash2 className='h-3.5 w-3.5' />
+              {t.quickRemove || 'Xóa nhiều task'}
+            </button>
           )}
         </div>
       </div>
@@ -148,6 +148,7 @@ const TaskList = ({ title, tasks = [], onToggle, onDelete, onUpdate, onDeleteMan
             const done = task.status === 'complete';
             const isEditing = editingTaskId === task._id;
             const isSelected = selectedTaskIds.includes(task._id);
+            const createdDateStr = formatTaskCreatedAt(task.createdAt, language);
 
             return (
               <div
@@ -223,9 +224,11 @@ const TaskList = ({ title, tasks = [], onToggle, onDelete, onUpdate, onDeleteMan
                         >
                           {task.title}
                         </p>
-                        <p className='mt-1 text-[11px] text-slate-400 dark:text-slate-400'>
-                          {formatTaskCreatedAt(task.createdAt)}
-                        </p>
+                        {createdDateStr && (
+                          <p className='mt-1 text-[11px] text-slate-400 dark:text-slate-400'>
+                            {t.createdAt || 'Created at'}: {createdDateStr}
+                          </p>
+                        )}
                       </>
                     )}
                   </div>
@@ -249,7 +252,6 @@ const TaskList = ({ title, tasks = [], onToggle, onDelete, onUpdate, onDeleteMan
                       <Check className='h-4 w-4 stroke-[3]' />
                     </button>
                   ) : (
-                    /* Chế độ thông thường */
                     <>
                       <button
                         type='button'
@@ -271,7 +273,7 @@ const TaskList = ({ title, tasks = [], onToggle, onDelete, onUpdate, onDeleteMan
                         disabled={editingTaskId !== null && !isEditing}
                         className={`cursor-pointer rounded-full border px-2.5 py-1 text-xs font-medium ${
                           editingTaskId !== null && !isEditing
-                            ? 'border-slate-200/50 bg-slate-100 text-slate-400 cursor-not-allowed'
+                            ? 'cursor-not-allowed border-slate-200/50 bg-slate-100 text-slate-400'
                             : 'border-slate-200 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'
                         }`}
                       >

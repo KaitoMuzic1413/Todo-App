@@ -30,6 +30,8 @@ export const translations = {
     edit: 'Edit',
     completed: 'Completed',
     pending: 'Pending',
+    important: 'Important',
+    total: 'Total',
     totalTasks: 'Total tasks',
     allTasks: 'All tasks',
     today: 'Today',
@@ -39,7 +41,9 @@ export const translations = {
     allTime: 'All time',
     page: 'Page',
     of: 'of',
-    goToPage: 'Go to page',
+    goToPage: 'Go',
+    enterPageError: 'Please enter a page number.',
+    invalidPageRangeError: 'Please enter a page between 1 and {max}.',
     noTasksInTrash: 'No tasks in trash.',
     restore: 'Restore',
     deletePermanently: 'Delete permanently',
@@ -59,6 +63,15 @@ export const translations = {
     notFoundTitle: 'The page you are looking for does not exist.',
     backToHome: 'Back to home',
     taskDeletedToTrash: 'Task moved to trash successfully',
+
+    // Bổ sung các key dịch thuật mới:
+    createdAt: 'Created at',
+    deletedAt: 'Deleted at',
+    quickRemove: 'Quick remove',
+    selectAll: 'Select all',
+    deselectAll: 'Deselect all',
+    deleteSelected: 'Delete selected',
+    period: 'Time period',
   },
   vi: {
     appName: 'Todo App',
@@ -89,6 +102,8 @@ export const translations = {
     edit: 'Sửa',
     completed: 'Đã hoàn thành',
     pending: 'Chưa hoàn thành',
+    important: 'Quan trọng',
+    total: 'Tổng số',
     totalTasks: 'Tổng task',
     allTasks: 'Tất cả',
     today: 'Hôm nay',
@@ -98,7 +113,9 @@ export const translations = {
     allTime: 'Tất cả thời gian',
     page: 'Trang',
     of: 'trong',
-    goToPage: 'Đi đến trang',
+    goToPage: 'Đi',
+    enterPageError: 'Vui lòng nhập số trang.',
+    invalidPageRangeError: 'Vui lòng nhập số trang từ 1 đến {max}.',
     noTasksInTrash: 'Không có task nào trong thùng rác.',
     restore: 'Khôi phục',
     deletePermanently: 'Xoá vĩnh viễn',
@@ -118,6 +135,15 @@ export const translations = {
     notFoundTitle: 'Trang bạn tìm kiếm không tồn tại.',
     backToHome: 'Quay lại trang chủ',
     taskDeletedToTrash: 'Task đã được chuyển vào thùng rác',
+
+    // Bổ sung các key dịch thuật mới:
+    createdAt: 'Tạo lúc',
+    deletedAt: 'Xóa lúc',
+    quickRemove: 'Xóa nhiều task',
+    selectAll: 'Chọn tất cả',
+    deselectAll: 'Bỏ chọn tất cả',
+    deleteSelected: 'Xóa đã chọn',
+    period: 'Khoảng thời gian',
   },
 };
 
@@ -144,7 +170,7 @@ export const useLanguage = () => {
 
   return {
     language,
-    setLanguage: setLanguage,
+    setLanguage,
     t: translations[language] || translations.en,
   };
 };

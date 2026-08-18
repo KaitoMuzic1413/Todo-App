@@ -298,7 +298,7 @@ export function SidebarContactDetails() {
         className='inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1.5 shadow-sm transition-colors hover:border-violet-300 hover:text-violet-700 dark:border-slate-700 dark:bg-slate-900/60 dark:hover:text-violet-200'
       >
         <Globe className='h-3.5 w-3.5 text-violet-500' />
-        Redhat
+        Kaito Dev
       </a>
     </div>
   );
