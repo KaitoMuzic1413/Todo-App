@@ -22,7 +22,7 @@ export default defineConfig({
     },
   },
   build: {
-    chunkSizeWarningLimit: 1000, // Tăng giới hạn cảnh báo lên 1000 kB
+    chunkSizeWarningLimit: 5000, // Tăng giới hạn cảnh báo lên 1000 kB
     rollupOptions: {
       output: {
         manualChunks(id) {
