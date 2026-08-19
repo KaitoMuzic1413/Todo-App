@@ -19,7 +19,6 @@ const formatTaskCreatedAt = (value, language) => {
   });
 };
 
-// Animation Variants cho Framer Motion
 const slideVariants = {
   enter: (direction) => ({
     x: direction > 0 ? 80 : -80,
@@ -35,10 +34,18 @@ const slideVariants = {
   }),
 };
 
+// Cấu hình hiệu ứng dồn vị trí mượt mà
+const taskItemVariants = {
+  initial: { opacity: 0, y: 30, scale: 0.98 },
+  animate: { opacity: 1, y: 0, scale: 1 },
+  exit: { opacity: 0, x: -60, scale: 0.95 },
+};
+
 const TaskList = ({
   title,
   tasks = [],
   page = 1,
+  dateFilter = 'all', // Nhận thêm prop dateFilter/period từ component cha
   onToggle,
   onDelete,
   onUpdate,
@@ -172,10 +179,10 @@ const TaskList = ({
         </div>
       </div>
 
-      {/* Task List Container */}
+      {/* Task List Container - Kết hợp page + dateFilter làm key để kích hoạt transition khi thay đổi bộ lọc */}
       <AnimatePresence mode='wait' custom={direction}>
         <motion.div
-          key={page}
+          key={`${dateFilter}-${page}`}
           custom={direction}
           variants={slideVariants}
           initial='enter'
@@ -189,7 +196,7 @@ const TaskList = ({
               {t.noTasks}
             </div>
           ) : (
-            <>
+            <AnimatePresence mode='popLayout'>
               {tasks.map((task) => {
                 const done = task.status === 'complete';
                 const isEditing = editingTaskId === task._id;
@@ -197,8 +204,18 @@ const TaskList = ({
                 const createdDateStr = formatTaskCreatedAt(task.createdAt, language);
 
                 return (
-                  <div
+                  <motion.div
                     key={task._id}
+                    layout
+                    variants={taskItemVariants}
+                    initial='initial'
+                    animate='animate'
+                    exit='exit'
+                    transition={{
+                      layout: { type: 'spring', stiffness: 500, damping: 35 },
+                      opacity: { duration: 0.2 },
+                      y: { duration: 0.25 },
+                    }}
                     onClick={() => isSelectMode && handleToggleSelectTask(task._id)}
                     className={`flex min-h-[72px] items-center justify-between gap-4 rounded-2xl border p-4 transition-colors ${
                       isSelectMode ? 'cursor-pointer hover:border-violet-300 dark:hover:border-violet-700' : ''
@@ -338,19 +355,20 @@ const TaskList = ({
                         </>
                       )}
                     </div>
-                  </div>
+                  </motion.div>
                 );
               })}
 
-              {/* Slot đệm chuẩn 72px khớp 100% với task thật */}
+              {/* Slot đệm giữ nguyên kích thước UI */}
               {emptySlotsCount > 0 &&
                 Array.from({ length: emptySlotsCount }).map((_, index) => (
-                  <div
+                  <motion.div
                     key={`empty-slot-${index}`}
+                    layout
                     className='h-[72px] rounded-2xl border border-dashed border-slate-200/60 bg-slate-50/30 dark:border-slate-800/60 dark:bg-slate-950/20'
                   />
                 ))}
-            </>
+            </AnimatePresence>
           )}
         </motion.div>
       </AnimatePresence>

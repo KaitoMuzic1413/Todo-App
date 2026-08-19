@@ -36,7 +36,7 @@ const getTrashDateFilter = (period) => {
   return null;
 };
 
-export const cleanupExpiredTrashTasks = async () => {
+export const cleanupExpiredTrashTasks = async (req) => {
   try {
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - 30);
@@ -46,9 +46,9 @@ export const cleanupExpiredTrashTasks = async () => {
       deletedAt: { $lte: cutoff },
     });
 
-    // Nếu có task rác bị dọn tự động, cũng phát tín hiệu cập nhật
     if (result.deletedCount > 0) {
-      io.emit('task_updated');
+      const io = req?.app?.get('io') || global.io;
+      if (io) io.emit('task_updated');
     }
 
     return result.deletedCount || 0;
@@ -124,8 +124,8 @@ export const createTask = async (req, res) => {
       await existingPendingTaskToday.save();
       await touchUserActivity(userId);
 
-      // 🚀 Realtime update
-      io.emit('task_updated');
+      const io = req.app.get('io') || global.io;
+      if (io) io.emit('task_updated');
 
       return res.status(200).json(existingPendingTaskToday);
     }
@@ -140,8 +140,8 @@ export const createTask = async (req, res) => {
     const newTask = await task.save();
     await touchUserActivity(userId);
 
-    // 🚀 Realtime update
-    io.emit('task_updated');
+    const io = req.app.get('io') || global.io;
+    if (io) io.emit('task_updated');
 
     return res.status(201).json(newTask);
   } catch (error) {
@@ -180,8 +180,8 @@ export const updateTask = async (req, res) => {
     const updatedTask = await Task.findByIdAndUpdate(req.params.id, nextData, { returnDocument: 'after' });
     await touchUserActivity(userId);
 
-    // 🚀 Realtime update
-    io.emit('task_updated');
+    const io = req.app.get('io') || global.io;
+    if (io) io.emit('task_updated');
 
     return res.status(200).json(updatedTask);
   } catch (error) {
@@ -192,9 +192,10 @@ export const updateTask = async (req, res) => {
 
 export const deleteTask = async (req, res) => {
   try {
-    const { userId } = req.body;
+    const userId = req.body?.userId || req.query?.userId;
+
     const task = await Task.findOneAndUpdate(
-      { _id: req.params.id, userId, isDeleted: false },
+      { _id: req.params.id, ...(userId ? { userId } : {}), isDeleted: false },
       { isDeleted: true, deletedAt: new Date() },
       { returnDocument: 'after' }
     );
@@ -203,10 +204,14 @@ export const deleteTask = async (req, res) => {
       return res.status(404).json({ message: 'Task not found' });
     }
 
-    await touchUserActivity(userId);
+    if (userId) {
+      await touchUserActivity(userId);
+    }
 
-    // 🚀 Realtime update
-    io.emit('task_updated');
+    const io = req.app.get('io') || global.io;
+    if (io) {
+      io.emit('task_updated');
+    }
 
     return res.status(200).json({ message: 'Task moved to trash successfully', task });
   } catch (error) {
@@ -236,8 +241,8 @@ export const toggleTaskStatus = async (req, res) => {
 
     await touchUserActivity(userId);
 
-    // 🚀 Realtime update
-    io.emit('task_updated');
+    const io = req.app.get('io') || global.io;
+    if (io) io.emit('task_updated');
 
     return res.status(200).json(updatedTask);
   } catch (error) {
@@ -263,8 +268,8 @@ export const restoreTask = async (req, res) => {
 
     await touchUserActivity(userId);
 
-    // 🚀 Realtime update
-    io.emit('task_updated');
+    const io = req.app.get('io') || global.io;
+    if (io) io.emit('task_updated');
 
     return res.status(200).json({ message: 'Task restored successfully', task: restoredTask });
   } catch (error) {
@@ -284,8 +289,8 @@ export const deletePermanentTask = async (req, res) => {
 
     await touchUserActivity(userId);
 
-    // 🚀 Realtime update
-    io.emit('task_updated');
+    const io = req.app.get('io') || global.io;
+    if (io) io.emit('task_updated');
 
     return res.status(200).json({ message: 'Task permanently deleted', task });
   } catch (error) {
@@ -304,8 +309,8 @@ export const clearTrash = async (req, res) => {
     const result = await Task.deleteMany({ userId, isDeleted: true });
     await touchUserActivity(userId);
 
-    // 🚀 Realtime update
-    io.emit('task_updated');
+    const io = req.app.get('io') || global.io;
+    if (io) io.emit('task_updated');
 
     return res.status(200).json({ message: 'Trash cleared successfully', deletedCount: result.deletedCount || 0 });
   } catch (error) {
