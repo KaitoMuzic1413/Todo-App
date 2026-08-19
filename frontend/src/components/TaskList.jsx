@@ -179,199 +179,201 @@ const TaskList = ({
         </div>
       </div>
 
-      {/* Task List Container - Kết hợp page + dateFilter làm key để kích hoạt transition khi thay đổi bộ lọc */}
-      <AnimatePresence mode='wait' custom={direction}>
-        <motion.div
-          key={`${dateFilter}-${page}`}
-          custom={direction}
-          variants={slideVariants}
-          initial='enter'
-          animate='center'
-          exit='exit'
-          transition={{ duration: 0.25, ease: 'easeInOut' }}
-          className='space-y-3'
-        >
-          {tasks.length === 0 ? (
-            <div className='flex h-[410px] items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-950/40 dark:text-slate-300'>
-              {t.noTasks}
-            </div>
-          ) : (
-            <AnimatePresence mode='popLayout'>
-              {tasks.map((task) => {
-                const done = task.status === 'complete';
-                const isEditing = editingTaskId === task._id;
-                const isSelected = selectedTaskIds.includes(task._id);
-                const createdDateStr = formatTaskCreatedAt(task.createdAt, language);
+      {/* Bọc khung cố định có overflow-hidden để kích hoạt GPU Acceleration trên Vercel/Render */}
+      <div className='relative w-full overflow-hidden'>
+        <AnimatePresence mode='wait' custom={direction}>
+          <motion.div
+            key={`${dateFilter}-${page}`}
+            custom={direction}
+            variants={slideVariants}
+            initial='enter'
+            animate='center'
+            exit='exit'
+            transition={{ duration: 0.25, ease: 'easeInOut' }}
+            className='space-y-3 will-change-transform'
+          >
+            {tasks.length === 0 ? (
+              <div className='flex h-[410px] items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-950/40 dark:text-slate-300'>
+                {t.noTasks}
+              </div>
+            ) : (
+              <AnimatePresence mode='popLayout'>
+                {tasks.map((task) => {
+                  const done = task.status === 'complete';
+                  const isEditing = editingTaskId === task._id;
+                  const isSelected = selectedTaskIds.includes(task._id);
+                  const createdDateStr = formatTaskCreatedAt(task.createdAt, language);
 
-                return (
-                  <motion.div
-                    key={task._id}
-                    layout
-                    variants={taskItemVariants}
-                    initial='initial'
-                    animate='animate'
-                    exit='exit'
-                    transition={{
-                      layout: { type: 'spring', stiffness: 500, damping: 35 },
-                      opacity: { duration: 0.2 },
-                      y: { duration: 0.25 },
-                    }}
-                    onClick={() => isSelectMode && handleToggleSelectTask(task._id)}
-                    className={`flex min-h-[72px] items-center justify-between gap-4 rounded-2xl border p-4 transition-colors ${
-                      isSelectMode ? 'cursor-pointer hover:border-violet-300 dark:hover:border-violet-700' : ''
-                    } ${
-                      isSelected
-                        ? 'border-violet-500 bg-violet-50/50 dark:border-violet-600 dark:bg-violet-950/20'
-                        : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-950/50'
-                    }`}
-                  >
-                    <div className='flex min-w-0 flex-1 items-center gap-3'>
-                      {!isSelectMode && (
-                        <button
-                          type='button'
-                          onClick={() => onToggle?.(task._id)}
-                          disabled={editingTaskId !== null}
-                          className={`flex h-9 w-9 shrink-0 ${editingTaskId !== null ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} items-center justify-center rounded-full bg-white text-slate-400 shadow-sm transition-transform dark:bg-slate-900`}
-                          aria-label={done ? 'Mark task as active' : 'Mark task as complete'}
-                        >
-                          {done ? (
-                            <CheckCircle2 className='h-4 w-4 text-emerald-500' />
+                  return (
+                    <motion.div
+                      key={task._id}
+                      layout
+                      variants={taskItemVariants}
+                      initial='initial'
+                      animate='animate'
+                      exit='exit'
+                      transition={{
+                        layout: { type: 'spring', stiffness: 500, damping: 35 },
+                        opacity: { duration: 0.2 },
+                        y: { duration: 0.25 },
+                      }}
+                      onClick={() => isSelectMode && handleToggleSelectTask(task._id)}
+                      className={`flex min-h-[72px] items-center justify-between gap-4 rounded-2xl border p-4 transition-colors will-change-transform ${
+                        isSelectMode ? 'cursor-pointer hover:border-violet-300 dark:hover:border-violet-700' : ''
+                      } ${
+                        isSelected
+                          ? 'border-violet-500 bg-violet-50/50 dark:border-violet-600 dark:bg-violet-950/20'
+                          : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-950/50'
+                      }`}
+                    >
+                      <div className='flex min-w-0 flex-1 items-center gap-3'>
+                        {!isSelectMode && (
+                          <button
+                            type='button'
+                            onClick={() => onToggle?.(task._id)}
+                            disabled={editingTaskId !== null}
+                            className={`flex h-9 w-9 shrink-0 ${editingTaskId !== null ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} items-center justify-center rounded-full bg-white text-slate-400 shadow-sm transition-transform dark:bg-slate-900`}
+                            aria-label={done ? 'Mark task as active' : 'Mark task as complete'}
+                          >
+                            {done ? (
+                              <CheckCircle2 className='h-4 w-4 text-emerald-500' />
+                            ) : (
+                              <Circle className='h-4 w-4 text-slate-400' />
+                            )}
+                          </button>
+                        )}
+
+                        <div className='min-w-0 flex-1'>
+                          {isEditing ? (
+                            <div className='flex items-center gap-2'>
+                              <input
+                                type='text'
+                                value={draftValue}
+                                onChange={(event) => setDraftValue(event.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    saveEditing(task._id);
+                                  }
+                                  if (e.key === 'Escape') {
+                                    cancelEditing();
+                                  }
+                                }}
+                                className='task-content min-w-0 flex-1 cursor-text rounded-xl border border-slate-200 bg-white px-2.5 py-1 text-sm text-slate-800 outline-none focus:border-violet-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100'
+                                autoFocus
+                              />
+                              <button
+                                type='button'
+                                onClick={() => saveEditing(task._id)}
+                                className='cursor-pointer rounded-full bg-violet-600 px-2.5 py-1 text-[11px] font-medium text-white'
+                              >
+                                {t.save}
+                              </button>
+                              <button
+                                type='button'
+                                onClick={cancelEditing}
+                                className='cursor-pointer rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'
+                              >
+                                {t.cancel}
+                              </button>
+                            </div>
                           ) : (
-                            <Circle className='h-4 w-4 text-slate-400' />
+                            <>
+                              <p
+                                className={`task-content truncate text-sm font-medium ${
+                                  done ? 'text-slate-400 line-through dark:text-slate-500' : 'text-slate-800 dark:text-slate-100'
+                                }`}
+                              >
+                                {task.title}
+                              </p>
+                              {createdDateStr && (
+                                <p className='mt-0.5 text-[11px] text-slate-400 dark:text-slate-400'>
+                                  {t.createdAt || 'Created at'}: {createdDateStr}
+                                </p>
+                              )}
+                            </>
                           )}
-                        </button>
-                      )}
+                        </div>
+                      </div>
 
-                      <div className='min-w-0 flex-1'>
-                        {isEditing ? (
-                          <div className='flex items-center gap-2'>
-                            <input
-                              type='text'
-                              value={draftValue}
-                              onChange={(event) => setDraftValue(event.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  e.preventDefault();
-                                  saveEditing(task._id);
-                                }
-                                if (e.key === 'Escape') {
-                                  cancelEditing();
-                                }
-                              }}
-                              className='task-content min-w-0 flex-1 cursor-text rounded-xl border border-slate-200 bg-white px-2.5 py-1 text-sm text-slate-800 outline-none focus:border-violet-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100'
-                              autoFocus
-                            />
-                            <button
-                              type='button'
-                              onClick={() => saveEditing(task._id)}
-                              className='cursor-pointer rounded-full bg-violet-600 px-2.5 py-1 text-[11px] font-medium text-white'
-                            >
-                              {t.save}
-                            </button>
-                            <button
-                              type='button'
-                              onClick={cancelEditing}
-                              className='cursor-pointer rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'
-                            >
-                              {t.cancel}
-                            </button>
-                          </div>
+                      <div className='flex shrink-0 items-center gap-2'>
+                        {isSelectMode ? (
+                          <button
+                            type='button'
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleToggleSelectTask(task._id);
+                            }}
+                            className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border transition-all ${
+                              isSelected
+                                ? 'border-violet-600 bg-violet-600 text-white'
+                                : 'border-slate-300 bg-white text-transparent dark:border-slate-600 dark:bg-slate-900'
+                            }`}
+                            aria-label='Select task for deletion'
+                          >
+                            <Check className='h-4 w-4 stroke-[3]' />
+                          </button>
                         ) : (
                           <>
-                            <p
-                              className={`task-content truncate text-sm font-medium ${
-                                done ? 'text-slate-400 line-through dark:text-slate-500' : 'text-slate-800 dark:text-slate-100'
+                            <button
+                              type='button'
+                              onClick={() => toggleImportant(task)}
+                              disabled={editingTaskId !== null}
+                              className={`cursor-pointer rounded-full border px-2 py-1 text-xs font-medium transition-colors ${
+                                task.important
+                                  ? 'border-amber-300 bg-amber-50 text-amber-500 dark:border-amber-500/50 dark:bg-amber-500/20 dark:text-amber-300'
+                                  : 'border-slate-200 bg-white text-slate-400 hover:text-amber-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:text-amber-400'
+                              }`}
+                              aria-label='Toggle important'
+                            >
+                              <Star className={`h-3.5 w-3.5 ${task.important ? 'fill-amber-400 text-amber-400 dark:fill-amber-300 dark:text-amber-300' : ''}`} />
+                            </button>
+
+                            <button
+                              type='button'
+                              onClick={() => (isEditing ? saveEditing(task._id) : startEditing(task))}
+                              disabled={editingTaskId !== null && !isEditing}
+                              className={`cursor-pointer rounded-full border px-2.5 py-1 text-xs font-medium ${
+                                editingTaskId !== null && !isEditing
+                                  ? 'cursor-not-allowed border-slate-200/50 bg-slate-100 text-slate-400'
+                                  : 'border-slate-200 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'
                               }`}
                             >
-                              {task.title}
-                            </p>
-                            {createdDateStr && (
-                              <p className='mt-0.5 text-[11px] text-slate-400 dark:text-slate-400'>
-                                {t.createdAt || 'Created at'}: {createdDateStr}
-                              </p>
-                            )}
+                              {isEditing ? t.save : t.edit}
+                            </button>
+
+                            <button
+                              type='button'
+                              onClick={() => onDelete?.(task._id)}
+                              disabled={editingTaskId !== null}
+                              className={`flex h-8 w-8 ${
+                                editingTaskId !== null ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
+                              } items-center justify-center rounded-full border border-rose-200 bg-rose-50 text-rose-500 dark:border-rose-900/60 dark:bg-rose-500/10 dark:text-rose-200`}
+                              aria-label='Delete task'
+                            >
+                              <Trash2 className='h-3.5 w-3.5' />
+                            </button>
                           </>
                         )}
                       </div>
-                    </div>
+                    </motion.div>
+                  );
+                })}
 
-                    <div className='flex shrink-0 items-center gap-2'>
-                      {isSelectMode ? (
-                        <button
-                          type='button'
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleToggleSelectTask(task._id);
-                          }}
-                          className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border transition-all ${
-                            isSelected
-                              ? 'border-violet-600 bg-violet-600 text-white'
-                              : 'border-slate-300 bg-white text-transparent dark:border-slate-600 dark:bg-slate-900'
-                          }`}
-                          aria-label='Select task for deletion'
-                        >
-                          <Check className='h-4 w-4 stroke-[3]' />
-                        </button>
-                      ) : (
-                        <>
-                          <button
-                            type='button'
-                            onClick={() => toggleImportant(task)}
-                            disabled={editingTaskId !== null}
-                            className={`cursor-pointer rounded-full border px-2 py-1 text-xs font-medium transition-colors ${
-                              task.important
-                                ? 'border-amber-300 bg-amber-50 text-amber-500 dark:border-amber-500/50 dark:bg-amber-500/20 dark:text-amber-300'
-                                : 'border-slate-200 bg-white text-slate-400 hover:text-amber-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:text-amber-400'
-                            }`}
-                            aria-label='Toggle important'
-                          >
-                            <Star className={`h-3.5 w-3.5 ${task.important ? 'fill-amber-400 text-amber-400 dark:fill-amber-300 dark:text-amber-300' : ''}`} />
-                          </button>
-
-                          <button
-                            type='button'
-                            onClick={() => (isEditing ? saveEditing(task._id) : startEditing(task))}
-                            disabled={editingTaskId !== null && !isEditing}
-                            className={`cursor-pointer rounded-full border px-2.5 py-1 text-xs font-medium ${
-                              editingTaskId !== null && !isEditing
-                                ? 'cursor-not-allowed border-slate-200/50 bg-slate-100 text-slate-400'
-                                : 'border-slate-200 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'
-                            }`}
-                          >
-                            {isEditing ? t.save : t.edit}
-                          </button>
-
-                          <button
-                            type='button'
-                            onClick={() => onDelete?.(task._id)}
-                            disabled={editingTaskId !== null}
-                            className={`flex h-8 w-8 ${
-                              editingTaskId !== null ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
-                            } items-center justify-center rounded-full border border-rose-200 bg-rose-50 text-rose-500 dark:border-rose-900/60 dark:bg-rose-500/10 dark:text-rose-200`}
-                            aria-label='Delete task'
-                          >
-                            <Trash2 className='h-3.5 w-3.5' />
-                          </button>
-                        </>
-                      )}
-                    </div>
-                  </motion.div>
-                );
-              })}
-
-              {/* Slot đệm giữ nguyên kích thước UI */}
-              {emptySlotsCount > 0 &&
-                Array.from({ length: emptySlotsCount }).map((_, index) => (
-                  <motion.div
-                    key={`empty-slot-${index}`}
-                    layout
-                    className='h-[72px] rounded-2xl border border-dashed border-slate-200/60 bg-slate-50/30 dark:border-slate-800/60 dark:bg-slate-950/20'
-                  />
-                ))}
-            </AnimatePresence>
-          )}
-        </motion.div>
-      </AnimatePresence>
+                {/* Slot đệm giữ nguyên kích thước UI */}
+                {emptySlotsCount > 0 &&
+                  Array.from({ length: emptySlotsCount }).map((_, index) => (
+                    <motion.div
+                      key={`empty-slot-${index}`}
+                      layout
+                      className='h-[72px] rounded-2xl border border-dashed border-slate-200/60 bg-slate-50/30 dark:border-slate-800/60 dark:bg-slate-950/20'
+                    />
+                  ))}
+              </AnimatePresence>
+            )}
+          </motion.div>
+        </AnimatePresence>
+      </div>
     </div>
   );
 };
