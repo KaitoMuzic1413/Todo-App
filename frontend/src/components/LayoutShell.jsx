@@ -1,8 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { NavLink } from 'react-router';
-import { ChevronLeft, Globe, LogIn, LogOut, Mail, Moon, Phone, SunMedium, UserCircle2, X, Home, Trash2 } from 'lucide-react';
+import { ChevronLeft, Globe, LogIn, LogOut, Mail, Moon, SunMedium, UserCircle2, X, Home, Trash2 } from 'lucide-react';
 import { loginWithEmail } from '@/lib/api';
 import { useLanguage } from '@/lib/i18n';
+
+const SIDEBAR_WIDTH = 320;
+const EDGE_WIDTH = 35;
 
 const getStoredUser = () => {
   if (typeof window === 'undefined') return null;
@@ -21,7 +24,11 @@ export function LayoutShell({ children }) {
     if (typeof window === 'undefined') return false;
     return localStorage.getItem('todo-theme') === 'dark';
   });
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [sidebarOffset, setSidebarOffset] = useState(-SIDEBAR_WIDTH);
+  const [isDragging, setIsDragging] = useState(false);
+
   const [currentUser, setCurrentUser] = useState(getStoredUser);
   const [loginEmail, setLoginEmail] = useState(() => {
     if (typeof window === 'undefined') return '';
@@ -30,11 +37,94 @@ export function LayoutShell({ children }) {
   const [loginError, setLoginError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const touchStartX = useRef(0);
+  const startOffset = useRef(-SIDEBAR_WIDTH);
+  const isEligibleSwipe = useRef(false);
+
   const navItems = [
     { name: t.home, to: '/' },
     { name: t.trash, to: '/trash' },
     { name: t.contact, to: '/about' },
   ];
+
+  // Khóa cuộn trang chính (`body`) khi Sidebar đang mở trên Mobile
+  useEffect(() => {
+    if (isSidebarOpen && window.innerWidth < 1024) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.touchAction = 'none';
+    } else {
+      document.body.style.overflow = '';
+      document.body.style.touchAction = '';
+    }
+
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.touchAction = '';
+    };
+  }, [isSidebarOpen]);
+
+  // Logic kéo Sidebar bám tay
+  useEffect(() => {
+    const handleTouchStart = (event) => {
+      const touchX = event.touches[0].clientX;
+
+      if ((!isSidebarOpen && touchX <= EDGE_WIDTH) || isSidebarOpen) {
+        isEligibleSwipe.current = true;
+        touchStartX.current = touchX;
+        startOffset.current = isSidebarOpen ? 0 : -SIDEBAR_WIDTH;
+      } else {
+        isEligibleSwipe.current = false;
+      }
+    };
+
+    const handleTouchMove = (event) => {
+      if (!isEligibleSwipe.current) return;
+
+      const currentX = event.touches[0].clientX;
+      const deltaX = currentX - touchStartX.current;
+
+      let nextOffset = startOffset.current + deltaX;
+
+      if (nextOffset > 0) nextOffset = 0;
+      if (nextOffset < -SIDEBAR_WIDTH) nextOffset = -SIDEBAR_WIDTH;
+
+      setIsDragging(true);
+      setSidebarOffset(nextOffset);
+    };
+
+    const handleTouchEnd = () => {
+      if (!isEligibleSwipe.current) return;
+
+      setIsDragging(false);
+      isEligibleSwipe.current = false;
+
+      const threshold = -SIDEBAR_WIDTH * 0.7;
+
+      if (sidebarOffset > threshold) {
+        setIsSidebarOpen(true);
+        setSidebarOffset(0);
+      } else {
+        setIsSidebarOpen(false);
+        setSidebarOffset(-SIDEBAR_WIDTH);
+      }
+    };
+
+    window.addEventListener('touchstart', handleTouchStart);
+    window.addEventListener('touchmove', handleTouchMove);
+    window.addEventListener('touchend', handleTouchEnd);
+
+    return () => {
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [isSidebarOpen, sidebarOffset]);
+
+  useEffect(() => {
+    if (!isDragging) {
+      setSidebarOffset(isSidebarOpen ? 0 : -SIDEBAR_WIDTH);
+    }
+  }, [isSidebarOpen, isDragging]);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode);
@@ -48,9 +138,7 @@ export function LayoutShell({ children }) {
         (isMetaCombo && event.shiftKey && ['i', 'j', 'c', 'u'].includes(event.key.toLowerCase())) ||
         (isMetaCombo && event.key.toLowerCase() === 's');
 
-      if (event.key === 'F12') {
-        return;
-      }
+      if (event.key === 'F12') return;
 
       if (isBlockedCombo || event.key === 'ContextMenu') {
         event.preventDefault();
@@ -116,6 +204,7 @@ export function LayoutShell({ children }) {
 
   const userEmail = currentUser?.email || loginEmail;
   const userInitial = userEmail ? userEmail.split('@')[0].slice(0, 2).toUpperCase() : 'G';
+  const backdropOpacity = Math.max(0, (SIDEBAR_WIDTH + sidebarOffset) / SIDEBAR_WIDTH);
 
   return (
     <div className='min-h-screen bg-[#f5f7fb] text-slate-900 transition-colors duration-300 dark:bg-[#0f172a] dark:text-slate-50'>
@@ -133,22 +222,28 @@ export function LayoutShell({ children }) {
         </button>
       </div>
 
-      {/* Backdrop mờ phía sau cho Mobile */}
+      {/* Backdrop mờ */}
       <div
-        className={`fixed inset-0 z-20 bg-slate-950/35 transition-opacity duration-300 ease-in-out lg:hidden ${
-          isSidebarOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
-        }`}
+        className={`fixed inset-0 z-20 bg-slate-950/35 lg:hidden ${
+          sidebarOffset > -SIDEBAR_WIDTH ? 'pointer-events-auto' : 'pointer-events-none'
+        } ${isDragging ? '' : 'transition-opacity duration-300'}`}
+        style={{ opacity: backdropOpacity }}
         onClick={() => setIsSidebarOpen(false)}
         aria-hidden='true'
       />
 
       {/* Sidebar chính */}
       <aside
-        className={`fixed left-0 top-0 z-30 flex h-screen w-[320px] flex-col border-r border-slate-200/80 bg-white/80 backdrop-blur-xl transition-transform duration-300 ease-in-out dark:border-slate-800 dark:bg-slate-950/80 ${
-          isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        className={`fixed left-0 top-0 z-30 flex h-screen h-[100dvh] w-[320px] flex-col border-r border-slate-200/80 bg-white/80 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/80 ${
+          isDragging ? '' : 'transition-transform duration-300 ease-out'
         }`}
+        style={{
+          transform: `translateX(${sidebarOffset}px)`,
+          touchAction: 'none', // Chặn cuộn dọc mặc định của trình duyệt tác động lên trang sau
+        }}
       >
-        <div className='flex items-center justify-between border-b border-slate-200/80 bg-white/60 p-4 dark:border-slate-800 dark:bg-slate-950/60'>
+        {/* Header Cố định */}
+        <div className='flex shrink-0 items-center justify-between border-b border-slate-200/80 bg-white/60 p-4 dark:border-slate-800 dark:bg-slate-950/60'>
           <div className='flex items-center gap-3 rounded-2xl bg-slate-100/80 px-3 py-3 shadow-sm dark:bg-slate-900'>
             <img src='/Logo.jpg' alt='Redhat logo' className='h-12 w-12 rounded-xl object-cover shadow-sm' />
             <div className='min-w-0'>
@@ -176,7 +271,11 @@ export function LayoutShell({ children }) {
           </button>
         </div>
 
-        <div className='flex-1 overflow-y-auto px-4 py-5'>
+        {/* Vùng Menu có cuộn nội dung */}
+        <div
+          className='min-h-0 flex-1 overflow-y-auto px-4 py-5 [overscroll-behavior:contain]'
+          style={{ touchAction: 'pan-y' }} // Chỉ cho phép cuộn nội bộ danh sách menu
+        >
           <nav className='space-y-2'>
             {navItems.map((item) => (
               <NavLink
@@ -229,7 +328,8 @@ export function LayoutShell({ children }) {
           </nav>
         </div>
 
-        <div className='border-t border-slate-200/80 bg-white/60 p-4 dark:border-slate-800 dark:bg-slate-950/60'>
+        {/* Footer Cố định */}
+        <div className='shrink-0 border-t border-slate-200/80 bg-white/80 p-4 backdrop-blur-md dark:border-slate-800 dark:bg-slate-950/80'>
           {currentUser ? (
             <div className='rounded-2xl border border-emerald-200 bg-emerald-50/80 p-3 dark:border-emerald-900/70 dark:bg-emerald-500/10'>
               <div className='flex items-center justify-between gap-3'>
@@ -284,30 +384,6 @@ export function LayoutShell({ children }) {
       <main className={`min-h-screen transition-all duration-300 ease-in-out ${isSidebarOpen ? 'lg:ml-[320px]' : 'lg:ml-0'}`}>
         <div className='mx-auto max-w-5xl px-4 py-8 sm:px-6'>{children}</div>
       </main>
-    </div>
-  );
-}
-
-export function SidebarContactDetails() {
-  return (
-    <div className='flex flex-wrap items-center justify-center gap-3 text-sm text-slate-600 dark:text-slate-300'>
-      <span className='inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1.5 shadow-sm dark:border-slate-700 dark:bg-slate-900/60'>
-        <Phone className='h-3.5 w-3.5 text-violet-500' />
-        +84 793 903 870
-      </span>
-      <span className='inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1.5 shadow-sm dark:border-slate-700 dark:bg-slate-900/60'>
-        <Mail className='h-3.5 w-3.5 text-violet-500' />
-        kaitomuzicvn@gmail.com
-      </span>
-      <a
-        href='https://facebook.com'
-        target='_blank'
-        rel='noreferrer'
-        className='inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1.5 shadow-sm transition-colors hover:border-violet-300 hover:text-violet-700 dark:border-slate-700 dark:bg-slate-900/60 dark:hover:text-violet-200'
-      >
-        <Globe className='h-3.5 w-3.5 text-violet-500' />
-        Kaito Dev
-      </a>
     </div>
   );
 }

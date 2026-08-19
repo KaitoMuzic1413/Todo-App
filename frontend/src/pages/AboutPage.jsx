@@ -1,7 +1,32 @@
-import { Mail, MessageSquareText, Phone } from 'lucide-react';
-import { LayoutShell, SidebarContactDetails } from '@/components/LayoutShell';
+import { Globe, Mail, MessageSquareText, Phone } from 'lucide-react';
 import Header from '@/components/Header';
+import { LayoutShell } from '@/components/LayoutShell';
 import { useLanguage } from '@/lib/i18n';
+
+// Component ContactDetails đặt trực tiếp trong file AboutPage
+function ContactDetails() {
+  return (
+    <div className='flex flex-wrap items-center justify-center gap-3 text-sm text-slate-600 dark:text-slate-300'>
+      <span className='inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1.5 shadow-sm dark:border-slate-700 dark:bg-slate-900/60'>
+        <Phone className='h-3.5 w-3.5 text-violet-500' />
+        +84 693 903 870
+      </span>
+      <span className='inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1.5 shadow-sm dark:border-slate-700 dark:bg-slate-900/60'>
+        <Mail className='h-3.5 w-3.5 text-violet-500' />
+        kaitomuzicvn@gmail.com
+      </span>
+      <a
+        href='https://www.facebook.com/share/1KPgW9jyHm/'
+        target='_blank'
+        rel='noreferrer'
+        className='inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1.5 shadow-sm transition-colors hover:border-violet-300 hover:text-violet-700 dark:border-slate-700 dark:bg-slate-900/60 dark:hover:text-violet-200'
+      >
+        <Globe className='h-3.5 w-3.5 text-violet-500' />
+        Kaito Dev
+      </a>
+    </div>
+  );
+}
 
 const contactMethods = [
   {
@@ -42,7 +67,9 @@ const AboutPage = () => {
                 {t.aboutTitle}
               </h2>
             </div>
-            <SidebarContactDetails />
+            
+            {/* Hiển thị danh sách liên hệ nhỏ ở góc */}
+            <ContactDetails />
           </div>
 
           <div className='mt-8 grid gap-4 md:grid-cols-3'>

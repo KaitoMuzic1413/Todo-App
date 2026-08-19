@@ -46,6 +46,11 @@ export const cleanupExpiredTrashTasks = async () => {
       deletedAt: { $lte: cutoff },
     });
 
+    // Nếu có task rác bị dọn tự động, cũng phát tín hiệu cập nhật
+    if (result.deletedCount > 0) {
+      io.emit('task_updated');
+    }
+
     return result.deletedCount || 0;
   } catch (error) {
     console.error('Error cleanupExpiredTrashTasks:', error);
@@ -119,6 +124,9 @@ export const createTask = async (req, res) => {
       await existingPendingTaskToday.save();
       await touchUserActivity(userId);
 
+      // 🚀 Realtime update
+      io.emit('task_updated');
+
       return res.status(200).json(existingPendingTaskToday);
     }
 
@@ -131,6 +139,10 @@ export const createTask = async (req, res) => {
 
     const newTask = await task.save();
     await touchUserActivity(userId);
+
+    // 🚀 Realtime update
+    io.emit('task_updated');
+
     return res.status(201).json(newTask);
   } catch (error) {
     console.error('Error createTask:', error);
@@ -167,6 +179,10 @@ export const updateTask = async (req, res) => {
 
     const updatedTask = await Task.findByIdAndUpdate(req.params.id, nextData, { returnDocument: 'after' });
     await touchUserActivity(userId);
+
+    // 🚀 Realtime update
+    io.emit('task_updated');
+
     return res.status(200).json(updatedTask);
   } catch (error) {
     console.error('Error updateTask:', error);
@@ -188,6 +204,10 @@ export const deleteTask = async (req, res) => {
     }
 
     await touchUserActivity(userId);
+
+    // 🚀 Realtime update
+    io.emit('task_updated');
+
     return res.status(200).json({ message: 'Task moved to trash successfully', task });
   } catch (error) {
     console.error('Error deleteTask:', error);
@@ -215,6 +235,10 @@ export const toggleTaskStatus = async (req, res) => {
     );
 
     await touchUserActivity(userId);
+
+    // 🚀 Realtime update
+    io.emit('task_updated');
+
     return res.status(200).json(updatedTask);
   } catch (error) {
     console.error('Error toggleTaskStatus:', error);
@@ -238,6 +262,10 @@ export const restoreTask = async (req, res) => {
     );
 
     await touchUserActivity(userId);
+
+    // 🚀 Realtime update
+    io.emit('task_updated');
+
     return res.status(200).json({ message: 'Task restored successfully', task: restoredTask });
   } catch (error) {
     console.error('Error restoreTask:', error);
@@ -255,6 +283,10 @@ export const deletePermanentTask = async (req, res) => {
     }
 
     await touchUserActivity(userId);
+
+    // 🚀 Realtime update
+    io.emit('task_updated');
+
     return res.status(200).json({ message: 'Task permanently deleted', task });
   } catch (error) {
     console.error('Error deletePermanentTask:', error);
@@ -271,6 +303,10 @@ export const clearTrash = async (req, res) => {
 
     const result = await Task.deleteMany({ userId, isDeleted: true });
     await touchUserActivity(userId);
+
+    // 🚀 Realtime update
+    io.emit('task_updated');
+
     return res.status(200).json({ message: 'Trash cleared successfully', deletedCount: result.deletedCount || 0 });
   } catch (error) {
     console.error('Error clearTrash:', error);

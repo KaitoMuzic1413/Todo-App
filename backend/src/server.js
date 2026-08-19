@@ -20,21 +20,20 @@ const app = express();
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:3000",
-  "https://todo-app-seven-mocha-91.vercel.app", // Domain Frontend Vercel của bạn
+  "https://todo-app-seven-mocha-91.vercel.app",
 ];
 
-// Cấu hình Middleware CORS
+// Cấu hình Middleware CORS cho Express
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Cho phép request không có origin (như Postman hoặc mobile apps) hoặc thuộc allowedOrigins
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
         callback(new Error("CORS policy: Not allowed by CORS"));
       }
     },
-    credentials: true, // Cho phép gửi Cookie / Auth Header
+    credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
@@ -46,7 +45,7 @@ app.use(express.json());
 app.use("/api/users", userRoute);
 app.use("/api/tasks", taskRoute);
 
-// Phục vụ Static File (nếu chạy Monorepo trên cùng 1 server)
+// Phục vụ Static File
 const __dirname = path.resolve();
 const distPath = path.join(__dirname, "../frontend/dist");
 
@@ -88,6 +87,7 @@ connectDB()
   .then(() => {
     startMaintenanceJobs();
 
+    // Chạy Express trực tiếp
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });

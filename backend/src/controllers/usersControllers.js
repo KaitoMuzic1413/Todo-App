@@ -28,6 +28,11 @@ export const cleanupInactiveUsers = async () => {
       await User.findByIdAndDelete(user._id);
     }
 
+    // 🚀 Nếu có task bị xóa do dọn dẹp tài khoản lâu không dùng, thông báo realtime cho các client
+    if (deletedTasks > 0) {
+      io.emit('task_updated');
+    }
+
     return { deletedUsers: inactiveUsers.length, deletedTasks };
   } catch (error) {
     console.error('Error cleanupInactiveUsers:', error);

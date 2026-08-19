@@ -40,31 +40,49 @@ const TrashPage = () => {
     return () => window.removeEventListener('todo-auth-changed', syncUser);
   }, []);
 
+  // 🚀 TẢI DANH SÁCH THÙNG RÁC & LẮNG NGHE REALTIME
   useEffect(() => {
     if (!currentUser?._id) {
       navigate('/login');
       return;
     }
 
-    const loadTrash = async () => {
+    // isSilent = true giúp tải ngầm khi nhận thông báo Realtime từ Socket
+    const loadTrash = async (isSilent = false) => {
       try {
-        setLoading(true);
+        if (!isSilent) setLoading(true);
         const response = await fetchTrashTasks(currentUser._id, {
           status: statusFilter,
           period: periodFilter,
         });
         setTasks(response.data || []);
-        setPage(1);
-        setSelectedTaskIds([]);
-        setIsSelectMode(false);
+        
+        // Chỉ reset phân trang và lựa chọn khi tải lại theo Filter thủ công
+        if (!isSilent) {
+          setPage(1);
+          setSelectedTaskIds([]);
+          setIsSelectMode(false);
+        }
       } catch (error) {
         console.error('Failed to load trash tasks', error);
       } finally {
-        setLoading(false);
+        if (!isSilent) setLoading(false);
       }
     };
 
+    // Load dữ liệu ban đầu
     loadTrash();
+
+    // Lắng nghe sự kiện "reload_tasks" được phát từ App.jsx qua Socket.IO
+    const handleRealtimeReload = () => {
+      loadTrash(true); // Re-fetch dữ liệu ngầm
+    };
+
+    window.addEventListener('reload_tasks', handleRealtimeReload);
+
+    return () => {
+      window.removeEventListener('reload_tasks', handleRealtimeReload);
+    };
   }, [currentUser, navigate, statusFilter, periodFilter]);
 
   const totalPages = Math.max(1, Math.ceil(tasks.length / PAGE_SIZE));

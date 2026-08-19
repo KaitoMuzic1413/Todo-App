@@ -116,6 +116,7 @@ const HomePage = () => {
     };
   }, []);
 
+  // Tải danh sách Task lần đầu khi vào trang
   useEffect(() => {
     if (!currentUser?._id) {
       navigate('/login');
@@ -127,7 +128,6 @@ const HomePage = () => {
         setLoading(true);
         const response = await fetchTasks(currentUser._id);
         setTasks(response.data || []);
-        setCurrentPage(1);
       } catch (error) {
         console.error('Failed to load tasks', error);
       } finally {
