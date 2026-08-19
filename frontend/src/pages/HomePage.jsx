@@ -116,7 +116,6 @@ const HomePage = () => {
     };
   }, []);
 
-  // Tải danh sách Task lần đầu khi vào trang
   useEffect(() => {
     if (!currentUser?._id) {
       navigate('/login');
@@ -262,6 +261,7 @@ const HomePage = () => {
                   : 'All Tasks'
               }
               tasks={visibleTasks}
+              page={safeCurrentPage}
               onToggle={handleToggleTask}
               onDelete={handleDeleteTask}
               onUpdate={handleUpdateTask}
