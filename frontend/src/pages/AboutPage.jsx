@@ -9,7 +9,7 @@ function ContactDetails() {
     <div className='flex flex-wrap items-center justify-center gap-3 text-sm text-slate-600 dark:text-slate-300'>
       <span className='inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1.5 shadow-sm dark:border-slate-700 dark:bg-slate-900/60'>
         <Phone className='h-3.5 w-3.5 text-violet-500' />
-        +84 693 903 870
+        +84 793 903 870
       </span>
       <span className='inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-1.5 shadow-sm dark:border-slate-700 dark:bg-slate-900/60'>
         <Mail className='h-3.5 w-3.5 text-violet-500' />
@@ -32,8 +32,8 @@ const contactMethods = [
   {
     icon: Phone,
     label: 'Phone',
-    value: '+84 693 903 870',
-    href: 'tel:+84693903870',
+    value: '+84 793 903 870',
+    href: 'tel:+84793903870',
   },
   {
     icon: Mail,
