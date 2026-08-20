@@ -1,5 +1,5 @@
-import { BrowserRouter, Route, Routes } from 'react-router';
 import { Toaster } from 'sonner';
+import { BrowserRouter, Route, Routes } from 'react-router';
 import AboutPage from './pages/AboutPage';
 import HomePages from './pages/HomePage';
 import Login from './pages/LoginPage';
