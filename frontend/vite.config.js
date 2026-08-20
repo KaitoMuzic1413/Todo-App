@@ -21,22 +21,4 @@ export default defineConfig({
       },
     },
   },
-  build: {
-    chunkSizeWarningLimit: 1000, // Tăng giới hạn cảnh báo lên 1000 kB
-    rollupOptions: {
-      output: {
-        manualChunks(id) {
-          if (id.includes('node_modules')) {
-            if (id.includes('framer-motion')) {
-              return 'vendor-framer-motion';
-            }
-            if (id.includes('lucide-react')) {
-              return 'vendor-lucide';
-            }
-            return 'vendor'; // Tách các thư viện node_modules còn lại ra file riêng
-          }
-        },
-      },
-    },
-  },
 });

@@ -36,7 +36,7 @@ const getTrashDateFilter = (period) => {
   return null;
 };
 
-export const cleanupExpiredTrashTasks = async (req) => {
+export const cleanupExpiredTrashTasks = async () => {
   try {
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - 30);
@@ -45,11 +45,6 @@ export const cleanupExpiredTrashTasks = async (req) => {
       isDeleted: true,
       deletedAt: { $lte: cutoff },
     });
-
-    if (result.deletedCount > 0) {
-      const io = req?.app?.get('io') || global.io;
-      if (io) io.emit('task_updated');
-    }
 
     return result.deletedCount || 0;
   } catch (error) {
@@ -124,9 +119,6 @@ export const createTask = async (req, res) => {
       await existingPendingTaskToday.save();
       await touchUserActivity(userId);
 
-      const io = req.app.get('io') || global.io;
-      if (io) io.emit('task_updated');
-
       return res.status(200).json(existingPendingTaskToday);
     }
 
@@ -139,10 +131,6 @@ export const createTask = async (req, res) => {
 
     const newTask = await task.save();
     await touchUserActivity(userId);
-
-    const io = req.app.get('io') || global.io;
-    if (io) io.emit('task_updated');
-
     return res.status(201).json(newTask);
   } catch (error) {
     console.error('Error createTask:', error);
@@ -179,10 +167,6 @@ export const updateTask = async (req, res) => {
 
     const updatedTask = await Task.findByIdAndUpdate(req.params.id, nextData, { returnDocument: 'after' });
     await touchUserActivity(userId);
-
-    const io = req.app.get('io') || global.io;
-    if (io) io.emit('task_updated');
-
     return res.status(200).json(updatedTask);
   } catch (error) {
     console.error('Error updateTask:', error);
@@ -192,10 +176,9 @@ export const updateTask = async (req, res) => {
 
 export const deleteTask = async (req, res) => {
   try {
-    const userId = req.body?.userId || req.query?.userId;
-
+    const { userId } = req.body;
     const task = await Task.findOneAndUpdate(
-      { _id: req.params.id, ...(userId ? { userId } : {}), isDeleted: false },
+      { _id: req.params.id, userId, isDeleted: false },
       { isDeleted: true, deletedAt: new Date() },
       { returnDocument: 'after' }
     );
@@ -204,15 +187,7 @@ export const deleteTask = async (req, res) => {
       return res.status(404).json({ message: 'Task not found' });
     }
 
-    if (userId) {
-      await touchUserActivity(userId);
-    }
-
-    const io = req.app.get('io') || global.io;
-    if (io) {
-      io.emit('task_updated');
-    }
-
+    await touchUserActivity(userId);
     return res.status(200).json({ message: 'Task moved to trash successfully', task });
   } catch (error) {
     console.error('Error deleteTask:', error);
@@ -240,10 +215,6 @@ export const toggleTaskStatus = async (req, res) => {
     );
 
     await touchUserActivity(userId);
-
-    const io = req.app.get('io') || global.io;
-    if (io) io.emit('task_updated');
-
     return res.status(200).json(updatedTask);
   } catch (error) {
     console.error('Error toggleTaskStatus:', error);
@@ -267,10 +238,6 @@ export const restoreTask = async (req, res) => {
     );
 
     await touchUserActivity(userId);
-
-    const io = req.app.get('io') || global.io;
-    if (io) io.emit('task_updated');
-
     return res.status(200).json({ message: 'Task restored successfully', task: restoredTask });
   } catch (error) {
     console.error('Error restoreTask:', error);
@@ -288,10 +255,6 @@ export const deletePermanentTask = async (req, res) => {
     }
 
     await touchUserActivity(userId);
-
-    const io = req.app.get('io') || global.io;
-    if (io) io.emit('task_updated');
-
     return res.status(200).json({ message: 'Task permanently deleted', task });
   } catch (error) {
     console.error('Error deletePermanentTask:', error);
@@ -308,10 +271,6 @@ export const clearTrash = async (req, res) => {
 
     const result = await Task.deleteMany({ userId, isDeleted: true });
     await touchUserActivity(userId);
-
-    const io = req.app.get('io') || global.io;
-    if (io) io.emit('task_updated');
-
     return res.status(200).json({ message: 'Trash cleared successfully', deletedCount: result.deletedCount || 0 });
   } catch (error) {
     console.error('Error clearTrash:', error);

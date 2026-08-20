@@ -16,28 +16,39 @@ const INACTIVE_ACCOUNT_CHECK_INTERVAL = 60 * 60 * 1000;
 
 const app = express();
 
-// Danh sách các tên miền được phép truy cập API
+// Danh sách tên miền cố định + Lấy thêm từ biến môi trường FRONTEND_URL (nếu có)
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:3000",
   "https://todo-app-seven-mocha-91.vercel.app",
-];
+  process.env.FRONTEND_URL, // Nhập URL Frontend trên Render Environment Variables
+].filter(Boolean);
 
-// Cấu hình Middleware CORS cho Express
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("CORS policy: Not allowed by CORS"));
-      }
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Cho phép request từ server-to-server, Postman, hoặc nằm trong allowedOrigins
+    // Kiểm tra thêm match cho các link preview từ Vercel nếu có
+    if (
+      !origin ||
+      allowedOrigins.includes(origin) ||
+      origin.endsWith(".vercel.app") ||
+      origin.endsWith(".onrender.com")
+    ) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS policy: ${origin} is not allowed by CORS`));
+    }
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+};
+
+// Áp dụng CORS Middleware
+app.use(cors(corsOptions));
+
+// Xử lý Preflight Request (OPTIONS) cho tất cả các đường dẫn
+app.options("*", cors(corsOptions));
 
 app.use(express.json());
 
@@ -61,7 +72,7 @@ if (fs.existsSync(distPath)) {
   });
 }
 
-// Xử lý các công việc bảo trì định kỳ
+// Công việc bảo trì định kỳ
 const runMaintenanceJobs = async () => {
   try {
     const { deletedUsers, deletedTasks } = await cleanupInactiveUsers();
@@ -87,7 +98,6 @@ connectDB()
   .then(() => {
     startMaintenanceJobs();
 
-    // Chạy Express trực tiếp
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
     });
