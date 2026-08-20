@@ -67,6 +67,7 @@ export const translations = {
     createdAt: 'Created at',
     deletedAt: 'Deleted at',
     quickRemove: 'Quick remove',
+    quickRemoveTrash: 'Quick select',
     selectAll: 'Select all',
     deselectAll: 'Deselect all',
     deleteSelected: 'Delete selected',
@@ -137,7 +138,8 @@ export const translations = {
 
     createdAt: 'Tạo lúc',
     deletedAt: 'Xóa lúc',
-    quickRemove: 'Xóa nhiều task',
+    quickRemove: 'Xóa nhanh',
+    quickRemoveTrash: "Chọn nhanh",
     selectAll: 'Chọn tất cả',
     deselectAll: 'Bỏ chọn tất cả',
     deleteSelected: 'Xóa đã chọn',

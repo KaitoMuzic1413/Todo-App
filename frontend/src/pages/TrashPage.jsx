@@ -334,7 +334,7 @@ const TrashPage = () => {
                   className='inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-600 shadow-sm transition-opacity disabled:cursor-not-allowed disabled:opacity-50 dark:border-rose-900/60 dark:bg-rose-500/10 dark:text-rose-200'
                 >
                   <Trash2 className='h-3.5 w-3.5' />
-                  {t.quickRemove || 'Xóa nhiều task'}
+                  {t.quickRemoveTrash || 'Chọn nhanh'}
                 </button>
               )}
             </div>
