@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n';
 
@@ -10,11 +10,6 @@ const TaskListPagination = ({ currentPage = 1, totalPages = 1, onPageChange }) =
   const safeTotalPages = Math.max(1, totalPages);
   const safePage = Math.min(Math.max(currentPage, 1), safeTotalPages);
 
-  useEffect(() => {
-    setGoToPageValue(String(safePage));
-  }, [safePage]);
-
-  // Kiểm tra ô nhập có bị bỏ trống hay không
   const isInputEmpty = !String(goToPageValue ?? '').trim();
 
   const handleGoToPage = () => {
@@ -38,6 +33,7 @@ const TaskListPagination = ({ currentPage = 1, totalPages = 1, onPageChange }) =
 
     setPageError('');
     onPageChange?.(parsed);
+    setGoToPageValue('');
   };
 
   const handleKeyDown = (e) => {
@@ -48,10 +44,11 @@ const TaskListPagination = ({ currentPage = 1, totalPages = 1, onPageChange }) =
     }
   };
 
-  const inputClassName = `h-10 w-20 rounded-full border px-2 text-center text-sm font-medium shadow-sm outline-none transition-all placeholder:text-slate-400 focus:ring-4 ${
+  // Class khung Input đồng bộ 100% với khung "Page X of Y"
+  const inputClassName = `h-10 w-20 rounded-full border border-slate-200 bg-white px-2 text-center text-sm font-medium text-slate-700 shadow-sm outline-none transition-all duration-300 placeholder:text-slate-400 focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:placeholder:text-slate-500 dark:focus:ring-violet-900/40 ${
     pageError
-      ? 'border-red-300 bg-red-50 text-red-600 focus:border-red-400 focus:bg-red-50 focus:ring-red-100 dark:border-red-700 dark:bg-red-950/40 dark:text-red-200 dark:focus:border-red-500 dark:focus:ring-red-900/40'
-      : 'border-slate-200 bg-slate-50 text-slate-700 focus:border-violet-400 focus:bg-white focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300 dark:placeholder:text-slate-500 dark:focus:bg-slate-900 dark:focus:text-slate-100 dark:focus:ring-violet-900/40'
+      ? 'border-red-400 bg-red-50 text-red-600 focus:border-red-500 focus:ring-red-100 dark:border-red-600 dark:bg-red-950/40 dark:text-red-200'
+      : ''
   }`;
 
   return (
@@ -101,15 +98,7 @@ const TaskListPagination = ({ currentPage = 1, totalPages = 1, onPageChange }) =
             max={safeTotalPages}
             value={goToPageValue}
             placeholder={String(safePage)}
-            onFocus={(e) => {
-              e.target.select();
-              setPageError('');
-            }}
-            onBlur={() => {
-              if (!String(goToPageValue).trim()) {
-                setGoToPageValue(String(safePage));
-              }
-            }}
+            onFocus={() => setPageError('')}
             onChange={(e) => {
               setGoToPageValue(e.target.value);
               if (pageError) setPageError('');
@@ -127,10 +116,10 @@ const TaskListPagination = ({ currentPage = 1, totalPages = 1, onPageChange }) =
                 handleGoToPage();
               }
             }}
-            className={`rounded-full px-3.5 py-2 text-sm font-medium text-white shadow-sm transition-all dark:shadow-violet-900/30 ${
+            className={`inline-flex h-10 items-center justify-center rounded-full px-4 text-sm font-semibold text-white transition-all duration-300 ${
               isInputEmpty
-                ? '!cursor-not-allowed bg-slate-300 text-slate-500 shadow-none dark:bg-slate-800 dark:text-slate-500'
-                : 'cursor-pointer bg-violet-600 shadow-violet-200 hover:bg-violet-500 active:scale-95'
+                ? 'cursor-not-allowed bg-violet-500/40 opacity-50 dark:bg-violet-600/30'
+                : 'cursor-pointer bg-gradient-to-r from-violet-600 to-indigo-600 shadow-md shadow-violet-500/25 active:scale-95 hover:-translate-y-0.5 hover:from-violet-500 hover:to-indigo-500 hover:shadow-violet-500/40 dark:shadow-violet-900/40'
             }`}
           >
             {t.goToPage || 'Go'}

@@ -18,6 +18,8 @@ const AddTask = ({ onAdd }) => {
     setTitle('');
   };
 
+  const isDisable = !title.trim();
+
   return (
     <Card className='rounded-[28px] border border-slate-200/80 bg-white/80 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/70'>
       <form onSubmit={handleSubmit} className='flex flex-col gap-3 sm:flex-row'>
@@ -31,13 +33,19 @@ const AddTask = ({ onAdd }) => {
 
         <button
           type='submit'
-          disabled={!title.trim()}
-          className={`inline-flex h-12 items-center justify-center gap-2 rounded-2xl px-6 text-sm font-semibold text-white shadow-md transition-all hover:-translate-y-0.5 dark:shadow-violet-900/30 ${
-            !title.trim() ? 'bg-slate-300 text-slate-500 cursor-not-allowed shadow-none' : 'bg-gradient-to-r from-violet-500 to-indigo-500 shadow-violet-200'
+          disabled={isDisable}
+          className={`group relative inline-flex h-12 items-center justify-center gap-2 overflow-hidden rounded-2xl px-6 text-sm font-semibold text-white transition-all duration-300 ${
+            isDisable
+              ? 'cursor-not-allowed bg-violet-500/40 opacity-50 dark:bg-violet-600/30'
+              : 'bg-gradient-to-r from-violet-600 to-indigo-600 shadow-lg shadow-violet-500/25 active:scale-95 hover:-translate-y-0.5 hover:from-violet-500 hover:to-indigo-500 hover:shadow-violet-500/40 dark:shadow-violet-900/40'
           }`}
         >
-          <Plus className='h-4 w-4' />
-          {t.newTask}
+          <Plus
+            className={`h-4 w-4 transition-transform duration-300 ${
+              !isDisable ? 'group-hover:rotate-90' : ''
+            }`}
+          />
+          <span>{t.newTask}</span>
         </button>
       </form>
     </Card>

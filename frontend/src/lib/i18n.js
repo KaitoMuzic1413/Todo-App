@@ -64,7 +64,6 @@ export const translations = {
     backToHome: 'Back to home',
     taskDeletedToTrash: 'Task moved to trash successfully',
 
-    // Bổ sung các key dịch thuật mới:
     createdAt: 'Created at',
     deletedAt: 'Deleted at',
     quickRemove: 'Quick remove',
@@ -136,7 +135,6 @@ export const translations = {
     backToHome: 'Quay lại trang chủ',
     taskDeletedToTrash: 'Task đã được chuyển vào thùng rác',
 
-    // Bổ sung các key dịch thuật mới:
     createdAt: 'Tạo lúc',
     deletedAt: 'Xóa lúc',
     quickRemove: 'Xóa nhiều task',
@@ -168,9 +166,19 @@ export const useLanguage = () => {
     return () => window.removeEventListener('todo-language-changed', syncLanguage);
   }, []);
 
+  // Hàm hỗ trợ format chuỗi dịch có chứa tham số (Ví dụ: {max})
+  const formatText = (key, params = {}) => {
+    const text = translations[language]?.[key] || translations.en[key] || key;
+    return Object.keys(params).reduce(
+      (acc, paramKey) => acc.replace(`{${paramKey}}`, params[paramKey]),
+      text
+    );
+  };
+
   return {
     language,
     setLanguage,
     t: translations[language] || translations.en,
+    formatText,
   };
 };
