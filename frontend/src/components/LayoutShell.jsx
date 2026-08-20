@@ -42,6 +42,7 @@ export function LayoutShell({ children }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
   const startOffset = useRef(-SIDEBAR_WIDTH);
   const isEligibleSwipe = useRef(false);
 
@@ -51,10 +52,8 @@ export function LayoutShell({ children }) {
     { name: t.contact, to: '/about' },
   ];
 
-  // Tính toán trực tiếp offset để tránh dùng useEffect gây lỗi Linter
   const currentOffset = isDragging ? sidebarOffset : (isSidebarOpen ? 0 : -SIDEBAR_WIDTH);
 
-  // Xử lý chuyển trang: Trượt đóng Sidebar xong mới đổi Route
   const handleNavClick = (event, to) => {
     event.preventDefault();
 
@@ -73,9 +72,9 @@ export function LayoutShell({ children }) {
     }
   };
 
-  // Khóa cuộn body khi mở Sidebar trên Mobile
+  // 1. Cập nhật: Khóa cuộn trang khi Sidebar mở HOẶC khi đang thực hiện kéo vuốt
   useEffect(() => {
-    if (isSidebarOpen && window.innerWidth < 1024) {
+    if ((isSidebarOpen || isDragging) && window.innerWidth < 1024) {
       document.body.style.overflow = 'hidden';
       document.body.style.touchAction = 'none';
     } else {
@@ -87,16 +86,18 @@ export function LayoutShell({ children }) {
       document.body.style.overflow = '';
       document.body.style.touchAction = '';
     };
-  }, [isSidebarOpen]);
+  }, [isSidebarOpen, isDragging]);
 
-  // Logic kéo vuốt Sidebar bám tay
+  // 2. Cập nhật Logic kéo vuốt Sidebar
   useEffect(() => {
     const handleTouchStart = (event) => {
       const touchX = event.touches[0].clientX;
+      const touchY = event.touches[0].clientY;
 
       if ((!isSidebarOpen && touchX <= EDGE_WIDTH) || isSidebarOpen) {
         isEligibleSwipe.current = true;
         touchStartX.current = touchX;
+        touchStartY.current = touchY;
         startOffset.current = isSidebarOpen ? 0 : -SIDEBAR_WIDTH;
       } else {
         isEligibleSwipe.current = false;
@@ -107,7 +108,17 @@ export function LayoutShell({ children }) {
       if (!isEligibleSwipe.current) return;
 
       const currentX = event.touches[0].clientX;
+      const currentY = event.touches[0].clientY;
+
       const deltaX = currentX - touchStartX.current;
+      const deltaY = currentY - touchStartY.current;
+
+      // Nếu đang vuốt ngang nhiều hơn vuốt dọc, chặn ngay cuộn trang web phía sau
+      if (Math.abs(deltaX) > Math.abs(deltaY)) {
+        if (event.cancelable) {
+          event.preventDefault();
+        }
+      }
 
       let nextOffset = startOffset.current + deltaX;
 
@@ -135,9 +146,10 @@ export function LayoutShell({ children }) {
       }
     };
 
-    window.addEventListener('touchstart', handleTouchStart);
-    window.addEventListener('touchmove', handleTouchMove);
-    window.addEventListener('touchend', handleTouchEnd);
+    // Đăng ký event với passive: false để cho phép gọi event.preventDefault()
+    window.addEventListener('touchstart', handleTouchStart, { passive: true });
+    window.addEventListener('touchmove', handleTouchMove, { passive: false });
+    window.addEventListener('touchend', handleTouchEnd, { passive: true });
 
     return () => {
       window.removeEventListener('touchstart', handleTouchStart);
@@ -323,12 +335,12 @@ export function LayoutShell({ children }) {
               onClick={() => setLanguage(language === 'en' ? 'vi' : 'en')}
               className='group relative flex w-full cursor-default items-center justify-between overflow-hidden rounded-2xl px-3 py-2.5 text-left text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-900'
             >
-              <span className='flex items-center gap-2 z-10'>
+              <span className='z-10 flex items-center gap-2'>
                 <Globe className='h-4 w-4 text-violet-500 transition-transform duration-300 group-hover:rotate-45' />
                 <span>{t.language}:</span>
               </span>
 
-              <div className='relative min-w-[85px] h-5 overflow-hidden text-right'>
+              <div className='relative h-5 min-w-[85px] overflow-hidden text-right'>
                 <AnimatePresence mode='wait' initial={false}>
                   <motion.span
                     key={language}
