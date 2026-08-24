@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import AddTask from '@/components/AddTask';
 import DateTimeFilter from '@/components/DateTimeFilter';
 import Footer from '@/components/Footer';
@@ -98,13 +99,13 @@ const taskMatchesDateRange = (task, value) => {
 
 const HomePage = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [currentUser, setCurrentUser] = useState(getStoredUser);
-  const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [filterKey, setFilterKey] = useState('all');
   const [timeFilter, setTimeFilter] = useState('all');
 
+  // Quản lý trạng thái User Đăng Nhập
   useEffect(() => {
     const syncUser = () => setCurrentUser(getStoredUser());
 
@@ -116,27 +117,85 @@ const HomePage = () => {
     };
   }, []);
 
+  // Điều hướng về Login nếu chưa đăng nhập
   useEffect(() => {
     if (!currentUser?._id) {
       navigate('/login');
-      return;
     }
-
-    const loadTasks = async () => {
-      try {
-        setLoading(true);
-        const response = await fetchTasks(currentUser._id);
-        setTasks(response.data || []);
-      } catch (error) {
-        console.error('Failed to load tasks', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadTasks();
   }, [currentUser, navigate]);
 
+  // 1. Fetch Data bằng TanStack Query (Cấu hình Polling 3 giây đồng bộ nhiều tab)
+  const { data: tasks = [], isLoading } = useQuery({
+    queryKey: ['tasks', currentUser?._id],
+    queryFn: async () => {
+      const response = await fetchTasks(currentUser._id);
+      return response.data || [];
+    },
+    enabled: !!currentUser?._id,
+    refetchInterval: 3000, // Tự động kéo data mới mỗi 3 giây
+    refetchIntervalInBackground: true, // Giữ kéo data ngay cả khi đang ở tab/màn hình khác
+  });
+
+  // 2. Các Mutation xử lý Thêm / Toggle / Xóa / Sửa
+  const addTaskMutation = useMutation({
+    mutationFn: (title) => createTask({ title, userId: currentUser._id }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks', currentUser?._id] });
+      setCurrentPage(1);
+    },
+  });
+
+  const toggleTaskMutation = useMutation({
+    mutationFn: (taskId) => toggleTaskStatus(taskId, currentUser._id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks', currentUser?._id] });
+    },
+  });
+
+  const deleteTaskMutation = useMutation({
+    mutationFn: (taskId) => deleteTask(taskId, currentUser._id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks', currentUser?._id] });
+    },
+  });
+
+  const updateTaskMutation = useMutation({
+    mutationFn: ({ taskId, body }) => updateTask(taskId, currentUser._id, body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks', currentUser?._id] });
+    },
+  });
+
+  // Handlers gửi dữ liệu
+  const handleAddTask = (title) => {
+    if (!currentUser?._id) return;
+    addTaskMutation.mutate(title);
+  };
+
+  const handleToggleTask = (taskId) => {
+    if (!currentUser?._id) return;
+    toggleTaskMutation.mutate(taskId);
+  };
+
+  const handleDeleteTask = (taskId) => {
+    if (!currentUser?._id) return;
+    deleteTaskMutation.mutate(taskId);
+  };
+
+  const handleUpdateTask = (taskId, nextTitle, payload = {}) => {
+    if (!currentUser?._id) return;
+
+    const body = { ...(payload || {}) };
+    if (nextTitle !== undefined) {
+      const trimmed = String(nextTitle || '').trim();
+      if (!trimmed) return;
+      body.title = trimmed;
+    }
+
+    updateTaskMutation.mutate({ taskId, body });
+  };
+
+  // Logic Lọc Task & Phân Trang
   const filteredTasks = useMemo(() => {
     let nextTasks = [...tasks];
 
@@ -162,68 +221,6 @@ const HomePage = () => {
     [safeCurrentPage, filteredTasks]
   );
 
-  const handleAddTask = async (title) => {
-    if (!currentUser?._id) return;
-
-    try {
-      const response = await createTask({ title, userId: currentUser._id });
-      const taskResult = response.data;
-
-      setTasks((prevTasks) => {
-        const otherTasks = prevTasks.filter((t) => t._id !== taskResult._id);
-        return [taskResult, ...otherTasks];
-      });
-
-      setCurrentPage(1);
-    } catch (error) {
-      console.error('Failed to create task:', error);
-    }
-  };
-
-  const handleToggleTask = async (taskId) => {
-    if (!currentUser?._id) return;
-
-    try {
-      const response = await toggleTaskStatus(taskId, currentUser._id);
-      setTasks((previous) =>
-        previous.map((task) => (task._id === taskId ? response.data : task))
-      );
-    } catch (error) {
-      console.error('Failed to toggle task', error);
-    }
-  };
-
-  const handleDeleteTask = async (taskId) => {
-    if (!currentUser?._id) return;
-
-    try {
-      await deleteTask(taskId, currentUser._id);
-      setTasks((previous) => previous.filter((task) => task._id !== taskId));
-    } catch (error) {
-      console.error('Failed to delete task', error);
-    }
-  };
-
-  const handleUpdateTask = async (taskId, nextTitle, payload = {}) => {
-    if (!currentUser?._id) return;
-
-    try {
-      const body = { ...(payload || {}) };
-      if (nextTitle !== undefined) {
-        const trimmed = String(nextTitle || '').trim();
-        if (!trimmed) return;
-        body.title = trimmed;
-      }
-
-      const response = await updateTask(taskId, currentUser._id, body);
-      setTasks((previous) =>
-        previous.map((task) => (task._id === taskId ? response.data : task))
-      );
-    } catch (error) {
-      console.error('Failed to update task', error);
-    }
-  };
-
   if (!currentUser?._id) {
     return null;
   }
@@ -244,7 +241,7 @@ const HomePage = () => {
           }}
         />
 
-        {loading ? (
+        {isLoading ? (
           <div className='rounded-[28px] border border-slate-200 bg-white/80 p-5 text-slate-500 dark:border-slate-800 dark:bg-slate-900/70'>
             Loading tasks...
           </div>
