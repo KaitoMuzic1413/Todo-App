@@ -1,5 +1,5 @@
 import { Check, CheckCircle2, Circle, Star, Trash2, X } from 'lucide-react';
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/lib/i18n';
 
@@ -58,12 +58,14 @@ const TaskList = ({
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [selectedTaskIds, setSelectedTaskIds] = useState([]);
 
-  const prevPageRef = useRef(page);
-  const direction = page >= prevPageRef.current ? 1 : -1;
+  // Xử lý hướng slide chuyển trang đúng chuẩn React State (không dùng useRef trong render)
+  const [prevPage, setPrevPage] = useState(page);
+  const [direction, setDirection] = useState(1);
 
-  useEffect(() => {
-    prevPageRef.current = page;
-  }, [page]);
+  if (prevPage !== page) {
+    setDirection(page >= prevPage ? 1 : -1);
+    setPrevPage(page);
+  }
 
   const emptySlotsCount = Math.max(0, MAX_TASKS_PER_PAGE - tasks.length);
 
