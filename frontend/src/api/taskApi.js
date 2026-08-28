@@ -1,5 +1,4 @@
-// frontend/src/api/taskApi.js
-import axiosClient from './axiosClient'; // Trỏ đúng đường dẫn đến file axiosClient.js
+import axiosClient from './axiosClient';
 
 export const fetchTasks = async () => {
   const response = await axiosClient.get('/tasks');
@@ -7,6 +6,6 @@ export const fetchTasks = async () => {
 };
 
 export const fetchUserQuota = async () => {
-  const response = await axiosClient.get('/tasks/quota'); // Không còn truyền /quota/:userId nữa
+  const response = await axiosClient.get('/tasks/quota');
   return response.data;
 };

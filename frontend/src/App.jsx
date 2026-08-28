@@ -7,12 +7,11 @@ import Login from './pages/LoginPage';
 import NotFound from './pages/NotFound';
 import TrashPage from './pages/TrashPage';
 
-// 1. Khởi tạo QueryClient bên ngoài component
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      refetchOnWindowFocus: false, // Tránh tự động refetch lại khi đổi tab browser (tùy chọn)
-      staleTime: 1000 * 60 * 5, // Cache dữ liệu trong 5 phút
+      refetchOnWindowFocus: false,
+      staleTime: 1000 * 60 * 5,
     },
   },
 });

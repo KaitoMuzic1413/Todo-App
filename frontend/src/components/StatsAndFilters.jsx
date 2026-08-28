@@ -1,32 +1,16 @@
 import { Clipboard, CheckCircle2, Clock, Star } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n';
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const AnimatedNumber = ({ value }) => {
   const numericValue = Number(value) || 0;
-  const isFirstRender = useRef(true);
-  const prevValueRef = useRef(numericValue);
+  const [prevValue, setPrevValue] = useState(numericValue);
   const [direction, setDirection] = useState(1);
 
-  useEffect(() => {
-    isFirstRender.current = false;
-  }, []);
-
-  if (prevValueRef.current !== numericValue) {
-    if (!isFirstRender.current) {
-      setDirection(numericValue > prevValueRef.current ? 1 : -1);
-    }
-    prevValueRef.current = numericValue;
-  }
-
-  // First mount / Refresh: Render tĩnh không có animation
-  if (isFirstRender.current) {
-    return (
-      <span className='inline-flex font-bold text-slate-900 dark:text-white text-base sm:text-lg'>
-        {value}
-      </span>
-    );
+  if (prevValue !== numericValue) {
+    setPrevValue(numericValue);
+    setDirection(numericValue > prevValue ? 1 : -1);
   }
 
   return (
@@ -35,7 +19,6 @@ const AnimatedNumber = ({ value }) => {
         <motion.span
           key={value}
           custom={direction}
-          // Hiệu ứng Apple UI: Kết hợp y + scale + blur + opacity
           initial={(dir) => ({
             y: dir > 0 ? '80%' : '-80%',
             opacity: 0,

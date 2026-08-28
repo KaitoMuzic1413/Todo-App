@@ -5,7 +5,7 @@ const DateTimeFilter = ({ value = 'all', onChange }) => {
   const { t } = useLanguage();
 
   const filters = [
-    { key: 'all', label: t.allTime || t.all || 'All time' }, // Đã đổi 'All' thành 'All time'
+    { key: 'all', label: t.allTime || t.all || 'All time' },
     { key: 'today', label: t.today || 'Today' },
     { key: 'week', label: t.thisWeek || 'This Week' },
     { key: 'month', label: t.thisMonth || 'This Month' },

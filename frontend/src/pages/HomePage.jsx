@@ -105,7 +105,6 @@ const HomePage = () => {
   const [filterKey, setFilterKey] = useState('all');
   const [timeFilter, setTimeFilter] = useState('all');
 
-  // Quản lý trạng thái User Đăng Nhập
   useEffect(() => {
     const syncUser = () => setCurrentUser(getStoredUser());
 
@@ -117,14 +116,12 @@ const HomePage = () => {
     };
   }, []);
 
-  // Điều hướng về Login nếu chưa đăng nhập
   useEffect(() => {
     if (!currentUser?._id) {
       navigate('/login');
     }
   }, [currentUser, navigate]);
 
-  // 1. Fetch Data bằng TanStack Query (Cấu hình Polling 3 giây đồng bộ nhiều tab)
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: ['tasks', currentUser?._id],
     queryFn: async () => {
@@ -132,11 +129,10 @@ const HomePage = () => {
       return response.data || [];
     },
     enabled: !!currentUser?._id,
-    refetchInterval: 3000, // Tự động kéo data mới mỗi 3 giây
-    refetchIntervalInBackground: true, // Giữ kéo data ngay cả khi đang ở tab/màn hình khác
+    refetchInterval: 3000,
+    refetchIntervalInBackground: true,
   });
 
-  // 2. Các Mutation xử lý Thêm / Toggle / Xóa / Sửa
   const addTaskMutation = useMutation({
     mutationFn: (title) => createTask({ title, userId: currentUser._id }),
     onSuccess: () => {
@@ -166,7 +162,6 @@ const HomePage = () => {
     },
   });
 
-  // Handlers gửi dữ liệu
   const handleAddTask = (title) => {
     if (!currentUser?._id) return;
     addTaskMutation.mutate(title);
@@ -195,7 +190,6 @@ const HomePage = () => {
     updateTaskMutation.mutate({ taskId, body });
   };
 
-  // Logic Lọc Task & Phân Trang
   const filteredTasks = useMemo(() => {
     let nextTasks = [...tasks];
 

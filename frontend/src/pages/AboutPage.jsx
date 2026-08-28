@@ -3,7 +3,6 @@ import Header from '@/components/Header';
 import { LayoutShell } from '@/components/LayoutShell';
 import { useLanguage } from '@/lib/i18n';
 
-// Component ContactDetails đặt trực tiếp trong file AboutPage
 function ContactDetails() {
   return (
     <div className='flex flex-wrap items-center justify-center gap-3 text-sm text-slate-600 dark:text-slate-300'>
@@ -68,7 +67,6 @@ const AboutPage = () => {
               </h2>
             </div>
             
-            {/* Hiển thị danh sách liên hệ nhỏ ở góc */}
             <ContactDetails />
           </div>
 

@@ -29,7 +29,6 @@ const TrashPage = () => {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
 
-  // Thêm State phục vụ cho chế độ chọn nhiều (Bulk Select / Quick Remove)
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [selectedTaskIds, setSelectedTaskIds] = useState([]);
 

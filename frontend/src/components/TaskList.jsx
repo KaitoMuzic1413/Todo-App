@@ -34,7 +34,6 @@ const slideVariants = {
   }),
 };
 
-// Cấu hình hiệu ứng dồn vị trí mượt mà
 const taskItemVariants = {
   initial: { opacity: 0, y: 30, scale: 0.98 },
   animate: { opacity: 1, y: 0, scale: 1 },
@@ -45,7 +44,7 @@ const TaskList = ({
   title,
   tasks = [],
   page = 1,
-  dateFilter = 'all', // Nhận thêm prop dateFilter/period từ component cha
+  dateFilter = 'all',
   onToggle,
   onDelete,
   onUpdate,
@@ -58,7 +57,6 @@ const TaskList = ({
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [selectedTaskIds, setSelectedTaskIds] = useState([]);
 
-  // Xử lý hướng slide chuyển trang đúng chuẩn React State (không dùng useRef trong render)
   const [prevPage, setPrevPage] = useState(page);
   const [direction, setDirection] = useState(1);
 
@@ -132,7 +130,6 @@ const TaskList = ({
 
   return (
     <div className='relative flex flex-col overflow-hidden rounded-[28px] border border-slate-200/80 bg-white/80 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/70'>
-      {/* Header */}
       <div className='mb-4 flex flex-wrap items-center justify-between gap-2'>
         <h3 className='text-xl font-semibold text-slate-900 dark:text-white'>{title || t.todayTasks}</h3>
 
@@ -181,7 +178,6 @@ const TaskList = ({
         </div>
       </div>
 
-      {/* Bọc khung cố định có overflow-hidden để kích hoạt GPU Acceleration trên Vercel/Render */}
       <div className='relative w-full overflow-hidden'>
         <AnimatePresence mode='wait' custom={direction}>
           <motion.div
@@ -362,7 +358,6 @@ const TaskList = ({
                   );
                 })}
 
-                {/* Slot đệm giữ nguyên kích thước UI */}
                 {emptySlotsCount > 0 &&
                   Array.from({ length: emptySlotsCount }).map((_, index) => (
                     <motion.div

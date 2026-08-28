@@ -44,7 +44,6 @@ const TaskListPagination = ({ currentPage = 1, totalPages = 1, onPageChange }) =
     }
   };
 
-  // Class khung Input đồng bộ 100% với khung "Page X of Y"
   const inputClassName = `h-10 w-20 rounded-full border border-slate-200 bg-white px-2 text-center text-sm font-medium text-slate-700 shadow-sm outline-none transition-all duration-300 placeholder:text-slate-400 focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:placeholder:text-slate-500 dark:focus:ring-violet-900/40 ${
     pageError
       ? 'border-red-400 bg-red-50 text-red-600 focus:border-red-500 focus:ring-red-100 dark:border-red-600 dark:bg-red-950/40 dark:text-red-200'
@@ -53,7 +52,6 @@ const TaskListPagination = ({ currentPage = 1, totalPages = 1, onPageChange }) =
 
   return (
     <div className='flex flex-col items-center gap-3 sm:flex-row'>
-      {/* Nút Chuyển trang Trước / Sau */}
       <div className='flex items-center gap-2'>
         <button
           type='button'
@@ -88,7 +86,6 @@ const TaskListPagination = ({ currentPage = 1, totalPages = 1, onPageChange }) =
         </button>
       </div>
 
-      {/* Ô nhập & Nút Đến trang */}
       <div className='flex flex-col items-start gap-1'>
         <div className='flex items-center gap-2'>
           <input

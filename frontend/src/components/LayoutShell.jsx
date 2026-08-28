@@ -52,7 +52,6 @@ export function LayoutShell({ children }) {
     { name: t.contact, to: '/about' },
   ];
 
-  // Xử lý chuyển trang: Đóng sidebar trước, đợi animation hoàn tất (0.7s) rồi mới navigate
   const handleNavClick = (to) => {
     if (location.pathname === to) {
       setIsSidebarOpen(false);
@@ -60,16 +59,15 @@ export function LayoutShell({ children }) {
     }
 
     if (isSidebarOpen) {
-      setIsSidebarOpen(false); // Kích hoạt animation đóng
+      setIsSidebarOpen(false);
       setTimeout(() => {
-        navigate(to); // Chuyển trang sau khi đóng xong
+        navigate(to);
       }, 700);
     } else {
       navigate(to);
     }
   };
 
-  // Lock scroll khi mở sidebar ở màn hình nhỏ
   useEffect(() => {
     if ((isSidebarOpen || isDragging) && window.innerWidth < 1024) {
       document.body.style.overflow = 'hidden';
@@ -85,7 +83,6 @@ export function LayoutShell({ children }) {
     };
   }, [isSidebarOpen, isDragging]);
 
-  // Vuốt chạm
   useEffect(() => {
     const handleTouchStart = (event) => {
       const touchX = event.touches[0].clientX;
@@ -214,7 +211,6 @@ export function LayoutShell({ children }) {
 
   return (
     <div className='min-h-screen overflow-x-hidden bg-[#f5f7fb] text-slate-900 transition-colors duration-500 dark:bg-[#0f172a] dark:text-slate-50'>
-      {/* Nút mở Sidebar khi đang đóng */}
       <div className={`fixed left-0 top-0 z-40 flex items-center transition-opacity duration-500 ${isSidebarOpen ? 'pointer-events-none opacity-0' : 'opacity-100'}`}>
         <button
           type='button'
@@ -226,11 +222,9 @@ export function LayoutShell({ children }) {
         </button>
       </div>
 
-      {/* Backdrop & Sidebar managed by Framer Motion */}
       <AnimatePresence>
         {isSidebarOpen && (
           <>
-            {/* Backdrop mờ dần khi đóng */}
             <motion.div
               key='backdrop'
               initial={{ opacity: 0 }}
@@ -242,7 +236,6 @@ export function LayoutShell({ children }) {
               aria-hidden='true'
             />
 
-            {/* Sidebar trượt đóng chậm (0.7s) và rất mượt */}
             <motion.aside
               key='sidebar'
               initial={{ x: -SIDEBAR_WIDTH }}
@@ -256,7 +249,6 @@ export function LayoutShell({ children }) {
               className='fixed left-0 top-0 z-30 flex h-screen h-[100dvh] w-[320px] flex-col border-r border-slate-200/80 bg-white/80 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/80'
               style={{ touchAction: 'none' }}
             >
-              {/* Header Cố định */}
               <div className='flex shrink-0 items-center justify-between border-b border-slate-200/80 bg-white/60 p-4 dark:border-slate-800 dark:bg-slate-950/60'>
                 <div className='flex items-center gap-3 rounded-2xl bg-slate-100/80 px-3 py-3 shadow-sm dark:bg-slate-900'>
                   <img src='/Logo.jpg' alt='Redhat logo' className='h-12 w-12 rounded-xl object-cover shadow-sm' />
@@ -285,7 +277,6 @@ export function LayoutShell({ children }) {
                 </button>
               </div>
 
-              {/* Vùng Menu Nav */}
               <div className='min-h-0 flex-1 overflow-y-auto px-4 py-5 [overscroll-behavior:contain]' style={{ touchAction: 'pan-y' }}>
                 <nav className='space-y-2'>
                   {navItems.map((item) => {
@@ -324,7 +315,6 @@ export function LayoutShell({ children }) {
                     <span className='text-xs text-slate-400'>→</span>
                   </button>
 
-                  {/* Nút Đổi Ngôn Ngữ */}
                   <button
                     type='button'
                     onClick={() => setLanguage(language === 'en' ? 'vi' : 'en')}
@@ -353,7 +343,6 @@ export function LayoutShell({ children }) {
                 </nav>
               </div>
 
-              {/* Footer */}
               <div className='shrink-0 overflow-hidden border-t border-slate-200/80 bg-white/80 p-4 backdrop-blur-md dark:border-slate-800 dark:bg-slate-950/80'>
                 <AnimatePresence mode='wait'>
                   {currentUser ? (
@@ -426,7 +415,6 @@ export function LayoutShell({ children }) {
         )}
       </AnimatePresence>
 
-      {/* Main Content */}
       <main className={`min-h-screen transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${isSidebarOpen ? 'lg:ml-[320px]' : 'lg:ml-0'}`}>
         <div className='mx-auto max-w-5xl px-4 py-8 sm:px-6'>
           <AnimatePresence mode='wait'>

@@ -16,18 +16,15 @@ const INACTIVE_ACCOUNT_CHECK_INTERVAL = 60 * 60 * 1000;
 
 const app = express();
 
-// Danh sách tên miền cố định + Lấy thêm từ biến môi trường FRONTEND_URL (nếu có)
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:3000",
   "https://todo-app-seven-mocha-91.vercel.app",
-  process.env.FRONTEND_URL, // Nhập URL Frontend trên Render Environment Variables
+  process.env.FRONTEND_URL,
 ].filter(Boolean);
 
 const corsOptions = {
   origin: function (origin, callback) {
-    // Cho phép request từ server-to-server, Postman, hoặc nằm trong allowedOrigins
-    // Kiểm tra thêm match cho các link preview từ Vercel nếu có
     if (
       !origin ||
       allowedOrigins.includes(origin) ||
@@ -44,19 +41,15 @@ const corsOptions = {
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
 };
 
-// Áp dụng CORS Middleware
 app.use(cors(corsOptions));
 
-// Xử lý Preflight Request (OPTIONS) cho tất cả các đường dẫn
 app.options("*", cors(corsOptions));
 
 app.use(express.json());
 
-// Routes API
 app.use("/api/users", userRoute);
 app.use("/api/tasks", taskRoute);
 
-// Phục vụ Static File
 const __dirname = path.resolve();
 const distPath = path.join(__dirname, "../frontend/dist");
 
@@ -72,7 +65,6 @@ if (fs.existsSync(distPath)) {
   });
 }
 
-// Công việc bảo trì định kỳ
 const runMaintenanceJobs = async () => {
   try {
     const { deletedUsers, deletedTasks } = await cleanupInactiveUsers();
@@ -93,7 +85,6 @@ const startMaintenanceJobs = () => {
   setInterval(runMaintenanceJobs, INACTIVE_ACCOUNT_CHECK_INTERVAL);
 };
 
-// Kết nối Database & Khởi chạy Server
 connectDB()
   .then(() => {
     startMaintenanceJobs();

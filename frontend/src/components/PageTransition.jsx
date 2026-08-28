@@ -12,7 +12,7 @@ const pageVariants = {
     scale: 1,
     transition: {
       duration: 0.3,
-      ease: [0.25, 1, 0.5, 1], // Cubic-bezier mượt mà
+      ease: [0.25, 1, 0.5, 1],
     },
   },
   exit: {

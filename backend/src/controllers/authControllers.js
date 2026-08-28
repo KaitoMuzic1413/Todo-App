@@ -40,7 +40,7 @@ export const login = async (req, res) => {
 
     const isPasswordMatch = await bcrypt.compare(password, user.password);
     if (!isPasswordMatch) {
-      return res.status(400).json({ message: "Tài khoản hoặc mật khẩu không đúng!" });
+      return res.status(400).json({ message: "Email or password incorrect!" });
     }
 
     const token = jwt.sign(
@@ -50,11 +50,11 @@ export const login = async (req, res) => {
     );
 
     res.json({
-      message: "Đăng nhập thành công!",
+      message: "Login successfull!",
       token,
       user: { id: user._id, username: user.username },
     });
   } catch (error) {
-    res.status(500).json({ message: "Lỗi server khi đăng nhập" });
+    res.status(500).json({ message: "Login server error " });
   }
 };

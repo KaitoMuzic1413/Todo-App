@@ -1,6 +1,6 @@
 import * as React from "react"
 import { Link, useLocation } from "react-router"
-import { Home, Trash2, Crown, KeyRound, Settings } from "lucide-react"
+import { Home, Trash2, Crown, KeyRound } from "lucide-react"
 
 import {
   Sidebar,
@@ -17,7 +17,6 @@ export function AppSidebar({ ...props }) {
   const location = useLocation();
   const currentPath = location.pathname;
 
-  // Lấy thông tin user từ localStorage để kiểm tra quyền admin
   const user = React.useMemo(() => {
     if (typeof window === "undefined") return null;
     try {
@@ -69,8 +68,6 @@ export function AppSidebar({ ...props }) {
           </SidebarMenuItem>
 
           <SidebarSeparator className="my-2" />
-
-          {/* CHỈ HIỂN THỊ KHI ĐĂNG NHẬP BẰNG EMAIL ADMIN */}
           {user?.email === "kaitomuzicvn@gmail.com" && (
             <SidebarMenuItem>
               <SidebarMenuButton 
@@ -90,7 +87,6 @@ export function AppSidebar({ ...props }) {
       </SidebarContent>
 
       <SidebarFooter className="p-4">
-        {/* Phần thông tin user dưới chân sidebar nếu cần */}
       </SidebarFooter>
     </Sidebar>
   )
