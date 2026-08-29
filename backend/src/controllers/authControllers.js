@@ -138,12 +138,12 @@ export const forgotPassword = async (req, res) => {
       return res.status(500).json({ message: "Server misconfiguration: Missing email credentials." });
     }
 
-    // Kết hợp cấu hình Gmail + chỉ định cổng TCP SSL 465
+    // Cấu hình SMTP cổng 587 tương thích tốt nhất với môi trường Render
     const transporter = nodemailer.createTransport({
-      service: 'gmail',
       host: 'smtp.gmail.com',
-      port: 465,
-      secure: true,
+      port: 587,
+      secure: false, // Bắt buộc false đối với cổng 587
+      requireTLS: true, // Ép nâng cấp kết nối lên TLS
       auth: {
         user: emailUser,
         pass: emailPass,
