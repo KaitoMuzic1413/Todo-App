@@ -17,6 +17,10 @@ export const loginWithEmail = (email, password) => api.post('/auth/login', { ema
 
 export const registerWithEmail = (email, password) => api.post('/auth/register', { email, password });
 
+export const forgotPassword = (email) => api.post('/auth/forgot-password', { email });
+
+export const resetPassword = (token, newPassword) => api.post('/auth/reset-password', { token, newPassword });
+
 // Task APIs
 export const fetchTasks = (userId) => api.get('/tasks', { params: { userId } });
 

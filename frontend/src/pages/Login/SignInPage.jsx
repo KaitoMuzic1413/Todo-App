@@ -108,6 +108,16 @@ const SignInPage = () => {
             </div>
           </label>
 
+          {/* Forgot Password Link */}
+          <div className='flex justify-end pt-1'>
+            <Link
+              to='/forgot-password'
+              className='text-xs font-medium text-violet-600 hover:underline dark:text-violet-400'
+            >
+              Forgot password?
+            </Link>
+          </div>
+
           {/* Error Message */}
           {error ? <p className='text-sm text-rose-500'>{error}</p> : null}
 

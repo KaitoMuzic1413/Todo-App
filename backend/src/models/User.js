@@ -30,6 +30,15 @@ const userSchema = new mongoose.Schema(
       expiresAt: { type: Date, default: null },
       unlimitedUntil: { type: Date, default: null },
     },
+    // Các trường phục vụ Quên / Đặt lại mật khẩu
+    resetPasswordToken: {
+      type: String,
+      default: null,
+    },
+    resetPasswordExpires: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 );

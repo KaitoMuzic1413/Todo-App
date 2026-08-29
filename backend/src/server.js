@@ -1,5 +1,5 @@
+import "dotenv/config"; // Nạp biến môi trường NGAY ĐẦU TIÊN trước tất cả các module khác
 import cors from "cors";
-import dotenv from "dotenv";
 import express from "express";
 import fs from "fs";
 import path from "path";
@@ -9,8 +9,6 @@ import { cleanupInactiveUsers } from "./controllers/usersControllers.js";
 import authRoute from "./routes/authRoutes.js";
 import taskRoute from "./routes/tasksRouters.js";
 import userRoute from "./routes/usersRoutes.js";
-
-dotenv.config();
 
 const PORT = process.env.PORT || 5001;
 const INACTIVE_ACCOUNT_CHECK_INTERVAL = 60 * 60 * 1000;
@@ -86,15 +84,13 @@ const startMaintenanceJobs = () => {
   setInterval(runMaintenanceJobs, INACTIVE_ACCOUNT_CHECK_INTERVAL);
 };
 
-connectDB()
-  .then(() => {
-    startMaintenanceJobs();
+app.listen(PORT, async () => {
+  console.log(`Server running on port ${PORT}`);
 
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-    });
-  })
-  .catch((err) => {
+  try {
+    await connectDB();
+    startMaintenanceJobs();
+  } catch (err) {
     console.error("Database connection failed:", err);
-    process.exit(1);
-  });
+  }
+});

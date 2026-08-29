@@ -4,9 +4,11 @@ import { Toaster } from 'sonner';
 import AboutPage from './pages/AboutPage';
 import HomePages from './pages/HomePage';
 import SignUpPage from './pages/Login/SignUpPage';
+import SignInPage from './pages/Login/SignInPage';
+import ForgotPasswordPage from './pages/Login/ForgotPasswordPage';
+import ResetPasswordPage from './pages/Login/ResetPasswordPage';
 import NotFound from './pages/NotFound';
 import TrashPage from './pages/TrashPage';
-import SignInPage from './pages/Login/SignInPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -47,6 +49,8 @@ function App() {
           {/* Public authentication routes */}
           <Route path='/signin' element={<SignInPage />} />
           <Route path='/signup' element={<SignUpPage />} />
+          <Route path='/forgot-password' element={<ForgotPasswordPage />} />
+          <Route path='/reset-password' element={<ResetPasswordPage />} />
 
           {/* Protected routes - Requires authentication */}
           <Route element={<ProtectedRoute />}>
