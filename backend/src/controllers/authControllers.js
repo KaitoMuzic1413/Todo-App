@@ -130,23 +130,23 @@ export const forgotPassword = async (req, res) => {
       return res.status(404).json({ message: 'Account with this email does not exist.' });
     }
 
-    // Kiểm tra trực tiếp biến môi trường trước khi gửi
     const emailUser = process.env.EMAIL_USER;
     const emailPass = process.env.EMAIL_PASS;
 
     if (!emailUser || !emailPass) {
-      console.error("LỖI: Chưa đọc được EMAIL_USER hoặc EMAIL_PASS từ file .env");
+      console.error("LỖI: Chưa đọc được EMAIL_USER hoặc EMAIL_PASS từ biến môi trường.");
       return res.status(500).json({ message: "Server misconfiguration: Missing email credentials." });
     }
 
-    // Khởi tạo Transporter trực tiếp trong hàm để đảm bảo luôn đọc đúng biến .env
+    // Kết hợp cấu hình Gmail + chỉ định cổng TCP SSL 465
     const transporter = nodemailer.createTransport({
+      service: 'gmail',
       host: 'smtp.gmail.com',
       port: 465,
-      secure: true, // Bắt buộc true cho port 465
+      secure: true,
       auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
+        user: emailUser,
+        pass: emailPass,
       },
       tls: {
         rejectUnauthorized: false,
