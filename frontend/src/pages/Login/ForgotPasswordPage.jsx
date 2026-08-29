@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router';
+import { Link } from 'react-router-dom';
 import { ArrowLeft, Mail } from 'lucide-react';
 import { forgotPassword } from '@/lib/api';
 
@@ -15,8 +15,9 @@ const ForgotPasswordPage = () => {
     setMessage('');
     try {
       setLoading(true);
+      // api.js trả về response trực tiếp từ axios (chứa object response.data từ Backend)
       const res = await forgotPassword(email.trim());
-      setMessage(res.data.message || 'Email sent successfully!');
+      setMessage(res?.data?.message || 'Email sent successfully!');
     } catch (err) {
       setError(err?.response?.data?.message || 'Something went wrong.');
     } finally {
