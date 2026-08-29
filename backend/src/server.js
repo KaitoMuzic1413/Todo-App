@@ -1,8 +1,6 @@
-import "dotenv/config"; // Nạp biến môi trường NGAY ĐẦU TIÊN trước tất cả các module khác
+import "dotenv/config";
 import cors from "cors";
 import express from "express";
-import fs from "fs";
-import path from "path";
 import { connectDB } from "./config/db.js";
 import { cleanupExpiredTrashTasks } from "./controllers/tasksControllers.js";
 import { cleanupInactiveUsers } from "./controllers/usersControllers.js";
@@ -44,25 +42,22 @@ app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
 app.use(express.json());
 
-// Routes
+// 1. Root route kiểm tra Server
+app.get("/", (req, res) => {
+  res.status(200).json({ message: "API Server is running..." });
+});
+
+// 2. Routes chính
 app.use("/api/auth", authRoute);
 app.use("/api/users", userRoute);
 app.use("/api/tasks", taskRoute);
 
-const __dirname = path.resolve();
-const distPath = path.join(__dirname, "../frontend/dist");
-
-if (fs.existsSync(distPath)) {
-  app.use(express.static(distPath));
-
-  app.get("*", (req, res) => {
-    res.sendFile(path.join(distPath, "index.html"));
+// 3. Middleware bắt tất cả route không tồn tại (404 Handler)
+app.use((req, res) => {
+  res.status(404).json({
+    message: `Cannot ${req.method} ${req.originalUrl} - Route not found`,
   });
-} else {
-  app.get("/", (req, res) => {
-    res.send("API Server is running...");
-  });
-}
+});
 
 const runMaintenanceJobs = async () => {
   try {
