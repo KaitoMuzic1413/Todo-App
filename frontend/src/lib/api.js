@@ -12,8 +12,12 @@ const api = axios.create({
   withCredentials: true,
 });
 
-export const loginWithEmail = (email) => api.post('/users/login', { email });
+// Auth APIs
+export const loginWithEmail = (email, password) => api.post('/auth/login', { email, password });
 
+export const registerWithEmail = (email, password) => api.post('/auth/register', { email, password });
+
+// Task APIs
 export const fetchTasks = (userId) => api.get('/tasks', { params: { userId } });
 
 export const createTask = ({ userId, title }) => api.post('/tasks', { userId, title });

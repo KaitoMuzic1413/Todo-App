@@ -118,7 +118,7 @@ const HomePage = () => {
 
   useEffect(() => {
     if (!currentUser?._id) {
-      navigate('/login');
+      navigate('/signin', { replace: true });
     }
   }, [currentUser, navigate]);
 
@@ -216,7 +216,11 @@ const HomePage = () => {
   );
 
   if (!currentUser?._id) {
-    return null;
+    return (
+      <div className='flex min-h-screen items-center justify-center bg-[#0f172a] text-slate-300'>
+        <p className='animate-pulse text-sm font-medium'>Redirecting to Sign In...</p>
+      </div>
+    );
   }
 
   return (

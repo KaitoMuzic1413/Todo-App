@@ -6,6 +6,7 @@ import path from "path";
 import { connectDB } from "./config/db.js";
 import { cleanupExpiredTrashTasks } from "./controllers/tasksControllers.js";
 import { cleanupInactiveUsers } from "./controllers/usersControllers.js";
+import authRoute from "./routes/authRoutes.js";
 import taskRoute from "./routes/tasksRouters.js";
 import userRoute from "./routes/usersRoutes.js";
 
@@ -42,11 +43,11 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-
 app.options("*", cors(corsOptions));
-
 app.use(express.json());
 
+// Routes
+app.use("/api/auth", authRoute);
 app.use("/api/users", userRoute);
 app.use("/api/tasks", taskRoute);
 

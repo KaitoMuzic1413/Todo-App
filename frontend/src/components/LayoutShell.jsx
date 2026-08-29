@@ -197,12 +197,23 @@ export function LayoutShell({ children }) {
   const handleLogout = () => {
     setIsSidebarOpen(false);
     setTimeout(() => {
+      // 1. Xóa sạch dữ liệu đăng nhập
       localStorage.removeItem('todo-user');
       localStorage.removeItem('todo-user-email');
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      sessionStorage.clear();
+
+      // 2. Reset state nội bộ
       setCurrentUser(null);
       setLoginEmail('');
       setLoginError('');
+
+      // 3. Bắn event thông báo thay đổi auth
       emitAuthChange();
+
+      // 4. CHUYỂN HƯỚNG VỀ TRANG SIGN IN
+      navigate('/signin', { replace: true });
     }, 700);
   };
 
