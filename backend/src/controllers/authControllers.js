@@ -158,7 +158,13 @@ export const forgotPassword = async (req, res) => {
     user.resetPasswordExpires = Date.now() + 15 * 60 * 1000;
     await user.save();
 
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    // Nếu chạy ở Render -> dùng link Vercel
+    // Nếu chạy ở Local -> dùng http://localhost:5173
+    const frontendUrl =
+      process.env.NODE_ENV === "production"
+        ? "https://todo-app-seven-mocha-91.vercel.app"
+        : "http://localhost:5173";
+
     const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
 
     const mailOptions = {
