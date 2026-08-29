@@ -142,7 +142,7 @@ export const forgotPassword = async (req, res) => {
     const transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
       port: 587,
-      secure: false, // Bắt buộc false đối với cổng 587
+      secure: false,
       requireTLS: true, // Ép nâng cấp kết nối lên TLS
       auth: {
         user: emailUser,
