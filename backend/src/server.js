@@ -13,6 +13,17 @@ const INACTIVE_ACCOUNT_CHECK_INTERVAL = 60 * 60 * 1000;
 
 const app = express();
 
+// Middleware tự động kết nối Database cho môi trường Serverless (Vercel)
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    console.error("Database connection failed:", error);
+    res.status(500).json({ error: "Database connection error" });
+  }
+});
+
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:3000",
@@ -74,18 +85,18 @@ const runMaintenanceJobs = async () => {
   }
 };
 
-const startMaintenanceJobs = () => {
-  runMaintenanceJobs();
-  setInterval(runMaintenanceJobs, INACTIVE_ACCOUNT_CHECK_INTERVAL);
-};
+// Kiểm tra nếu chạy ở môi trường Local/Render thông thường thì mới khởi chạy app.listen và Cron job
+if (process.env.NODE_ENV !== "production" || process.env.RENDER) {
+  const startMaintenanceJobs = () => {
+    runMaintenanceJobs();
+    setInterval(runMaintenanceJobs, INACTIVE_ACCOUNT_CHECK_INTERVAL);
+  };
 
-app.listen(PORT, async () => {
-  console.log(`Server running on port ${PORT}`);
-
-  try {
-    await connectDB();
+  app.listen(PORT, async () => {
+    console.log(`Server running on port ${PORT}`);
     startMaintenanceJobs();
-  } catch (err) {
-    console.error("Database connection failed:", err);
-  }
-});
+  });
+}
+
+// Export app để Vercel Serverless Function có thể sử dụng
+export default app;
