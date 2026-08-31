@@ -1,20 +1,24 @@
 {
-    "name": "todo-app",
-    "version": "1.0.0",
-    "main": "index.js",
-    "scripts": {
-        "build": "npm --prefix backend ci && npm --prefix frontend ci && npm --prefix frontend run build",
-        "start": "npm run start --prefix backend"
-    },
-    "engines": {
-        "node": "18.x"
-    },
-    "keywords": [],
-    "author": "",
-    "license": "ISC",
-    "description": "",
-    "dependencies": {
-        "@tanstack/react-query": "^5.102.2",
-        "framer-motion": "^13.1.0"
-    }
+  "name": "todo-app",
+  "version": "1.0.0",
+  "main": "index.js",
+  "allowScripts": {
+    "@parcel/watcher": true,
+    "esbuild": true
+  },
+  "scripts": {
+    "build": "npm --prefix backend ci && npm --prefix frontend ci && npm --prefix frontend run build",
+    "start": "npm run start --prefix backend"
+  },
+  "engines": {
+    "node": "18.x"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@tanstack/react-query": "^5.102.2",
+    "framer-motion": "^13.1.0"
+  }
 }

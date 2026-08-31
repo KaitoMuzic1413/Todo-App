@@ -19,20 +19,16 @@ const queryClient = new QueryClient({
   },
 });
 
-// ProtectedRoute: Redirects unauthenticated users to NotFound component
 const ProtectedRoute = () => {
   const user = localStorage.getItem('todo-user');
 
-  // If user is not logged in, redirect to /404 to display NotFound.jsx
   if (!user) {
     return <Navigate to='/404' replace />;
   }
 
-  // If logged in, render child routes
   return <Outlet />;
 };
 
-// RootRedirect: Handles base path '/' routing based on authentication state
 const RootRedirect = () => {
   const user = localStorage.getItem('todo-user');
   return <Navigate to={user ? '/home' : '/signin'} replace />;

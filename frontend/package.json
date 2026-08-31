@@ -3,6 +3,10 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "allowScripts": {
+    "@parcel/watcher": true,
+    "esbuild": true
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
