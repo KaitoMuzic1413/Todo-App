@@ -4,9 +4,10 @@ import { useLanguage } from '@/lib/i18n';
 import { Card } from './ui/card';
 import { Input } from './ui/input';
 
-const AddTask = ({ onAdd }) => {
+const AddTask = ({ onAdd, contentType = 'task' }) => {
   const { t } = useLanguage();
   const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
 
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -14,20 +15,29 @@ const AddTask = ({ onAdd }) => {
 
     if (!nextTitle || !onAdd) return;
 
-    onAdd(nextTitle);
+    onAdd({
+      title: nextTitle,
+      contentType,
+      content: contentType === 'note' ? content.trim() : '',
+      items: contentType === 'list'
+        ? content.split('\n').map((item) => item.trim()).filter(Boolean)
+        : [],
+    });
     setTitle('');
+    setContent('');
   };
 
-  const isDisable = !title.trim();
+  const isDisable = !title.trim() || (contentType !== 'task' && !content.trim());
 
   return (
     <Card className='rounded-[28px] border border-slate-200/80 bg-white/80 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/70'>
-      <form onSubmit={handleSubmit} className='flex flex-col gap-3 sm:flex-row'>
+      <form onSubmit={handleSubmit} className='flex flex-col gap-3'>
+        <div className='flex flex-col gap-3 sm:flex-row'>
         <Input
           type='text'
           value={title}
           onChange={(event) => setTitle(event.target.value)}
-          placeholder={t.addNewTask}
+          placeholder={contentType === 'note' ? t.noteTitle : contentType === 'list' ? t.listTitle : t.addNewTask}
           className='h-12 rounded-2xl border-slate-200 bg-slate-50 text-base text-slate-700 shadow-sm placeholder:text-slate-400 focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:ring-violet-900/40 sm:flex-1'
         />
 
@@ -45,8 +55,18 @@ const AddTask = ({ onAdd }) => {
               !isDisable ? 'group-hover:rotate-90' : ''
             }`}
           />
-          <span>{t.newTask}</span>
+          <span>{contentType === 'note' ? t.newNote : contentType === 'list' ? t.newList : t.newTask}</span>
         </button>
+        </div>
+        {contentType !== 'task' ? (
+          <textarea
+            value={content}
+            onChange={(event) => setContent(event.target.value)}
+            placeholder={contentType === 'note' ? t.noteContent : t.listItems}
+            rows={contentType === 'note' ? 5 : 4}
+            className='w-full resize-y rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-700 outline-none focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:ring-violet-900/40'
+          />
+        ) : null}
       </form>
     </Card>
   );

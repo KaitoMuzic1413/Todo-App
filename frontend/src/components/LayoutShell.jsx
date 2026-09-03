@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronLeft, Globe, LogIn, LogOut, Mail, Moon, SunMedium, UserCircle2, X, Home, Trash2 } from 'lucide-react';
+import { ChevronLeft, Globe, Archive, ClipboardList, FileText, LogIn, LogOut, Mail, Moon, SunMedium, UserCircle2, X, Home, Trash2 } from 'lucide-react';
 import { loginWithEmail } from '@/lib/api';
 import { useLanguage } from '@/lib/i18n';
 
@@ -51,6 +51,9 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
 
   const navItems = [
     { name: t.home, to: '/home' },
+    { name: t.lists, to: '/lists' },
+    { name: t.notes, to: '/notes' },
+    { name: t.archive, to: '/archive' },
     { name: t.trash, to: '/trash' },
     { name: t.contact, to: '/about' },
   ];
@@ -316,6 +319,9 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
                       >
                         <span className='flex items-center gap-2'>
                           {item.to === '/home' ? <Home className='h-4 w-4' /> : null}
+                          {item.to === '/lists' ? <ClipboardList className='h-4 w-4' /> : null}
+                          {item.to === '/notes' ? <FileText className='h-4 w-4' /> : null}
+                          {item.to === '/archive' ? <Archive className='h-4 w-4' /> : null}
                           {item.to === '/trash' ? <Trash2 className='h-4 w-4' /> : null}
                           {item.to === '/about' ? <Mail className='h-4 w-4' /> : null}
                           <span>{item.name}</span>
@@ -365,7 +371,7 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
                 </nav>
               </div>
 
-              {!hideAccountPanel ? <div className='shrink-0 overflow-hidden border-t border-slate-200/80 bg-white/80 p-4 backdrop-blur-md dark:border-slate-800 dark:bg-slate-950/80'>
+              {!hideAccountPanel ? <div className='shrink-0 overflow-hidden border-t border-slate-200/80 bg-white/80 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] backdrop-blur-md dark:border-slate-800 dark:bg-slate-950/80'>
                 <AnimatePresence mode='wait'>
                   {currentUser ? (
                     <motion.div

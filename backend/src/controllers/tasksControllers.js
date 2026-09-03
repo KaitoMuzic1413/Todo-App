@@ -58,6 +58,9 @@ export const cleanupExpiredTrashTasks = async () => {
 export const getAllTasks = async (req, res) => {
   try {
     const userFilter = getUserFilter(req);
+    const contentType = ['task', 'note', 'list'].includes(req.query.contentType)
+      ? req.query.contentType
+      : null;
 
     if (!userFilter) {
       return res.status(400).json({ message: 'userId is required.' });
@@ -65,7 +68,16 @@ export const getAllTasks = async (req, res) => {
 
     await touchUserActivity(userFilter.userId);
 
-    const tasks = await Task.find({ ...userFilter, isDeleted: false }).sort({ createdAt: -1 });
+    const typeFilter = contentType === 'task'
+      ? { $or: [{ contentType: 'task' }, { contentType: { $exists: false } }] }
+      : contentType
+      ? { contentType }
+      : {};
+    const tasks = await Task.find({
+      ...userFilter,
+      isDeleted: false,
+      ...typeFilter,
+    }).sort({ createdAt: -1 });
     return res.status(200).json(tasks);
   } catch (error) {
     console.error('Error getAllTasks:', error);
@@ -90,7 +102,7 @@ export const getUserQuota = async (req, res) => {
 
 export const createTask = async (req, res) => {
   try {
-    const { title } = req.body;
+    const { title, contentType = 'task', content = '', items = [] } = req.body;
     const userId = getAuthenticatedUserId(req);
 
     if (!title || !title.trim()) {
@@ -99,6 +111,18 @@ export const createTask = async (req, res) => {
 
     if (!userId) {
       return res.status(400).json({ message: 'userId is required.' });
+    }
+
+    if (!['task', 'note', 'list'].includes(contentType)) {
+      return res.status(400).json({ message: 'Invalid content type.' });
+    }
+
+    if (contentType === 'list' && (!Array.isArray(items) || items.length === 0)) {
+      return res.status(400).json({ message: 'A list needs at least one item.' });
+    }
+
+    if (contentType === 'note' && !String(content).trim()) {
+      return res.status(400).json({ message: 'Note content is required.' });
     }
 
     const user = await User.findById(userId);
@@ -112,6 +136,7 @@ export const createTask = async (req, res) => {
     const existingPendingTaskToday = await Task.findOne({
       userId,
       isDeleted: false,
+      contentType,
       status: 'active',
       createdAt: { $gte: startOfToday },
       title: { $regex: new RegExp(`^${trimmedTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') },
@@ -128,6 +153,11 @@ export const createTask = async (req, res) => {
     const task = new Task({
       userId,
       title: trimmedTitle,
+      contentType,
+      content: contentType === 'note' ? String(content).trim() : '',
+      items: contentType === 'list'
+        ? items.map((item) => ({ text: String(item.text || item).trim(), completed: !!item.completed }))
+        : undefined,
       status: 'active',
       completedAt: null,
     });
@@ -143,7 +173,7 @@ export const createTask = async (req, res) => {
 
 export const updateTask = async (req, res) => {
   try {
-    const { title, status, completedAt } = req.body;
+    const { title, status, completedAt, content, items } = req.body;
     const userId = getAuthenticatedUserId(req);
     const task = await Task.findOne({ _id: req.params.id, userId, isDeleted: false });
 
@@ -155,6 +185,10 @@ export const updateTask = async (req, res) => {
       ...(title ? { title: title.trim() } : {}),
       ...(status ? { status } : {}),
       ...(completedAt !== undefined ? { completedAt } : {}),
+      ...(content !== undefined ? { content: String(content).trim() } : {}),
+      ...(items !== undefined && Array.isArray(items)
+        ? { items: items.map((item) => ({ text: String(item.text || item).trim(), completed: !!item.completed })) }
+        : {}),
     };
 
     if (Object.prototype.hasOwnProperty.call(req.body, 'important')) {

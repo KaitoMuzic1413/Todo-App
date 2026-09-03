@@ -43,9 +43,9 @@ export const forgotPassword = (email) => api.post('/auth/forgot-password', { ema
 export const resetPassword = (token, newPassword) => api.post('/auth/reset-password', { token, newPassword });
 
 // Task APIs
-export const fetchTasks = (userId) => api.get('/tasks', { params: { userId } });
+export const fetchTasks = (userId, contentType) => api.get('/tasks', { params: { userId, ...(contentType ? { contentType } : {}) } });
 
-export const createTask = ({ userId, title }) => api.post('/tasks', { userId, title });
+export const createTask = ({ userId, title, contentType, content, items }) => api.post('/tasks', { userId, title, contentType, content, items });
 
 export const updateTask = (taskId, userId, payload) => api.put(`/tasks/${taskId}`, { userId, ...payload });
 
@@ -69,5 +69,15 @@ export const deleteTaskPermanently = (taskId, userId) => api.delete(`/tasks/${ta
 export const clearTrash = (userId) => api.delete('/tasks/trash/clear', { data: { userId } });
 
 export const getUserQuota = (userId) => api.get(`/tasks/quota/${userId}`);
+
+export const uploadAttachment = (file, taskId = null) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  if (taskId) formData.append('taskId', taskId);
+  return api.post('/attachments/upload', formData);
+};
+export const fetchAttachments = () => api.get('/attachments');
+export const deleteAttachment = (attachmentId) => api.delete(`/attachments/${attachmentId}`);
+export const downloadAttachment = (attachmentId) => api.get(`/attachments/${attachmentId}/download`, { responseType: 'blob' });
 
 export default api;

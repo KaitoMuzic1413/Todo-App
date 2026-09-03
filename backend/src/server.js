@@ -7,6 +7,7 @@ import { cleanupInactiveUsers } from "./controllers/usersControllers.js";
 import authRoute from "./routes/authRoutes.js";
 import taskRoute from "./routes/tasksRouters.js";
 import userRoute from "./routes/usersRoutes.js";
+import attachmentRoute from "./routes/attachmentsRoutes.js";
 
 const PORT = process.env.PORT || 5001;
 const INACTIVE_ACCOUNT_CHECK_INTERVAL = 60 * 60 * 1000;
@@ -43,6 +44,7 @@ app.get("/", (req, res) => {
 app.use("/api/auth", authRoute);
 app.use("/api/users", userRoute);
 app.use("/api/tasks", taskRoute);
+app.use("/api/attachments", attachmentRoute);
 
 // 3. Middleware bắt tất cả route không tồn tại (404 Handler)
 app.use((req, res) => {

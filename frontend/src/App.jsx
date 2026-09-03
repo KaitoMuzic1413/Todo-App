@@ -9,6 +9,7 @@ import ForgotPasswordPage from './pages/Login/ForgotPasswordPage';
 import ResetPasswordPage from './pages/Login/ResetPasswordPage';
 import NotFound from './pages/NotFound';
 import TrashPage from './pages/TrashPage';
+import ArchivePage from './pages/ArchivePage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -53,6 +54,9 @@ function App() {
         {/* Protected routes - Requires authentication */}
         <Route element={<ProtectedRoute />}>
           <Route path='/home' element={<HomePages />} />
+          <Route path='/lists' element={<HomePages contentType='list' />} />
+          <Route path='/notes' element={<HomePages contentType='note' />} />
+          <Route path='/archive' element={<ArchivePage />} />
           <Route path='/trash' element={<TrashPage />} />
         </Route>
 

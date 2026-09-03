@@ -13,6 +13,26 @@ const taskSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    contentType: {
+      type: String,
+      enum: ["task", "note", "list"],
+      default: "task",
+      index: true,
+    },
+    content: {
+      type: String,
+      default: "",
+      trim: true,
+    },
+    items: {
+      type: [
+        {
+          text: { type: String, required: true, trim: true },
+          completed: { type: Boolean, default: false },
+        },
+      ],
+      default: undefined,
+    },
     status: {
       type: String,
       enum: ["active", "complete"],
@@ -30,6 +50,7 @@ const taskSchema = new mongoose.Schema(
 );
 
 taskSchema.index({ userId: 1, isDeleted: 1, createdAt: -1 });
+taskSchema.index({ userId: 1, contentType: 1, isDeleted: 1, createdAt: -1 });
 taskSchema.index({ deletedAt: 1 }, { expireAfterSeconds: 2592000 });
 
 const Task = mongoose.model("Task", taskSchema);

@@ -97,7 +97,7 @@ const taskMatchesDateRange = (task, value) => {
   });
 };
 
-const HomePage = () => {
+const HomePage = ({ contentType = 'task' }) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [currentUser, setCurrentUser] = useState(getStoredUser);
@@ -123,9 +123,9 @@ const HomePage = () => {
   }, [currentUser, navigate]);
 
   const { data: tasks = [], isLoading } = useQuery({
-    queryKey: ['tasks', currentUser?._id],
+    queryKey: ['tasks', currentUser?._id, contentType],
     queryFn: async () => {
-      const response = await fetchTasks(currentUser._id);
+      const response = await fetchTasks(currentUser._id, contentType);
       return response.data || [];
     },
     enabled: !!currentUser?._id,
@@ -134,9 +134,9 @@ const HomePage = () => {
   });
 
   const addTaskMutation = useMutation({
-    mutationFn: (title) => createTask({ title, userId: currentUser._id }),
+    mutationFn: (payload) => createTask({ ...payload, userId: currentUser._id }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks', currentUser?._id] });
+      queryClient.invalidateQueries({ queryKey: ['tasks', currentUser?._id, contentType] });
       setCurrentPage(1);
     },
   });
@@ -162,9 +162,9 @@ const HomePage = () => {
     },
   });
 
-  const handleAddTask = (title) => {
+  const handleAddTask = (payload) => {
     if (!currentUser?._id) return;
-    addTaskMutation.mutate(title);
+    addTaskMutation.mutate(payload);
   };
 
   const handleToggleTask = (taskId) => {
@@ -228,7 +228,7 @@ const HomePage = () => {
       <div className='space-y-6'>
         <Header />
 
-        <AddTask onAdd={handleAddTask} />
+        <AddTask onAdd={handleAddTask} contentType={contentType} />
 
         <StatsAndFilters
           tasks={filteredTasks}
@@ -253,6 +253,10 @@ const HomePage = () => {
                   ? 'Completed Tasks'
                   : filterKey === 'pending'
                   ? 'Pending Tasks'
+                  : contentType === 'note'
+                  ? 'Notes'
+                  : contentType === 'list'
+                  ? 'Lists'
                   : 'All Tasks'
               }
               tasks={visibleTasks}

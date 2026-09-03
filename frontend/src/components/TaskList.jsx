@@ -284,6 +284,34 @@ const TaskList = ({
                               >
                                 {task.title}
                               </p>
+                              {task.contentType === 'note' && task.content ? (
+                                <p className='mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-600 dark:text-slate-300'>
+                                  {task.content}
+                                </p>
+                              ) : null}
+                              {task.contentType === 'list' && Array.isArray(task.items) ? (
+                                <div className='mt-2 space-y-1.5'>
+                                  {task.items.map((item, index) => (
+                                    <button
+                                      key={`${task._id}-item-${index}`}
+                                      type='button'
+                                      onClick={(event) => {
+                                        event.stopPropagation();
+                                        const items = task.items.map((currentItem, itemIndex) => (
+                                          itemIndex === index ? { ...currentItem, completed: !currentItem.completed } : currentItem
+                                        ));
+                                        onUpdate?.(task._id, undefined, { items });
+                                      }}
+                                      className='flex w-full items-center gap-2 text-left text-sm text-slate-600 dark:text-slate-300'
+                                    >
+                                      <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${item.completed ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-slate-300 dark:border-slate-600'}`}>
+                                        {item.completed ? <Check className='h-3 w-3' /> : null}
+                                      </span>
+                                      <span className={item.completed ? 'line-through opacity-60' : ''}>{item.text}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              ) : null}
                               {createdDateStr && (
                                 <p className='mt-0.5 text-[11px] text-slate-400 dark:text-slate-400'>
                                   {t.createdAt || 'Created at'}: {createdDateStr}
