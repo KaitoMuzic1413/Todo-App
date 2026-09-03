@@ -13,25 +13,8 @@ const INACTIVE_ACCOUNT_CHECK_INTERVAL = 60 * 60 * 1000;
 
 const app = express();
 
-const allowedOrigins = [
-  "http://localhost:5173",
-  "http://localhost:3000",
-  "https://todo-app-kaito20.vercel.app",
-  "https://todo-app-seven-mocha-91.vercel.app",
-  process.env.FRONTEND_URL,
-].filter(Boolean);
-
 const corsOptions = {
-  origin: function (origin, callback) {
-    if (
-      !origin ||
-      allowedOrigins.includes(origin)
-    ) {
-      callback(null, true);
-    } else {
-      callback(new Error(`CORS policy: ${origin} is not allowed by CORS`));
-    }
-  },
+  origin: true,
   credentials: false,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],

@@ -44,7 +44,8 @@ const sendResetEmail = async ({ to, resetUrl }) => {
       });
 
       if (!response.ok && response.status !== 202) {
-        throw new Error(`${apiProvider} request failed with status ${response.status}.`);
+        const providerMessage = (await response.text()).slice(0, 500);
+        throw new Error(`${apiProvider} request failed with status ${response.status}: ${providerMessage}`);
       }
       return;
     } finally {
@@ -211,8 +212,13 @@ export const forgotPassword = async (req, res) => {
     await sendResetEmail({ to: user.email, resetUrl });
     return res.status(200).json({ message: 'Password reset link sent to your email.' });
   } catch (error) {
-    console.error('--- LỖI NODEMAILER CHI TIẾT ---', error);
-    return res.status(500).json({ message: error.message || 'Server error while sending email.' });
+    console.error('Password reset email delivery failed:', error);
+    const isProviderError = error.message?.includes('request failed') || error.name === 'AbortError';
+    return res.status(isProviderError ? 502 : 500).json({
+      message: isProviderError
+        ? 'Email provider rejected the request. Check SENDGRID_API_KEY and EMAIL_FROM in Render.'
+        : error.message || 'Server error while sending email.',
+    });
   }
 };
 
