@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: todo-app-api
+    runtime: node
+    buildCommand: npm ci --prefix backend
+    startCommand: npm start --prefix backend
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_CONNECTIONSTRING
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: EMAIL_PROVIDER
+        value: sendgrid
+      - key: EMAIL_FROM
+        sync: false
+      - key: EMAIL_USER
+        sync: false
+      - key: SENDGRID_API_KEY
+        sync: false
+      - key: FRONTEND_URL
+        value: https://todo-app-kaito20.vercel.app
