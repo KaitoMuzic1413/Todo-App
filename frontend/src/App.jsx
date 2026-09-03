@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter, Route, Routes, Navigate, Outlet } from 'react-router';
+import { Route, Routes, Navigate, Outlet } from 'react-router-dom'; // Bỏ BrowserRouter ở đây
 import { Toaster } from 'sonner';
 import AboutPage from './pages/AboutPage';
 import HomePages from './pages/HomePage';
@@ -21,9 +21,10 @@ const queryClient = new QueryClient({
 
 const ProtectedRoute = () => {
   const user = localStorage.getItem('todo-user');
+  const token = localStorage.getItem('token');
 
-  if (!user) {
-    return <Navigate to='/404' replace />;
+  if (!user || !token) {
+    return <Navigate to='/signin' replace />;
   }
 
   return <Outlet />;
@@ -31,35 +32,34 @@ const ProtectedRoute = () => {
 
 const RootRedirect = () => {
   const user = localStorage.getItem('todo-user');
-  return <Navigate to={user ? '/home' : '/signin'} replace />;
+  const token = localStorage.getItem('token');
+  return <Navigate to={user && token ? '/home' : '/signin'} replace />;
 };
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <Routes>
-          {/* Default route handles automatic redirect */}
-          <Route path='/' element={<RootRedirect />} />
+      <Routes>
+        {/* Default route handles automatic redirect */}
+        <Route path='/' element={<RootRedirect />} />
 
-          {/* Public authentication routes */}
-          <Route path='/signin' element={<SignInPage />} />
-          <Route path='/signup' element={<SignUpPage />} />
-          <Route path='/forgot-password' element={<ForgotPasswordPage />} />
-          <Route path='/reset-password' element={<ResetPasswordPage />} />
+        {/* Public authentication routes */}
+        <Route path='/signin' element={<SignInPage />} />
+        <Route path='/signup' element={<SignUpPage />} />
+        <Route path='/forgot-password' element={<ForgotPasswordPage />} />
+        <Route path='/reset-password' element={<ResetPasswordPage />} />
+        <Route path='/about' element={<AboutPage />} />
 
-          {/* Protected routes - Requires authentication */}
-          <Route element={<ProtectedRoute />}>
-            <Route path='/home' element={<HomePages />} />
-            <Route path='/about' element={<AboutPage />} />
-            <Route path='/trash' element={<TrashPage />} />
-          </Route>
+        {/* Protected routes - Requires authentication */}
+        <Route element={<ProtectedRoute />}>
+          <Route path='/home' element={<HomePages />} />
+          <Route path='/trash' element={<TrashPage />} />
+        </Route>
 
-          {/* 404 Not Found fallback routes */}
-          <Route path='/404' element={<NotFound />} />
-          <Route path='*' element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+        {/* 404 Not Found fallback routes */}
+        <Route path='/404' element={<NotFound />} />
+        <Route path='*' element={<NotFound />} />
+      </Routes>
       <Toaster richColors position='top-right' />
     </QueryClientProvider>
   );

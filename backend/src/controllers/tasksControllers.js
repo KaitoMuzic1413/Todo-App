@@ -2,10 +2,12 @@ import Task from '../models/Task.js';
 import User from '../models/User.js';
 
 const getUserFilter = (req) => {
-  const { userId } = req.query;
+  const userId = req.user?.userId;
   if (!userId) return null;
   return { userId };
 };
+
+const getAuthenticatedUserId = (req) => req.user?.userId;
 
 const touchUserActivity = async (userId) => {
   if (!userId) return;
@@ -73,7 +75,7 @@ export const getAllTasks = async (req, res) => {
 
 export const getUserQuota = async (req, res) => {
   try {
-    const { userId } = req.params;
+    const userId = getAuthenticatedUserId(req);
     if (!userId) return res.status(400).json({ message: 'userId required' });
 
     const user = await User.findById(userId);
@@ -88,7 +90,8 @@ export const getUserQuota = async (req, res) => {
 
 export const createTask = async (req, res) => {
   try {
-    const { title, userId } = req.body;
+    const { title } = req.body;
+    const userId = getAuthenticatedUserId(req);
 
     if (!title || !title.trim()) {
       return res.status(400).json({ message: 'Task title is required.' });
@@ -140,7 +143,8 @@ export const createTask = async (req, res) => {
 
 export const updateTask = async (req, res) => {
   try {
-    const { title, status, completedAt, userId } = req.body;
+    const { title, status, completedAt } = req.body;
+    const userId = getAuthenticatedUserId(req);
     const task = await Task.findOne({ _id: req.params.id, userId, isDeleted: false });
 
     if (!task) {
@@ -176,7 +180,7 @@ export const updateTask = async (req, res) => {
 
 export const deleteTask = async (req, res) => {
   try {
-    const { userId } = req.body;
+    const userId = getAuthenticatedUserId(req);
     const task = await Task.findOneAndUpdate(
       { _id: req.params.id, userId, isDeleted: false },
       { isDeleted: true, deletedAt: new Date() },
@@ -197,7 +201,7 @@ export const deleteTask = async (req, res) => {
 
 export const toggleTaskStatus = async (req, res) => {
   try {
-    const { userId } = req.body;
+    const userId = getAuthenticatedUserId(req);
     const task = await Task.findOne({ _id: req.params.id, userId, isDeleted: false });
 
     if (!task) {
@@ -224,7 +228,7 @@ export const toggleTaskStatus = async (req, res) => {
 
 export const restoreTask = async (req, res) => {
   try {
-    const { userId } = req.body;
+    const userId = getAuthenticatedUserId(req);
     const task = await Task.findOne({ _id: req.params.id, userId, isDeleted: true });
 
     if (!task) {
@@ -247,7 +251,7 @@ export const restoreTask = async (req, res) => {
 
 export const deletePermanentTask = async (req, res) => {
   try {
-    const { userId } = req.body;
+    const userId = getAuthenticatedUserId(req);
     const task = await Task.findOneAndDelete({ _id: req.params.id, userId, isDeleted: true });
 
     if (!task) {
@@ -264,7 +268,7 @@ export const deletePermanentTask = async (req, res) => {
 
 export const clearTrash = async (req, res) => {
   try {
-    const { userId } = req.body;
+    const userId = getAuthenticatedUserId(req);
     if (!userId) {
       return res.status(400).json({ message: 'userId is required.' });
     }
@@ -280,7 +284,8 @@ export const clearTrash = async (req, res) => {
 
 export const getTrashTasks = async (req, res) => {
   try {
-    const { userId, status, period } = req.query;
+    const { status, period } = req.query;
+    const userId = getAuthenticatedUserId(req);
     if (!userId) {
       return res.status(400).json({ message: 'userId is required.' });
     }

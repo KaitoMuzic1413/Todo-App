@@ -8,9 +8,30 @@ const apiBaseUrl =
 
 const api = axios.create({
   baseURL: apiBaseUrl,
-  timeout: 60000,
-  withCredentials: true,
+  timeout: 20000,
+  withCredentials: false,
 });
+
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('todo-user');
+      localStorage.removeItem('todo-user-email');
+      localStorage.removeItem('token');
+      window.dispatchEvent(new Event('todo-auth-changed'));
+    }
+    return Promise.reject(error);
+  }
+);
 
 // Auth APIs
 export const loginWithEmail = (email, password) => api.post('/auth/login', { email, password });

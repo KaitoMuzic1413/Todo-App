@@ -13,7 +13,34 @@ const INACTIVE_ACCOUNT_CHECK_INTERVAL = 60 * 60 * 1000;
 
 const app = express();
 
-// Middleware tự động kết nối Database cho môi trường Serverless (Vercel)
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "https://todo-app-kaito20.vercel.app",
+  "https://todo-app-seven-mocha-91.vercel.app",
+  process.env.FRONTEND_URL,
+].filter(Boolean);
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (
+      !origin ||
+      allowedOrigins.includes(origin)
+    ) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS policy: ${origin} is not allowed by CORS`));
+    }
+  },
+  credentials: false,
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
+app.use(express.json());
+
 app.use(async (req, res, next) => {
   try {
     await connectDB();
@@ -23,35 +50,6 @@ app.use(async (req, res, next) => {
     res.status(500).json({ error: "Database connection error" });
   }
 });
-
-const allowedOrigins = [
-  "http://localhost:5173",
-  "http://localhost:3000",
-  "https://todo-app-seven-mocha-91.vercel.app",
-  process.env.FRONTEND_URL,
-].filter(Boolean);
-
-const corsOptions = {
-  origin: function (origin, callback) {
-    if (
-      !origin ||
-      allowedOrigins.includes(origin) ||
-      origin.endsWith(".vercel.app") ||
-      origin.endsWith(".onrender.com")
-    ) {
-      callback(null, true);
-    } else {
-      callback(new Error(`CORS policy: ${origin} is not allowed by CORS`));
-    }
-  },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-};
-
-app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
-app.use(express.json());
 
 // 1. Root route kiểm tra Server
 app.get("/", (req, res) => {
@@ -85,8 +83,8 @@ const runMaintenanceJobs = async () => {
   }
 };
 
-// Kiểm tra nếu chạy ở môi trường Local/Render thông thường thì mới khởi chạy app.listen và Cron job
-if (process.env.NODE_ENV !== "production" || process.env.RENDER) {
+// Kiểm tra nếu không phải môi trường Serverless (Vercel) thì khởi chạy app.listen
+if (!process.env.VERCEL) {
   const startMaintenanceJobs = () => {
     runMaintenanceJobs();
     setInterval(runMaintenanceJobs, INACTIVE_ACCOUNT_CHECK_INTERVAL);

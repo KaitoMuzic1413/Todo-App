@@ -41,7 +41,7 @@ const TrashPage = () => {
 
   useEffect(() => {
     if (!currentUser?._id) {
-      navigate('/login');
+      navigate('/signin', { replace: true });
       return;
     }
 

@@ -21,6 +21,10 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    sessionVersion: {
+      type: Number,
+      default: 0,
+    },
     isAdmin: {
       type: Boolean,
       default: false,

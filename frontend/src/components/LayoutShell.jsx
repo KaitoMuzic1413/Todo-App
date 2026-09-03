@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronLeft, Globe, LogIn, LogOut, Mail, Moon, SunMedium, UserCircle2, X, Home, Trash2 } from 'lucide-react';
 import { loginWithEmail } from '@/lib/api';
@@ -19,7 +19,7 @@ const getStoredUser = () => {
   }
 };
 
-export function LayoutShell({ children }) {
+export function LayoutShell({ children, hideAccountPanel = false }) {
   const { language, setLanguage, t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
@@ -41,13 +41,16 @@ export function LayoutShell({ children }) {
   const [loginError, setLoginError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const shellRef = useRef(null);
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
   const startOffset = useRef(-SIDEBAR_WIDTH);
+  const currentOffset = useRef(-SIDEBAR_WIDTH);
   const isEligibleSwipe = useRef(false);
+  const isHorizontalSwipe = useRef(false);
 
   const navItems = [
-    { name: t.home, to: '/' },
+    { name: t.home, to: '/home' },
     { name: t.trash, to: '/trash' },
     { name: t.contact, to: '/about' },
   ];
@@ -58,14 +61,8 @@ export function LayoutShell({ children }) {
       return;
     }
 
-    if (isSidebarOpen) {
-      setIsSidebarOpen(false);
-      setTimeout(() => {
-        navigate(to);
-      }, 700);
-    } else {
-      navigate(to);
-    }
+    setIsSidebarOpen(false);
+    navigate(to);
   };
 
   useEffect(() => {
@@ -84,15 +81,20 @@ export function LayoutShell({ children }) {
   }, [isSidebarOpen, isDragging]);
 
   useEffect(() => {
+    const shell = shellRef.current;
+    if (!shell) return undefined;
+
     const handleTouchStart = (event) => {
       const touchX = event.touches[0].clientX;
       const touchY = event.touches[0].clientY;
 
       if ((!isSidebarOpen && touchX <= EDGE_WIDTH) || isSidebarOpen) {
         isEligibleSwipe.current = true;
+        isHorizontalSwipe.current = false;
         touchStartX.current = touchX;
         touchStartY.current = touchY;
         startOffset.current = isSidebarOpen ? 0 : -SIDEBAR_WIDTH;
+        currentOffset.current = startOffset.current;
       } else {
         isEligibleSwipe.current = false;
       }
@@ -107,10 +109,18 @@ export function LayoutShell({ children }) {
       const deltaX = currentX - touchStartX.current;
       const deltaY = currentY - touchStartY.current;
 
-      if (Math.abs(deltaX) > Math.abs(deltaY)) {
-        if (event.cancelable) {
-          event.preventDefault();
+      if (!isHorizontalSwipe.current) {
+        if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > 6) {
+          isEligibleSwipe.current = false;
+          return;
         }
+
+        if (Math.abs(deltaX) <= 6) return;
+        isHorizontalSwipe.current = true;
+      }
+
+      if (event.cancelable) {
+        event.preventDefault();
       }
 
       let nextOffset = startOffset.current + deltaX;
@@ -119,18 +129,19 @@ export function LayoutShell({ children }) {
       if (nextOffset < -SIDEBAR_WIDTH) nextOffset = -SIDEBAR_WIDTH;
 
       setIsDragging(true);
+      currentOffset.current = nextOffset;
       setSidebarOffset(nextOffset);
     };
 
     const handleTouchEnd = () => {
-      if (!isEligibleSwipe.current) return;
+      if (!isEligibleSwipe.current || !isHorizontalSwipe.current) return;
 
       setIsDragging(false);
       isEligibleSwipe.current = false;
 
       const threshold = -SIDEBAR_WIDTH * 0.7;
 
-      if (sidebarOffset > threshold) {
+      if (currentOffset.current > threshold) {
         setIsSidebarOpen(true);
         setSidebarOffset(0);
       } else {
@@ -139,16 +150,16 @@ export function LayoutShell({ children }) {
       }
     };
 
-    window.addEventListener('touchstart', handleTouchStart, { passive: true });
-    window.addEventListener('touchmove', handleTouchMove, { passive: false });
-    window.addEventListener('touchend', handleTouchEnd, { passive: true });
+    shell.addEventListener('touchstart', handleTouchStart, { passive: true });
+    shell.addEventListener('touchmove', handleTouchMove, { passive: false });
+    shell.addEventListener('touchend', handleTouchEnd, { passive: true });
 
     return () => {
-      window.removeEventListener('touchstart', handleTouchStart);
-      window.removeEventListener('touchmove', handleTouchMove);
-      window.removeEventListener('touchend', handleTouchEnd);
+      shell.removeEventListener('touchstart', handleTouchStart);
+      shell.removeEventListener('touchmove', handleTouchMove);
+      shell.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [isSidebarOpen, sidebarOffset]);
+  }, [isSidebarOpen]);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode);
@@ -221,7 +232,7 @@ export function LayoutShell({ children }) {
   const userInitial = userEmail ? userEmail.split('@')[0].slice(0, 2).toUpperCase() : 'G';
 
   return (
-    <div className='min-h-screen overflow-x-hidden bg-[#f5f7fb] text-slate-900 transition-colors duration-500 dark:bg-[#0f172a] dark:text-slate-50'>
+    <div ref={shellRef} className='min-h-screen overflow-x-hidden bg-[#f5f7fb] text-slate-900 transition-colors duration-500 dark:bg-[#0f172a] dark:text-slate-50'>
       <div className={`fixed left-0 top-0 z-40 flex items-center transition-opacity duration-500 ${isSidebarOpen ? 'pointer-events-none opacity-0' : 'opacity-100'}`}>
         <button
           type='button'
@@ -304,7 +315,7 @@ export function LayoutShell({ children }) {
                         }`}
                       >
                         <span className='flex items-center gap-2'>
-                          {item.to === '/' ? <Home className='h-4 w-4' /> : null}
+                          {item.to === '/home' ? <Home className='h-4 w-4' /> : null}
                           {item.to === '/trash' ? <Trash2 className='h-4 w-4' /> : null}
                           {item.to === '/about' ? <Mail className='h-4 w-4' /> : null}
                           <span>{item.name}</span>
@@ -354,7 +365,7 @@ export function LayoutShell({ children }) {
                 </nav>
               </div>
 
-              <div className='shrink-0 overflow-hidden border-t border-slate-200/80 bg-white/80 p-4 backdrop-blur-md dark:border-slate-800 dark:bg-slate-950/80'>
+              {!hideAccountPanel ? <div className='shrink-0 overflow-hidden border-t border-slate-200/80 bg-white/80 p-4 backdrop-blur-md dark:border-slate-800 dark:bg-slate-950/80'>
                 <AnimatePresence mode='wait'>
                   {currentUser ? (
                     <motion.div
@@ -420,7 +431,7 @@ export function LayoutShell({ children }) {
                     </motion.form>
                   )}
                 </AnimatePresence>
-              </div>
+              </div> : null}
             </motion.aside>
           </>
         )}

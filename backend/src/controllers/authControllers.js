@@ -4,6 +4,73 @@ import jwt from 'jsonwebtoken';
 import nodemailer from 'nodemailer';
 import User from '../models/User.js';
 
+const JWT_SECRET = process.env.JWT_SECRET || 'SECRET_KEY';
+const JWT_EXPIRES_IN = '30d';
+
+const sendResetEmail = async ({ to, resetUrl }) => {
+  const emailUser = process.env.EMAIL_USER;
+  const emailProvider = String(process.env.EMAIL_PROVIDER || '').toLowerCase();
+  const subject = 'Password Reset Request';
+  const html = `
+    <div style="font-family: sans-serif; padding: 20px;">
+      <h2>Password Reset Request</h2>
+      <p>Click the button below to set a new password. This link expires in 15 minutes.</p>
+      <a href="${resetUrl}" style="display: inline-block; padding: 12px 24px; background-color: #8b5cf6; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; margin-top: 10px;">Reset Password</a>
+    </div>
+  `;
+
+  const apiProvider = emailProvider || (process.env.SENDGRID_API_KEY ? 'sendgrid' : 'resend');
+  const apiKey = apiProvider === 'sendgrid' ? process.env.SENDGRID_API_KEY : process.env.RESEND_API_KEY;
+  const from = process.env.EMAIL_FROM || emailUser;
+
+  if (apiKey) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+    try {
+      const endpoint = apiProvider === 'sendgrid'
+        ? 'https://api.sendgrid.com/v3/mail/send'
+        : 'https://api.resend.com/emails';
+      const payload = apiProvider === 'sendgrid'
+        ? { personalizations: [{ to: [{ email: to }] }], from: { email: from }, subject, content: [{ type: 'text/html', value: html }] }
+        : { from, to: [to], subject, html };
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
+
+      if (!response.ok && response.status !== 202) {
+        throw new Error(`${apiProvider} request failed with status ${response.status}.`);
+      }
+      return;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  const emailPass = process.env.EMAIL_PASS;
+  if (!emailUser || !emailPass) {
+    throw new Error('Server misconfiguration: configure SendGrid, Resend, or SMTP credentials.');
+  }
+
+  const transporter = nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
+    requireTLS: true,
+    auth: { user: emailUser, pass: emailPass },
+    connectionTimeout: 15000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000,
+  });
+
+  await transporter.sendMail({ from: `"Todo App" <${emailUser}>`, to, subject, html });
+};
+
 // 1. Controller Đăng ký
 export const register = async (req, res) => {
   try {
@@ -45,9 +112,9 @@ export const register = async (req, res) => {
     }
 
     const token = jwt.sign(
-      { userId: user._id },
-      process.env.JWT_SECRET || 'SECRET_KEY',
-      { expiresIn: '7d' }
+      { userId: user._id, sessionVersion: user.sessionVersion },
+      JWT_SECRET,
+      { expiresIn: JWT_EXPIRES_IN }
     );
 
     return res.status(201).json({
@@ -94,9 +161,9 @@ export const login = async (req, res) => {
     await user.save();
 
     const token = jwt.sign(
-      { userId: user._id },
-      process.env.JWT_SECRET || 'SECRET_KEY',
-      { expiresIn: '7d' }
+      { userId: user._id, sessionVersion: user.sessionVersion },
+      JWT_SECRET,
+      { expiresIn: JWT_EXPIRES_IN }
     );
 
     return res.status(200).json({
@@ -130,29 +197,6 @@ export const forgotPassword = async (req, res) => {
       return res.status(404).json({ message: 'Account with this email does not exist.' });
     }
 
-    const emailUser = process.env.EMAIL_USER;
-    const emailPass = process.env.EMAIL_PASS;
-
-    if (!emailUser || !emailPass) {
-      console.error("LỖI: Chưa đọc được EMAIL_USER hoặc EMAIL_PASS từ biến môi trường.");
-      return res.status(500).json({ message: "Server misconfiguration: Missing email credentials." });
-    }
-
-    // Cấu hình SMTP cổng 587 tương thích tốt nhất với môi trường Render
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 587,
-      secure: false,
-      requireTLS: true, // Ép nâng cấp kết nối lên TLS
-      auth: {
-        user: emailUser,
-        pass: emailPass,
-      },
-      tls: {
-        rejectUnauthorized: false,
-      },
-    });
-
     const resetToken = crypto.randomBytes(32).toString('hex');
     user.resetPasswordToken = resetToken;
     user.resetPasswordExpires = Date.now() + 15 * 60 * 1000;
@@ -160,28 +204,11 @@ export const forgotPassword = async (req, res) => {
 
     // Nếu chạy ở Render -> dùng link Vercel
     // Nếu chạy ở Local -> dùng http://localhost:5173
-    const frontendUrl =
-      process.env.NODE_ENV === "production"
-        ? "https://todo-app-seven-mocha-91.vercel.app"
-        : "http://localhost:5173";
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
 
     const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
 
-    const mailOptions = {
-      from: `"Todo App" <${emailUser}>`,
-      to: user.email,
-      subject: 'Password Reset Request',
-      html: `
-        <div style="font-family: sans-serif; padding: 20px;">
-          <h2>Password Reset Request</h2>
-          <p>You received this email because you requested a password reset for your Todo App account.</p>
-          <p>Click the button below to set a new password (link expires in 15 minutes):</p>
-          <a href="${resetUrl}" style="display: inline-block; padding: 12px 24px; background-color: #8b5cf6; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; margin-top: 10px;">Reset Password</a>
-        </div>
-      `,
-    };
-
-    await transporter.sendMail(mailOptions);
+    await sendResetEmail({ to: user.email, resetUrl });
     return res.status(200).json({ message: 'Password reset link sent to your email.' });
   } catch (error) {
     console.error('--- LỖI NODEMAILER CHI TIẾT ---', error);
@@ -216,6 +243,7 @@ export const resetPassword = async (req, res) => {
 
     const saltRounds = 10;
     user.password = await bcrypt.hash(newPassword, saltRounds);
+    user.sessionVersion = (user.sessionVersion || 0) + 1;
     user.resetPasswordToken = null;
     user.resetPasswordExpires = null;
     await user.save();

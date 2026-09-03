@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router';
+import { useNavigate, Link } from 'react-router-dom';
 import { ArrowRight, LogIn, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { loginWithEmail } from '@/lib/api';
+import AuthLayout from '@/components/AuthLayout';
 
 const SignInPage = () => {
   const navigate = useNavigate();
@@ -56,7 +57,7 @@ const SignInPage = () => {
   };
 
   return (
-    <div className='flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(168,85,247,0.22),transparent_40%),linear-gradient(135deg,#f5f7fb,#eef2ff)] p-6 dark:bg-[radial-gradient(circle_at_top,_rgba(168,85,247,0.2),transparent_38%),linear-gradient(135deg,#0f172a,#111827)]'>
+    <AuthLayout>
       <div className='w-full max-w-md rounded-[32px] border border-slate-200/80 bg-white/80 p-8 shadow-[0_30px_80px_rgba(15,23,42,0.12)] backdrop-blur-sm dark:border-slate-700 dark:bg-slate-900/80'>
         <div className='mb-6 text-center'>
           <div className='mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-200'>
@@ -143,7 +144,7 @@ const SignInPage = () => {
           </Link>
         </div>
       </div>
-    </div>
+    </AuthLayout>
   );
 };
 

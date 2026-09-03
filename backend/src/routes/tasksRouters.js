@@ -11,8 +11,11 @@ import {
   updateTask,
   getUserQuota,
 } from "../controllers/tasksControllers.js";
+import verifyToken from "../middleware/authMiddleware.js";
 
 const router = express.Router();
+
+router.use(verifyToken);
 
 router.get("/", getAllTasks);
 router.post("/", createTask);
