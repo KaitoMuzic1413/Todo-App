@@ -21,10 +21,19 @@ const queryClient = new QueryClient({
 });
 
 const ProtectedRoute = () => {
-  const user = localStorage.getItem('todo-user');
+  const storedUser = localStorage.getItem('todo-user');
+  const user = (() => {
+    if (!storedUser) return null;
+
+    try {
+      return JSON.parse(storedUser);
+    } catch {
+      return null;
+    }
+  })();
   const token = localStorage.getItem('token');
 
-  if (!user || !token) {
+  if (!user?._id || !token?.trim()) {
     return <Navigate to='/404' replace />;
   }
 

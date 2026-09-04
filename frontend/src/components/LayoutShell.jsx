@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronLeft, Globe, Archive, ClipboardList, FileText, LogIn, LogOut, Mail, Moon, SunMedium, UserCircle2, X, Home, Trash2 } from 'lucide-react';
-import { loginWithEmail } from '@/lib/api';
+import { ChevronLeft, Globe, Archive, ClipboardList, FileText, LogOut, Mail, Moon, SunMedium, X, Home, Trash2 } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n';
 
 const SIDEBAR_WIDTH = 320;
@@ -34,12 +33,6 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
   const [isDragging, setIsDragging] = useState(false);
 
   const [currentUser, setCurrentUser] = useState(getStoredUser);
-  const [loginEmail, setLoginEmail] = useState(() => {
-    if (typeof window === 'undefined') return '';
-    return localStorage.getItem('todo-user-email') || '';
-  });
-  const [loginError, setLoginError] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const shellRef = useRef(null);
   const touchStartX = useRef(0);
@@ -175,39 +168,6 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
     }
   };
 
-  const handleLogin = async (event) => {
-    event.preventDefault();
-    const trimmedEmail = loginEmail.trim();
-    const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail);
-
-    if (!isValidEmail) {
-      setLoginError(t.invalidEmail);
-      return;
-    }
-
-    try {
-      setIsSubmitting(true);
-      const response = await loginWithEmail(trimmedEmail);
-      const user = response.data.user;
-
-      localStorage.setItem('todo-user', JSON.stringify(user));
-      localStorage.setItem('todo-user-email', user.email);
-
-      setIsSidebarOpen(false);
-
-      setTimeout(() => {
-        setCurrentUser(user);
-        setLoginError('');
-        setLoginEmail(user.email);
-        emitAuthChange();
-      }, 700);
-    } catch (error) {
-      setLoginError(error?.response?.data?.message || 'Unable to sign in with email.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   const handleLogout = () => {
     setIsSidebarOpen(false);
     setTimeout(() => {
@@ -220,8 +180,6 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
 
       // 2. Reset state nội bộ
       setCurrentUser(null);
-      setLoginEmail('');
-      setLoginError('');
 
       // 3. Bắn event thông báo thay đổi auth
       emitAuthChange();
@@ -231,7 +189,7 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
     }, 700);
   };
 
-  const userEmail = currentUser?.email || loginEmail;
+  const userEmail = currentUser?.email || '';
   const userInitial = userEmail ? userEmail.split('@')[0].slice(0, 2).toUpperCase() : 'G';
 
   return (
@@ -404,37 +362,22 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
                       </div>
                     </motion.div>
                   ) : (
-                    <motion.form
+                    <motion.div
                       key='login-form'
                       initial={{ opacity: 0, y: 12, filter: 'blur(4px)' }}
                       animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
                       exit={{ opacity: 0, y: -12, filter: 'blur(4px)' }}
                       transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                      onSubmit={handleLogin}
                       className='space-y-3'
                     >
-                      <label className='flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 shadow-sm dark:border-slate-700 dark:bg-slate-900'>
-                        <UserCircle2 className='h-4 w-4 text-slate-500 dark:text-slate-400' />
-                        <input
-                          type='email'
-                          value={loginEmail}
-                          onChange={(event) => setLoginEmail(event.target.value)}
-                          placeholder={t.emailAddress}
-                          className='w-full border-0 bg-transparent text-sm text-slate-700 placeholder:text-slate-400 outline-none dark:text-slate-200 dark:placeholder:text-slate-500'
-                        />
-                      </label>
-
-                      {loginError ? <p className='text-xs text-rose-500'>{loginError}</p> : null}
-
                       <button
-                        type='submit'
-                        disabled={isSubmitting}
+                        type='button'
+                        onClick={() => navigate('/signin')}
                         className='inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-500 to-indigo-500 px-3 py-2.5 text-sm font-semibold text-white shadow-md shadow-violet-200 transition-transform disabled:opacity-60 dark:shadow-violet-900/30'
                       >
-                        <LogIn className='h-4 w-4' />
-                        {isSubmitting ? t.signingIn : t.signInWithEmail}
+                        {t.signIn}
                       </button>
-                    </motion.form>
+                    </motion.div>
                   )}
                 </AnimatePresence>
               </div> : null}
