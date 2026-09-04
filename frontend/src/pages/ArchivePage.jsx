@@ -9,6 +9,7 @@ const formatSize = (size) => `${(size / 1024 / 1024).toFixed(2)} MB`;
 const ArchivePage = () => {
   const [attachments, setAttachments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState('');
 
   const loadAttachments = async () => {
@@ -23,7 +24,8 @@ const ArchivePage = () => {
   };
 
   useEffect(() => {
-    loadAttachments();
+    const timer = window.setTimeout(() => loadAttachments(), 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   const handleUpload = async (event) => {
@@ -32,12 +34,15 @@ const ArchivePage = () => {
     if (!file) return;
 
     try {
+      setUploading(true);
       setMessage('Uploading...');
       await uploadAttachment(file);
       setMessage('File uploaded.');
       await loadAttachments();
     } catch (error) {
       setMessage(error?.response?.data?.message || 'Upload failed.');
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -74,9 +79,9 @@ const ArchivePage = () => {
               <h2 className='text-xl font-semibold text-slate-900 dark:text-white'>File archive</h2>
               <p className='mt-1 text-sm text-slate-500 dark:text-slate-400'>Private files stored in your account.</p>
             </div>
-            <label className='inline-flex cursor-pointer items-center gap-2 rounded-2xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-violet-500'>
+            <label className={`inline-flex items-center gap-2 rounded-2xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white ${uploading ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-violet-500'}`}>
               <Upload className='h-4 w-4' /> Upload file
-              <input type='file' className='hidden' onChange={handleUpload} accept='image/jpeg,image/png,image/gif,image/webp,application/pdf,text/plain,text/markdown' />
+              <input type='file' disabled={uploading} className='hidden' onChange={handleUpload} accept='image/jpeg,image/png,image/gif,image/webp,application/pdf,text/plain,text/markdown' />
             </label>
           </div>
           {message ? <p className='mt-4 text-sm text-slate-500 dark:text-slate-400'>{message}</p> : null}

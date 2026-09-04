@@ -1,9 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LayoutShell } from '@/components/LayoutShell';
-import { clearTrash, deleteTaskPermanently, fetchTrashTasks, restoreTask } from '@/lib/api';
+import {
+  clearTrash,
+  clearTrashAttachments,
+  deleteAttachmentPermanently,
+  deleteTaskPermanently,
+  fetchTrashAttachments,
+  fetchTrashTasks,
+  restoreAttachment,
+  restoreTask,
+} from '@/lib/api';
 import { useLanguage } from '@/lib/i18n';
-import { Check, RotateCcw, Trash2, X } from 'lucide-react';
+import { Check, FileArchive, RotateCcw, Trash2, X } from 'lucide-react';
 import TaskListPagination from '@/components/TaskListPagination';
 
 const PAGE_SIZE = 5;
@@ -24,6 +33,7 @@ const TrashPage = () => {
   const { t, language } = useLanguage();
   const [currentUser, setCurrentUser] = useState(getStoredUser);
   const [tasks, setTasks] = useState([]);
+  const [attachments, setAttachments] = useState([]);
   const [statusFilter, setStatusFilter] = useState('all');
   const [periodFilter, setPeriodFilter] = useState('all');
   const [page, setPage] = useState(1);
@@ -48,11 +58,12 @@ const TrashPage = () => {
     const loadTrash = async () => {
       try {
         setLoading(true);
-        const response = await fetchTrashTasks(currentUser._id, {
-          status: statusFilter,
-          period: periodFilter,
-        });
-        setTasks(response.data || []);
+        const [taskResponse, attachmentResponse] = await Promise.all([
+          fetchTrashTasks(currentUser._id, { status: statusFilter, period: periodFilter }),
+          fetchTrashAttachments(),
+        ]);
+        setTasks(taskResponse.data || []);
+        setAttachments(attachmentResponse.data || []);
         setPage(1);
         setSelectedTaskIds([]);
         setIsSelectMode(false);
@@ -95,12 +106,31 @@ const TrashPage = () => {
     }
   };
 
+  const handleRestoreAttachment = async (attachmentId) => {
+    try {
+      await restoreAttachment(attachmentId);
+      setAttachments((previous) => previous.filter((attachment) => attachment._id !== attachmentId));
+    } catch (error) {
+      console.error('Failed to restore attachment', error);
+    }
+  };
+
+  const handleDeleteAttachmentPermanently = async (attachmentId) => {
+    try {
+      await deleteAttachmentPermanently(attachmentId);
+      setAttachments((previous) => previous.filter((attachment) => attachment._id !== attachmentId));
+    } catch (error) {
+      console.error('Failed to delete attachment permanently', error);
+    }
+  };
+
   const handleClearTrash = async () => {
     if (!currentUser?._id) return;
 
     try {
-      await clearTrash(currentUser._id);
+      await Promise.all([clearTrash(currentUser._id), clearTrashAttachments()]);
       setTasks([]);
+      setAttachments([]);
       setPage(1);
       setSelectedTaskIds([]);
       setIsSelectMode(false);
@@ -209,7 +239,7 @@ const TrashPage = () => {
             <button
               type='button'
               onClick={handleClearTrash}
-              disabled={!tasks.length}
+              disabled={!tasks.length && !attachments.length}
               className='cursor-pointer rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-600 shadow-sm transition-opacity hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-rose-900/60 dark:bg-rose-500/10 dark:text-rose-200 dark:hover:bg-rose-500/20'
             >
               {t.clearAllTrash}
@@ -341,7 +371,7 @@ const TrashPage = () => {
 
           {loading ? (
             <div className='py-8 text-center text-slate-500 dark:text-slate-300'>Loading trash...</div>
-          ) : pagedTasks.length === 0 ? (
+          ) : pagedTasks.length === 0 && attachments.length === 0 ? (
             <div className='rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-950/40 dark:text-slate-300'>
               {t.noTasksInTrash}
             </div>
@@ -440,6 +470,35 @@ const TrashPage = () => {
             </div>
           )}
         </section>
+
+        {attachments.length > 0 ? (
+          <section className='rounded-[28px] border border-slate-200/80 bg-white/80 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/70'>
+            <div className='mb-4 flex items-center gap-2'>
+              <FileArchive className='h-5 w-5 text-violet-600' />
+              <h2 className='text-lg font-semibold text-slate-900 dark:text-white'>Deleted files</h2>
+            </div>
+            <div className='space-y-3'>
+              {attachments.map((attachment) => (
+                <div key={attachment._id} className='flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700 dark:bg-slate-950/50'>
+                  <div className='min-w-0'>
+                    <p className='truncate font-medium text-slate-800 dark:text-slate-100'>{attachment.originalName}</p>
+                    <p className='mt-1 text-xs text-rose-500 dark:text-rose-400'>
+                      Deleted at: {formatDate(attachment.deletedAt)}
+                    </p>
+                  </div>
+                  <div className='flex shrink-0 gap-2'>
+                    <button type='button' onClick={() => handleRestoreAttachment(attachment._id)} className='rounded-full bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-600'>
+                      {t.restore || 'Restore'}
+                    </button>
+                    <button type='button' onClick={() => handleDeleteAttachmentPermanently(attachment._id)} className='rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-100 dark:border-rose-900/60 dark:bg-rose-500/10 dark:text-rose-200'>
+                      {t.deletePermanently || 'Delete permanently'}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null}
 
         <div className='flex flex-col items-center justify-between gap-4 rounded-[28px] border border-slate-200/80 bg-white/80 p-4 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/70 sm:flex-row'>
           <TaskListPagination

@@ -1,7 +1,16 @@
 import express from 'express';
 import multer from 'multer';
 import verifyToken from '../middleware/authMiddleware.js';
-import { downloadAttachment, deleteAttachment, listAttachments, uploadAttachment } from '../controllers/attachmentsControllers.js';
+import {
+	clearTrashAttachments,
+	deleteAttachment,
+	deleteAttachmentPermanently,
+	downloadAttachment,
+	listAttachments,
+	listTrashAttachments,
+	restoreAttachment,
+	uploadAttachment,
+} from '../controllers/attachmentsControllers.js';
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
@@ -16,7 +25,11 @@ router.post('/upload', (req, res, next) => {
 	});
 }, uploadAttachment);
 router.get('/', listAttachments);
+router.get('/trash/all', listTrashAttachments);
+router.delete('/trash/clear', clearTrashAttachments);
 router.get('/:id/download', downloadAttachment);
+router.patch('/:id/restore', restoreAttachment);
+router.delete('/:id/permanent', deleteAttachmentPermanently);
 router.delete('/:id', deleteAttachment);
 
 export default router;

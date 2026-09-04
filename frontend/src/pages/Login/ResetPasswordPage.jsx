@@ -17,6 +17,17 @@ const ResetPasswordPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    if (!token) {
+      setError('This password reset link is invalid or incomplete.');
+      return;
+    }
+
+    if (!/^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z0-9]{8,20}$/.test(newPassword)) {
+      setError('Password must be 8-20 characters and contain letters and numbers.');
+      return;
+    }
+
     try {
       setLoading(true);
       await resetPassword(token, newPassword);
@@ -54,6 +65,8 @@ const ResetPasswordPage = () => {
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder='Enter new password'
+                minLength={8}
+                maxLength={20}
                 className='h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-11 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:ring-violet-900/40'
               />
               <button

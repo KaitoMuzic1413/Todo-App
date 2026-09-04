@@ -78,6 +78,10 @@ export const uploadAttachment = (file, taskId = null) => {
 };
 export const fetchAttachments = () => api.get('/attachments');
 export const deleteAttachment = (attachmentId) => api.delete(`/attachments/${attachmentId}`);
+export const fetchTrashAttachments = () => api.get('/attachments/trash/all');
+export const restoreAttachment = (attachmentId) => api.patch(`/attachments/${attachmentId}/restore`);
+export const deleteAttachmentPermanently = (attachmentId) => api.delete(`/attachments/${attachmentId}/permanent`);
+export const clearTrashAttachments = () => api.delete('/attachments/trash/clear');
 export const downloadAttachment = (attachmentId) => api.get(`/attachments/${attachmentId}/download`, { responseType: 'blob' });
 
 export default api;

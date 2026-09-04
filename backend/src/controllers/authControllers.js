@@ -6,6 +6,7 @@ import User from '../models/User.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'SECRET_KEY';
 const JWT_EXPIRES_IN = '30d';
+const PASSWORD_RESET_MESSAGE = 'If an account exists for that email, a password reset link has been sent.';
 
 const sendResetEmail = async ({ to, resetUrl }) => {
   const emailUser = process.env.EMAIL_USER;
@@ -187,30 +188,28 @@ export const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
 
-    if (!email) {
+    if (typeof email !== 'string' || !email.trim()) {
       return res.status(400).json({ message: 'Email is required.' });
     }
 
     const trimmedEmail = email.trim().toLowerCase();
     const user = await User.findOne({ email: trimmedEmail });
 
-    if (!user) {
-      return res.status(404).json({ message: 'Account with this email does not exist.' });
-    }
+    if (!user) return res.status(200).json({ message: PASSWORD_RESET_MESSAGE });
 
     const resetToken = crypto.randomBytes(32).toString('hex');
-    user.resetPasswordToken = resetToken;
+    user.resetPasswordTokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
     user.resetPasswordExpires = Date.now() + 15 * 60 * 1000;
     await user.save();
 
     // Nếu chạy ở Render -> dùng link Vercel
     // Nếu chạy ở Local -> dùng http://localhost:5173
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/+$/, '');
 
     const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
 
     await sendResetEmail({ to: user.email, resetUrl });
-    return res.status(200).json({ message: 'Password reset link sent to your email.' });
+    return res.status(200).json({ message: PASSWORD_RESET_MESSAGE });
   } catch (error) {
     console.error('Password reset email delivery failed:', error);
     const isProviderError = error.message?.includes('request failed') || error.name === 'AbortError';
@@ -227,7 +226,7 @@ export const resetPassword = async (req, res) => {
   try {
     const { token, newPassword } = req.body;
 
-    if (!token || !newPassword) {
+    if (typeof token !== 'string' || typeof newPassword !== 'string' || !token || !newPassword) {
       return res.status(400).json({ message: 'Token and new password are required.' });
     }
 
@@ -239,7 +238,7 @@ export const resetPassword = async (req, res) => {
     }
 
     const user = await User.findOne({
-      resetPasswordToken: token,
+      resetPasswordTokenHash: crypto.createHash('sha256').update(token).digest('hex'),
       resetPasswordExpires: { $gt: Date.now() },
     });
 
@@ -250,7 +249,7 @@ export const resetPassword = async (req, res) => {
     const saltRounds = 10;
     user.password = await bcrypt.hash(newPassword, saltRounds);
     user.sessionVersion = (user.sessionVersion || 0) + 1;
-    user.resetPasswordToken = null;
+    user.resetPasswordTokenHash = null;
     user.resetPasswordExpires = null;
     await user.save();
 

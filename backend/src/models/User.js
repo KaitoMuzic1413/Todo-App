@@ -35,7 +35,7 @@ const userSchema = new mongoose.Schema(
       unlimitedUntil: { type: Date, default: null },
     },
     // Các trường phục vụ Quên / Đặt lại mật khẩu
-    resetPasswordToken: {
+    resetPasswordTokenHash: {
       type: String,
       default: null,
     },

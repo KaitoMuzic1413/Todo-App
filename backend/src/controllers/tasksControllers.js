@@ -1,5 +1,7 @@
 import Task from '../models/Task.js';
 import User from '../models/User.js';
+import Attachment from '../models/Attachment.js';
+import { deleteAttachmentRecords } from './attachmentsControllers.js';
 
 const getUserFilter = (req) => {
   const userId = req.user?.userId;
@@ -47,6 +49,8 @@ export const cleanupExpiredTrashTasks = async () => {
       isDeleted: true,
       deletedAt: { $lte: cutoff },
     });
+
+    await Attachment.deleteMany({ isDeleted: true, deletedAt: { $lte: cutoff } });
 
     return result.deletedCount || 0;
   } catch (error) {
@@ -181,25 +185,33 @@ export const updateTask = async (req, res) => {
       return res.status(404).json({ message: 'Task not found' });
     }
 
+    const normalizedItems = items !== undefined && Array.isArray(items)
+      ? items.map((item) => ({ text: String(item.text || item).trim(), completed: !!item.completed }))
+      : null;
+    const allItemsCompleted = normalizedItems?.length > 0 && normalizedItems.every((item) => item.completed);
+    const nextStatus = normalizedItems && task.contentType === 'list'
+      ? (allItemsCompleted ? 'complete' : 'active')
+      : status;
+
     const nextData = {
       ...(title ? { title: title.trim() } : {}),
-      ...(status ? { status } : {}),
-      ...(completedAt !== undefined ? { completedAt } : {}),
+      ...(nextStatus ? { status: nextStatus } : {}),
+      ...(normalizedItems ? { items: normalizedItems } : {}),
+      ...(normalizedItems && task.contentType === 'list'
+        ? { completedAt: allItemsCompleted ? new Date() : null }
+        : (completedAt !== undefined ? { completedAt } : {})),
       ...(content !== undefined ? { content: String(content).trim() } : {}),
-      ...(items !== undefined && Array.isArray(items)
-        ? { items: items.map((item) => ({ text: String(item.text || item).trim(), completed: !!item.completed })) }
-        : {}),
     };
 
     if (Object.prototype.hasOwnProperty.call(req.body, 'important')) {
       nextData.important = !!req.body.important;
     }
 
-    if (status === 'complete' && !task.completedAt) {
+    if (nextStatus === 'complete' && !task.completedAt && !normalizedItems) {
       nextData.completedAt = new Date();
     }
 
-    if (status === 'active') {
+    if (nextStatus === 'active' && !normalizedItems) {
       nextData.completedAt = null;
     }
 
@@ -224,6 +236,11 @@ export const deleteTask = async (req, res) => {
     if (!task) {
       return res.status(404).json({ message: 'Task not found' });
     }
+
+    await Attachment.updateMany(
+      { taskId: task._id, ownerId: userId, isDeleted: false },
+      { isDeleted: true, deletedAt: new Date() }
+    );
 
     await touchUserActivity(userId);
     return res.status(200).json({ message: 'Task moved to trash successfully', task });
@@ -275,6 +292,11 @@ export const restoreTask = async (req, res) => {
       { returnDocument: 'after' }
     );
 
+    await Attachment.updateMany(
+      { taskId: task._id, ownerId: userId, isDeleted: true },
+      { isDeleted: false, deletedAt: null }
+    );
+
     await touchUserActivity(userId);
     return res.status(200).json({ message: 'Task restored successfully', task: restoredTask });
   } catch (error) {
@@ -292,6 +314,8 @@ export const deletePermanentTask = async (req, res) => {
       return res.status(404).json({ message: 'Task not found' });
     }
 
+    await deleteAttachmentRecords({ taskId: task._id, ownerId: userId });
+
     await touchUserActivity(userId);
     return res.status(200).json({ message: 'Task permanently deleted', task });
   } catch (error) {
@@ -307,6 +331,8 @@ export const clearTrash = async (req, res) => {
       return res.status(400).json({ message: 'userId is required.' });
     }
 
+    const deletedTasks = await Task.find({ userId, isDeleted: true }).select('_id');
+    await Promise.all(deletedTasks.map((task) => deleteAttachmentRecords({ taskId: task._id, ownerId: userId })));
     const result = await Task.deleteMany({ userId, isDeleted: true });
     await touchUserActivity(userId);
     return res.status(200).json({ message: 'Trash cleared successfully', deletedCount: result.deletedCount || 0 });
