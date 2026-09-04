@@ -1,9 +1,10 @@
 services:
   - type: web
-    name: todo-app-api
+    name: todo-app-1112
     runtime: node
-    buildCommand: npm ci --prefix backend
-    startCommand: npm start --prefix backend
+    rootDir: backend
+    buildCommand: npm ci
+    startCommand: npm start
     healthCheckPath: /
     envVars:
       - key: NODE_ENV
