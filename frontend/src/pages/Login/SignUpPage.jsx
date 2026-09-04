@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router';
+import { useNavigate, Link } from 'react-router-dom';
 import { ArrowRight, UserPlus, Mail, Lock, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
 import { registerWithEmail } from '@/lib/api';
 import { useLanguage } from '@/lib/i18n';

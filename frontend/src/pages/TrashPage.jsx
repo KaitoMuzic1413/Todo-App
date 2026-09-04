@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate } from 'react-router-dom';
 import { LayoutShell } from '@/components/LayoutShell';
 import { clearTrash, deleteTaskPermanently, fetchTrashTasks, restoreTask } from '@/lib/api';
 import { useLanguage } from '@/lib/i18n';
