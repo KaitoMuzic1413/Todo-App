@@ -44,6 +44,8 @@ export const registerWithEmail = (email, password) => api.post('/auth/register',
 
 export const forgotPassword = (email) => api.post('/auth/forgot-password', { email });
 
+export const verifyResetOtp = (email, otp) => api.post('/auth/verify-reset-otp', { email, otp });
+
 export const resetPassword = (email, otp, newPassword) => api.post('/auth/reset-password', { email, otp, newPassword });
 
 // Task APIs

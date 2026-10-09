@@ -8,7 +8,7 @@ import AuthLayout from '@/components/AuthLayout';
 const SignUpPage = () => {
   const navigate = useNavigate();
   const { t } = useLanguage();
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(() => sessionStorage.getItem('todo-auth-email') || '');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
@@ -93,7 +93,10 @@ const SignUpPage = () => {
               <input
                 type='email'
                 value={email}
-                onChange={(event) => setEmail(event.target.value)}
+                onChange={(event) => {
+                  setEmail(event.target.value);
+                  sessionStorage.setItem('todo-auth-email', event.target.value);
+                }}
                 placeholder='name@example.com'
                 disabled={Boolean(successMessage)}
                 className='h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-3 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:ring-violet-900/40'

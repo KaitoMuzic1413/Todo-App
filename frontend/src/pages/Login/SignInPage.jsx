@@ -6,7 +6,7 @@ import AuthLayout from '@/components/AuthLayout';
 
 const SignInPage = () => {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(() => sessionStorage.getItem('todo-auth-email') || '');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
@@ -38,6 +38,7 @@ const SignInPage = () => {
       if (safeUser?.email) {
         localStorage.setItem('todo-user-email', safeUser.email);
       }
+      sessionStorage.removeItem('todo-auth-email');
       if (res.data?.token) {
         localStorage.setItem('token', res.data.token);
       }
@@ -80,7 +81,10 @@ const SignInPage = () => {
               <input
                 type='email'
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  sessionStorage.setItem('todo-auth-email', e.target.value);
+                }}
                 placeholder='name@example.com'
                 className='h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-3 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:ring-violet-900/40'
               />

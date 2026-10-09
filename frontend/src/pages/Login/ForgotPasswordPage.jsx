@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Mail } from 'lucide-react';
-import { forgotPassword, resetPassword } from '@/lib/api';
+import { forgotPassword, resetPassword, verifyResetOtp } from '@/lib/api';
 import AuthLayout from '@/components/AuthLayout';
 
 const ForgotPasswordPage = () => {
@@ -9,6 +9,7 @@ const ForgotPasswordPage = () => {
   const [otp, setOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [codeSent, setCodeSent] = useState(false);
+  const [codeVerified, setCodeVerified] = useState(false);
   const [passwordReset, setPasswordReset] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -31,6 +32,10 @@ const ForgotPasswordPage = () => {
         const res = await forgotPassword(email.trim());
         setMessage(res?.data?.message || 'If an account exists for that email, a password reset code has been sent.');
         setCodeSent(true);
+      } else if (!codeVerified) {
+        const res = await verifyResetOtp(email.trim(), otp);
+        setCodeVerified(true);
+        setMessage(res?.data?.message || 'Code verified. You can now create a new password.');
       } else {
         const res = await resetPassword(email.trim(), otp, newPassword);
         setMessage(res?.data?.message || 'Password updated successfully. Please sign in.');
@@ -56,6 +61,9 @@ const ForgotPasswordPage = () => {
     try {
       setLoading(true);
       const res = await forgotPassword(email.trim());
+      setOtp('');
+      setCodeVerified(false);
+      setNewPassword('');
       setMessage(res?.data?.message || 'If an account exists for that email, a password reset code has been sent.');
     } catch (err) {
       setError(err?.response?.data?.message || 'Something went wrong. Please try again.');
@@ -72,31 +80,47 @@ const ForgotPasswordPage = () => {
             Forgot Password
           </h1>
           <p className='mt-2 text-sm text-slate-500 dark:text-slate-300'>
-            {codeSent ? 'Enter the verification code from your email and choose a new password.' : 'Enter your email address to receive a verification code.'}
+            {passwordReset ? 'Your password has been updated.' : codeVerified ? 'Create a new password for your account.' : codeSent ? 'Enter the 6-digit verification code sent to your email.' : 'Enter your email address to receive a verification code.'}
           </p>
         </div>
 
         {!passwordReset ? (
         <form onSubmit={handleSubmit} className='space-y-4'>
           <label className='block text-sm font-medium text-slate-700 dark:text-slate-200'>
-            {codeSent ? 'Verification code' : 'Email address'}
+            Email address
             <div className='relative mt-2'>
               <Mail className='absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400' />
               <input
-                type={codeSent ? 'text' : 'email'}
+                type='email'
                 required
                 disabled={loading || codeSent}
-                value={codeSent ? otp : email}
-                onChange={(e) => codeSent ? setOtp(e.target.value.replace(/\D/g, '').slice(0, 6)) : setEmail(e.target.value)}
-                inputMode={codeSent ? 'numeric' : undefined}
-                maxLength={codeSent ? 6 : undefined}
-                placeholder={codeSent ? '6-digit code' : 'name@example.com'}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder='name@example.com'
                 className='h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-3 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:ring-violet-900/40'
               />
             </div>
           </label>
 
-          {codeSent ? (
+          {codeSent && !codeVerified ? (
+            <label className='block text-sm font-medium text-slate-700 dark:text-slate-200'>
+              Verification code
+              <input
+                type='text'
+                required
+                disabled={loading}
+                value={otp}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                inputMode='numeric'
+                autoComplete='one-time-code'
+                maxLength={6}
+                placeholder='6-digit code'
+                className='mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:ring-violet-900/40'
+              />
+            </label>
+          ) : null}
+
+          {codeVerified && !passwordReset ? (
             <>
               <label className='block text-sm font-medium text-slate-700 dark:text-slate-200'>
                 New password
@@ -112,10 +136,13 @@ const ForgotPasswordPage = () => {
                   className='mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:ring-violet-900/40'
                 />
               </label>
-              <button type='button' disabled={loading} onClick={handleResendCode} className='text-sm font-medium text-violet-600 hover:underline disabled:opacity-50 dark:text-violet-400'>
-                Resend verification code
-              </button>
             </>
+          ) : null}
+
+          {codeSent && !codeVerified ? (
+            <button type='button' disabled={loading} onClick={handleResendCode} className='text-sm font-medium text-violet-600 hover:underline disabled:opacity-50 dark:text-violet-400'>
+              Resend verification code
+            </button>
           ) : null}
 
           {error ? <p className='text-sm text-rose-500'>{error}</p> : null}
@@ -128,7 +155,7 @@ const ForgotPasswordPage = () => {
             disabled={loading}
             className='inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-500 to-indigo-500 px-4 py-3 text-sm font-semibold text-white shadow-lg transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60'
           >
-            {loading ? (codeSent ? 'Updating...' : 'Sending...') : (codeSent ? 'Reset Password' : 'Send Verification Code')}
+            {loading ? (!codeSent ? 'Sending...' : codeVerified ? 'Updating...' : 'Verifying...') : (!codeSent ? 'Send Verification Code' : codeVerified ? 'Reset Password' : 'Verify Code')}
           </button>
         </form>
         ) : null}

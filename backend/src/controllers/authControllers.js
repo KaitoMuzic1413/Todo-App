@@ -109,6 +109,53 @@ export const login = async (req, res) => {
   }
 };
 
+const getUserWithValidResetOtp = async (email, otp) => {
+  const user = await User.findOne({ email: email.trim().toLowerCase() });
+  if (!user || !user.resetPasswordOtpHash || !user.resetPasswordOtpExpires || user.resetPasswordOtpExpires <= new Date() || user.resetPasswordOtpAttempts >= 5) {
+    return null;
+  }
+
+  const submittedHash = crypto.createHmac('sha256', JWT_SECRET)
+    .update(`${user._id}:${otp}`)
+    .digest('hex');
+  const submittedBuffer = Buffer.from(submittedHash, 'hex');
+  const storedBuffer = Buffer.from(user.resetPasswordOtpHash, 'hex');
+  if (submittedBuffer.length === storedBuffer.length && crypto.timingSafeEqual(submittedBuffer, storedBuffer)) {
+    return user;
+  }
+
+  const attemptsReachedLimit = user.resetPasswordOtpAttempts + 1 >= 5;
+  await User.updateOne(
+    {
+      _id: user._id,
+      resetPasswordOtpHash: user.resetPasswordOtpHash,
+      resetPasswordOtpExpires: { $gt: new Date() },
+      resetPasswordOtpAttempts: { $lt: 5 },
+    },
+    {
+      $inc: { resetPasswordOtpAttempts: 1 },
+      ...(attemptsReachedLimit ? { $set: { resetPasswordOtpHash: null, resetPasswordOtpExpires: null } } : {}),
+    }
+  );
+  return null;
+};
+
+export const verifyResetOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    if (typeof email !== 'string' || typeof otp !== 'string' || !email.trim() || !/^\d{6}$/.test(otp)) {
+      return res.status(400).json({ message: 'Email and a 6-digit verification code are required.' });
+    }
+
+    const user = await getUserWithValidResetOtp(email, otp);
+    if (!user) return res.status(400).json({ message: 'Invalid or expired verification code.' });
+    return res.status(200).json({ message: 'Verification code confirmed.' });
+  } catch (error) {
+    console.error('Verify password reset code error:', error);
+    return res.status(500).json({ message: 'Server error while verifying the code.' });
+  }
+};
+
 // 3. Controller Quên mật khẩu (Gửi email)
 export const forgotPassword = async (req, res) => {
   try {
@@ -182,37 +229,9 @@ export const resetPassword = async (req, res) => {
       });
     }
 
-    const user = await User.findOne({ email: email.trim().toLowerCase() });
     const invalidCodeMessage = 'Invalid or expired verification code.';
-    if (!user || !user.resetPasswordOtpHash || !user.resetPasswordOtpExpires || user.resetPasswordOtpExpires <= new Date()) {
-      return res.status(400).json({ message: invalidCodeMessage });
-    }
-
-    if (user.resetPasswordOtpAttempts >= 5) {
-      return res.status(400).json({ message: invalidCodeMessage });
-    }
-
-    const submittedHash = crypto.createHmac('sha256', JWT_SECRET)
-      .update(`${user._id}:${otp}`)
-      .digest('hex');
-    const submittedBuffer = Buffer.from(submittedHash, 'hex');
-    const storedBuffer = Buffer.from(user.resetPasswordOtpHash, 'hex');
-    if (submittedBuffer.length !== storedBuffer.length || !crypto.timingSafeEqual(submittedBuffer, storedBuffer)) {
-      const attemptsReachedLimit = user.resetPasswordOtpAttempts + 1 >= 5;
-      await User.updateOne(
-        {
-          _id: user._id,
-          resetPasswordOtpHash: user.resetPasswordOtpHash,
-          resetPasswordOtpExpires: { $gt: new Date() },
-          resetPasswordOtpAttempts: { $lt: 5 },
-        },
-        {
-          $inc: { resetPasswordOtpAttempts: 1 },
-          ...(attemptsReachedLimit ? { $set: { resetPasswordOtpHash: null, resetPasswordOtpExpires: null } } : {}),
-        }
-      );
-      return res.status(400).json({ message: invalidCodeMessage });
-    }
+    const user = await getUserWithValidResetOtp(email, otp);
+    if (!user) return res.status(400).json({ message: invalidCodeMessage });
 
     const saltRounds = 10;
     const updatedUser = await User.findOneAndUpdate(
