@@ -16,26 +16,32 @@ const touchUserActivity = async (userId) => {
   await User.findByIdAndUpdate(userId, { lastActiveAt: new Date() }, { returnDocument: 'after' });
 };
 
-const getTrashDateFilter = (period) => {
-  if (!period || period === 'all') return null;
+const getTrashDateFilter = ({ start, endExclusive, period }) => {
+  if (start && endExclusive) {
+    const startDate = new Date(start);
+    const endDate = new Date(endExclusive);
+    if (Number.isFinite(startDate.getTime()) && Number.isFinite(endDate.getTime()) && startDate < endDate) {
+      return { $gte: startDate, $lt: endDate };
+    }
+    return null;
+  }
 
+  if (!period || period === 'all') return null;
   const now = new Date();
-  const start = new Date(now);
+  const startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const todayStart = new Date(startDate);
+  const weekStart = new Date(todayStart);
+  weekStart.setDate(weekStart.getDate() - ((weekStart.getDay() + 6) % 7));
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const nowExclusive = new Date(now.getTime() + 1);
 
   if (period === 'today') {
-    start.setHours(0, 0, 0, 0);
-    return { $gte: start };
+    return { $gte: todayStart, $lt: nowExclusive };
   }
 
-  if (period === 'week') {
-    start.setDate(now.getDate() - 7);
-    return { $gte: start };
-  }
-
-  if (period === 'month') {
-    start.setDate(now.getDate() - 30);
-    return { $gte: start };
-  }
+  if (period === 'week') return { $gte: weekStart, $lt: nowExclusive };
+  if (period === 'month') return { $gte: monthStart, $lt: nowExclusive };
+  if (period === 'beforeMonth') return { $lt: monthStart };
 
   return null;
 };
@@ -344,7 +350,7 @@ export const clearTrash = async (req, res) => {
 
 export const getTrashTasks = async (req, res) => {
   try {
-    const { status, period } = req.query;
+    const { status, period, start, endExclusive } = req.query;
     const userId = getAuthenticatedUserId(req);
     if (!userId) {
       return res.status(400).json({ message: 'userId is required.' });
@@ -359,9 +365,9 @@ export const getTrashTasks = async (req, res) => {
       filter.status = status;
     }
 
-    const dateFilter = getTrashDateFilter(period);
+    const dateFilter = getTrashDateFilter({ start, endExclusive, period });
     if (dateFilter) {
-      filter.deletedAt = dateFilter;
+      filter.createdAt = dateFilter;
     }
 
     const tasks = await Task.find(filter).sort({ deletedAt: -1 });

@@ -15,7 +15,6 @@ const SignUpPage = () => {
   const [successMessage, setSuccessMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Validate password: 8-20 characters with letters and numbers
   const validatePassword = (pwd) => {
     const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z0-9]{8,20}$/;
     return passwordRegex.test(pwd);
@@ -45,10 +44,8 @@ const SignUpPage = () => {
       setIsSubmitting(true);
       await registerWithEmail(trimmedEmail, password);
 
-      // Success
       setSuccessMessage('Account created successfully! Redirecting to Sign In...');
 
-      // Wait 2s and go signin
       setTimeout(() => {
         navigate('/signin');
       }, 2000);
@@ -85,7 +82,6 @@ const SignUpPage = () => {
         </div>
 
         <form onSubmit={handleSubmit} className='space-y-4'>
-          {/* Email Input */}
           <label className='block text-sm font-medium text-slate-700 dark:text-slate-200'>
             {t.emailAddress || 'Email Address'}
             <div className='relative mt-2'>
@@ -104,7 +100,6 @@ const SignUpPage = () => {
             </div>
           </label>
 
-          {/* Password Input */}
           <label className='block text-sm font-medium text-slate-700 dark:text-slate-200'>
             Password
             <div className='relative mt-2'>
@@ -130,10 +125,8 @@ const SignUpPage = () => {
             </p>
           </label>
 
-          {/* Error Message */}
           {error ? <p className='text-sm text-rose-500'>{error}</p> : null}
 
-          {/* Success Message */}
           {successMessage ? (
             <div className='flex items-center gap-2 rounded-2xl bg-emerald-500/10 p-3 text-sm text-emerald-600 dark:text-emerald-400'>
               <CheckCircle2 className='h-5 w-5 flex-shrink-0' />
@@ -141,7 +134,6 @@ const SignUpPage = () => {
             </div>
           ) : null}
 
-          {/* Submit Button */}
           <button
             type='submit'
             disabled={isSubmitting || Boolean(successMessage)}
@@ -156,7 +148,6 @@ const SignUpPage = () => {
           </button>
         </form>
 
-        {/* Navigation to Login */}
         <div className='mt-6 text-center text-sm text-slate-500 dark:text-slate-400'>
           Already have an account?{' '}
           <Link

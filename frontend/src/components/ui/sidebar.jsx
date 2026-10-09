@@ -37,7 +37,6 @@ export function AppSidebar({ ...props }) {
 
       <SidebarContent>
         <SidebarMenu className="px-2">
-          {/* Trang chủ */}
           <SidebarMenuItem>
             <SidebarMenuButton asChild isActive={currentPath === "/"} tooltip="Home">
               <Link to="/">
@@ -47,7 +46,6 @@ export function AppSidebar({ ...props }) {
             </SidebarMenuButton>
           </SidebarMenuItem>
 
-          {/* Trang Premium */}
           <SidebarMenuItem>
             <SidebarMenuButton asChild isActive={currentPath === "/premium"} tooltip="Premium">
               <Link to="/premium">
@@ -57,7 +55,6 @@ export function AppSidebar({ ...props }) {
             </SidebarMenuButton>
           </SidebarMenuItem>
 
-          {/* Thùng rác */}
           <SidebarMenuItem>
             <SidebarMenuButton asChild isActive={currentPath === "/trash"} tooltip="Trash">
               <Link to="/trash">

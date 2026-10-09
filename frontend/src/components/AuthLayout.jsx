@@ -99,14 +99,9 @@ const AuthLayout = ({ children }) => {
       </AnimatePresence>
 
       <main className='flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(168,85,247,0.22),transparent_40%),linear-gradient(135deg,#f5f7fb,#eef2ff)] p-6 dark:bg-[radial-gradient(circle_at_top,_rgba(168,85,247,0.2),transparent_38%),linear-gradient(135deg,#0f172a,#111827)]'>
-        <motion.div
-          initial={{ opacity: 0, y: 18, scale: 0.985, filter: 'blur(5px)' }}
-          animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
-          transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-          className='flex w-full justify-center'
-        >
+        <div className='flex w-full justify-center'>
           {children}
-        </motion.div>
+        </div>
       </main>
     </div>
   );

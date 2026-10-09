@@ -28,11 +28,9 @@ const SignInPage = () => {
       
       const rawUser = res.data?.user || res.data;
 
-      // Clone user object and remove password safely to avoid storing sensitive data
       const safeUser = { ...(rawUser || {}) };
       delete safeUser.password;
 
-      // Save safe user info to localStorage
       localStorage.setItem('todo-user', JSON.stringify(safeUser));
       
       if (safeUser?.email) {
@@ -43,10 +41,8 @@ const SignInPage = () => {
         localStorage.setItem('token', res.data.token);
       }
 
-      // Notify components about auth state change
       window.dispatchEvent(new Event('todo-auth-changed'));
 
-      // Redirect to home page
       navigate('/home', { replace: true });
     } catch (requestError) {
       setError(
@@ -73,7 +69,6 @@ const SignInPage = () => {
         </div>
 
         <form onSubmit={handleSubmit} className='space-y-4'>
-          {/* Email Input */}
           <label className='block text-sm font-medium text-slate-700 dark:text-slate-200'>
             Email address
             <div className='relative mt-2'>
@@ -91,7 +86,6 @@ const SignInPage = () => {
             </div>
           </label>
 
-          {/* Password Input */}
           <label className='block text-sm font-medium text-slate-700 dark:text-slate-200'>
             Password
             <div className='relative mt-2'>
@@ -113,7 +107,6 @@ const SignInPage = () => {
             </div>
           </label>
 
-          {/* Forgot Password Link */}
           <div className='flex justify-end pt-1'>
             <Link
               to='/forgot-password'
@@ -123,10 +116,8 @@ const SignInPage = () => {
             </Link>
           </div>
 
-          {/* Error Message */}
           {error ? <p className='text-sm text-rose-500'>{error}</p> : null}
 
-          {/* Submit Button */}
           <button
             type='submit'
             disabled={isSubmitting}
@@ -137,7 +128,6 @@ const SignInPage = () => {
           </button>
         </form>
 
-        {/* Link to SignUp */}
         <div className='mt-6 text-center text-sm text-slate-500 dark:text-slate-400'>
           Don't have an account?{' '}
           <Link

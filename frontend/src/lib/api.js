@@ -1,6 +1,5 @@
 import axios from 'axios';
 
-// Lấy URL chuẩn không chứa dấu ngoặc vuông hay ký tự thừa
 const apiBaseUrl =
   import.meta.env.VITE_API_URL ||
   import.meta.env.VITE_API_BASE_URL ||
@@ -37,7 +36,6 @@ api.interceptors.response.use(
   }
 );
 
-// Auth APIs
 export const loginWithEmail = (email, password) => api.post('/auth/login', { email, password });
 
 export const registerWithEmail = (email, password) => api.post('/auth/register', { email, password });
@@ -48,7 +46,6 @@ export const verifyResetOtp = (email, otp) => api.post('/auth/verify-reset-otp',
 
 export const resetPassword = (email, otp, newPassword) => api.post('/auth/reset-password', { email, otp, newPassword });
 
-// Task APIs
 export const fetchTasks = (userId, contentType) => api.get('/tasks', { params: { userId, ...(contentType ? { contentType } : {}) } });
 
 export const createTask = ({ userId, title, contentType, content, items }) => api.post('/tasks', { userId, title, contentType, content, items });
@@ -65,6 +62,8 @@ export const fetchTrashTasks = (userId, filters = {}) =>
       userId,
       status: filters.status || 'all',
       period: filters.period || 'all',
+      ...(filters.start ? { start: filters.start } : {}),
+      ...(filters.endExclusive ? { endExclusive: filters.endExclusive } : {}),
     },
   });
 

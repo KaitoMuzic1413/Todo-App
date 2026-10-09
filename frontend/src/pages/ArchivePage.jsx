@@ -8,6 +8,7 @@ import TaskListPagination from '@/components/TaskListPagination';
 import DateTimeFilter from '@/components/DateTimeFilter';
 import { deleteAttachment, downloadAttachment, fetchAttachments, updateAttachment, uploadAttachment } from '@/lib/api';
 import { useLanguage } from '@/lib/i18n';
+import { getCreatedAtRange, isDateInRange } from '@/lib/dateFilters';
 
 const PAGE_SIZE = 5;
 
@@ -42,7 +43,6 @@ const ArchivePage = () => {
   const [zoomScale, setZoomScale] = useState(1);
   const [downloadedIds, setDownloadedIds] = useState(new Set());
   
-  // State quản lý tệp đang chờ xác nhận tải lại
   const [confirmDownloadItem, setConfirmDownloadItem] = useState(null);
 
   const imageContainerRef = useRef(null);
@@ -52,8 +52,8 @@ const ArchivePage = () => {
       const response = await fetchAttachments();
       const normalizedData = (response?.data || []).map(item => ({
         ...item,
-        createdAt: item.createdAt || item.updatedAt || new Date().toISOString(),
-        starttime: item.starttime || item.createdAt || new Date().toISOString(),
+        createdAt: item.createdAt || null,
+        starttime: item.starttime || item.createdAt || null,
       }));
       setAttachments(normalizedData);
     } catch {
@@ -102,13 +102,11 @@ const ArchivePage = () => {
     }
   };
 
-  // Hàm thực thi tải tệp xuống máy
   const processDownload = async (attachment) => {
     try {
       const response = await downloadAttachment(attachment._id);
       const fileName = attachment.originalName || 'download';
 
-      // Sử dụng API chọn thư mục hệ thống hiện đại nếu trình duyệt hỗ trợ để bắt chính xác hành động Lưu/Hủy
       if (window.showSaveFilePicker) {
         try {
           const handle = await window.showSaveFilePicker({ suggestedName: fileName });
@@ -131,7 +129,6 @@ const ArchivePage = () => {
         }
       }
 
-      // Fallback truyền thống
       const downloadUrl = URL.createObjectURL(response.data);
       const link = document.createElement('a');
       link.href = downloadUrl;
@@ -152,13 +149,10 @@ const ArchivePage = () => {
     }
   };
 
-  // Xử lý khi nhấn nút Tải xuống trên giao diện
   const handleDownloadClick = (attachment) => {
     if (downloadedIds.has(attachment._id)) {
-      // Nếu đã có trong danh sách đã tải -> Mở bảng xác nhận tải lại
       setConfirmDownloadItem(attachment);
     } else {
-      // Chưa tải lần nào -> Tải luôn
       processDownload(attachment);
     }
   };
@@ -220,22 +214,9 @@ const ArchivePage = () => {
     }
 
     if (timeFilter && timeFilter !== 'all') {
-      const now = new Date();
+      const range = getCreatedAtRange(timeFilter);
       nextItems = nextItems.filter((item) => {
-        const itemDate = new Date(item.createdAt || item.starttime);
-        if (isNaN(itemDate.getTime())) return true;
-
-        if (timeFilter === 'today') {
-          return itemDate.toDateString() === now.toDateString();
-        } else if (timeFilter === 'thisWeek') {
-          const startOfWeek = new Date(now);
-          startOfWeek.setDate(now.getDate() - now.getDay());
-          startOfWeek.setHours(0, 0, 0, 0);
-          return itemDate >= startOfWeek;
-        } else if (timeFilter === 'thisMonth') {
-          return itemDate.getMonth() === now.getMonth() && itemDate.getFullYear() === now.getFullYear();
-        }
-        return true;
+        return isDateInRange(item.createdAt, range);
       });
     }
 
@@ -381,7 +362,6 @@ const ArchivePage = () => {
           />
         </div>
 
-        {/* Modal Xác nhận tải lại tệp nếu đã tồn tại trạng thái Downloaded */}
         {confirmDownloadItem && (
           <div className='fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm' onClick={() => setConfirmDownloadItem(null)}>
             <div className='w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl dark:bg-slate-900' onClick={(e) => e.stopPropagation()}>

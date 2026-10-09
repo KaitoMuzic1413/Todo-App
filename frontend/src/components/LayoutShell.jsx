@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, animate, motion, useMotionValue, useTransform } from 'framer-motion';
 import { ChevronLeft, Globe, Archive, ClipboardList, FileText, LogOut, Mail, Moon, SunMedium, X, Home, Trash2 } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n';
 
 const SIDEBAR_WIDTH = 320;
 const EDGE_WIDTH = 35;
+const getSidebarWidth = () => typeof window === 'undefined'
+  ? SIDEBAR_WIDTH
+  : Math.min(SIDEBAR_WIDTH, window.innerWidth * 0.88);
 
 const getStoredUser = () => {
   if (typeof window === 'undefined') return null;
@@ -29,9 +32,13 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
   });
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const signInNavigationTimer = useRef(null);
-  const [sidebarOffset, setSidebarOffset] = useState(-SIDEBAR_WIDTH);
+  const navigationTimer = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
+  const sidebarX = useMotionValue(-getSidebarWidth());
+  const backdropOpacity = useTransform(sidebarX, (offset) => {
+    const width = getSidebarWidth();
+    return Math.max(0, Math.min(1, (width + offset) / width));
+  });
 
   const [currentUser, setCurrentUser] = useState(getStoredUser);
 
@@ -39,11 +46,10 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
   const startOffset = useRef(-SIDEBAR_WIDTH);
-  const currentOffset = useRef(-SIDEBAR_WIDTH);
+  const currentOffset = useRef(-getSidebarWidth());
   const isEligibleSwipe = useRef(false);
   const isHorizontalSwipe = useRef(false);
 
-  // Contact is always available, other items only if authenticated
   const navItems = [
     { name: t.contact, to: '/about' },
     ...(currentUser ? [
@@ -56,9 +62,9 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
   ];
 
   const handleNavClick = (to) => {
-    if (signInNavigationTimer.current) {
-      window.clearTimeout(signInNavigationTimer.current);
-      signInNavigationTimer.current = null;
+    if (navigationTimer.current) {
+      window.clearTimeout(navigationTimer.current);
+      navigationTimer.current = null;
     }
 
     if (location.pathname === to) {
@@ -68,23 +74,26 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
 
     setIsSidebarOpen(false);
 
-    // Give the sidebar time to begin closing before switching to the sign-in page.
-    if (to === '/signin') {
-      signInNavigationTimer.current = window.setTimeout(() => {
-        navigate(to);
-        signInNavigationTimer.current = null;
-      }, 300);
-      return;
-    }
-
-    navigate(to);
+    navigationTimer.current = window.setTimeout(() => {
+      navigate(to);
+      navigationTimer.current = null;
+    }, 450);
   };
 
   useEffect(() => () => {
-    if (signInNavigationTimer.current) {
-      window.clearTimeout(signInNavigationTimer.current);
+    if (navigationTimer.current) {
+      window.clearTimeout(navigationTimer.current);
     }
   }, []);
+
+  useEffect(() => {
+    if (!isSidebarOpen || isDragging) return undefined;
+    const controls = animate(sidebarX, 0, {
+      duration: 0.45,
+      ease: [0.16, 1, 0.3, 1],
+    });
+    return () => controls.stop();
+  }, [isSidebarOpen, isDragging, sidebarX]);
 
   useEffect(() => {
     if ((isSidebarOpen || isDragging) && window.innerWidth < 1024) {
@@ -114,7 +123,7 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
         isHorizontalSwipe.current = false;
         touchStartX.current = touchX;
         touchStartY.current = touchY;
-        startOffset.current = isSidebarOpen ? 0 : -SIDEBAR_WIDTH;
+        startOffset.current = isSidebarOpen ? 0 : -getSidebarWidth();
         currentOffset.current = startOffset.current;
       } else {
         isEligibleSwipe.current = false;
@@ -137,7 +146,13 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
         }
 
         if (Math.abs(deltaX) <= 6) return;
+        if ((!isSidebarOpen && deltaX < 0) || (isSidebarOpen && deltaX > 0)) {
+          isEligibleSwipe.current = false;
+          return;
+        }
         isHorizontalSwipe.current = true;
+        setIsDragging(true);
+        if (!isSidebarOpen) setIsSidebarOpen(true);
       }
 
       if (event.cancelable) {
@@ -145,13 +160,13 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
       }
 
       let nextOffset = startOffset.current + deltaX;
+      const sidebarWidth = getSidebarWidth();
 
       if (nextOffset > 0) nextOffset = 0;
-      if (nextOffset < -SIDEBAR_WIDTH) nextOffset = -SIDEBAR_WIDTH;
+      if (nextOffset < -sidebarWidth) nextOffset = -sidebarWidth;
 
-      setIsDragging(true);
       currentOffset.current = nextOffset;
-      setSidebarOffset(nextOffset);
+      sidebarX.set(nextOffset);
     };
 
     const handleTouchEnd = () => {
@@ -160,27 +175,28 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
       setIsDragging(false);
       isEligibleSwipe.current = false;
 
-      const threshold = -SIDEBAR_WIDTH * 0.7;
+      const threshold = -getSidebarWidth() * 0.7;
 
       if (currentOffset.current > threshold) {
         setIsSidebarOpen(true);
-        setSidebarOffset(0);
       } else {
         setIsSidebarOpen(false);
-        setSidebarOffset(-SIDEBAR_WIDTH);
       }
+      setIsDragging(false);
     };
 
     shell.addEventListener('touchstart', handleTouchStart, { passive: true });
     shell.addEventListener('touchmove', handleTouchMove, { passive: false });
     shell.addEventListener('touchend', handleTouchEnd, { passive: true });
+    shell.addEventListener('touchcancel', handleTouchEnd, { passive: true });
 
     return () => {
       shell.removeEventListener('touchstart', handleTouchStart);
       shell.removeEventListener('touchmove', handleTouchMove);
       shell.removeEventListener('touchend', handleTouchEnd);
+      shell.removeEventListener('touchcancel', handleTouchEnd);
     };
-  }, [isSidebarOpen]);
+  }, [isSidebarOpen, sidebarX]);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', darkMode);
@@ -196,22 +212,18 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
   const handleLogout = () => {
     setIsSidebarOpen(false);
     setTimeout(() => {
-      // 1. Xóa sạch dữ liệu đăng nhập
       localStorage.removeItem('todo-user');
       localStorage.removeItem('todo-user-email');
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       sessionStorage.clear();
 
-      // 2. Reset state nội bộ
       setCurrentUser(null);
 
-      // 3. Bắn event thông báo thay đổi auth
       emitAuthChange();
 
-      // 4. CHUYỂN HƯỚNG VỀ TRANG SIGN IN
       navigate('/signin', { replace: true });
-    }, 700);
+    }, 450);
   };
 
   const userEmail = currentUser?.email || '';
@@ -235,31 +247,20 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
           <>
             <motion.div
               key='backdrop'
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-              className='fixed inset-0 z-20 bg-slate-950/40 backdrop-blur-xs lg:hidden'
+              initial={false}
+              style={{ opacity: backdropOpacity }}
+              className='fixed inset-0 z-20 bg-slate-950/40 backdrop-blur-none md:backdrop-blur-xs lg:hidden'
               onClick={() => setIsSidebarOpen(false)}
               aria-hidden='true'
             />
 
             <motion.aside
               key='sidebar'
-              initial={{ x: -SIDEBAR_WIDTH, opacity: 0, filter: 'blur(5px)' }}
-              animate={{
-                x: isDragging ? sidebarOffset : 0,
-                opacity: 1,
-                filter: 'blur(0px)',
-              }}
-              exit={{ x: -SIDEBAR_WIDTH, opacity: 0, filter: 'blur(5px)' }}
-              transition={
-                isDragging
-                  ? { duration: 0 }
-                  : { duration: 0.45, ease: [0.16, 1, 0.3, 1] }
-              }
-              className='fixed left-0 top-0 z-30 flex h-screen h-[100dvh] w-[320px] flex-col border-r border-slate-200/80 bg-white/80 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/80'
-              style={{ touchAction: 'none' }}
+              initial={false}
+              exit={{ x: -getSidebarWidth(), opacity: 0 }}
+              transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+              className='fixed left-0 top-0 z-30 flex h-screen h-[100dvh] w-[min(320px,88vw)] flex-col border-r border-slate-200/80 bg-white/95 dark:border-slate-800 dark:bg-slate-950/95 md:bg-white/80 md:backdrop-blur-xl md:dark:bg-slate-950/80'
+              style={{ x: sidebarX, touchAction: 'none' }}
             >
               <div className='flex shrink-0 items-center justify-between border-b border-slate-200/80 bg-white/60 p-4 dark:border-slate-800 dark:bg-slate-950/60'>
                 <div className='flex items-center gap-3 rounded-2xl bg-slate-100/80 px-3 py-3 shadow-sm dark:bg-slate-900'>
@@ -416,18 +417,8 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
       </AnimatePresence>
 
       <main className={`min-h-screen transition-all duration-[450ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${isSidebarOpen ? 'lg:ml-[320px]' : 'lg:ml-0'}`}>
-        <div className='mx-auto max-w-5xl px-4 py-8 sm:px-6'>
-          <AnimatePresence mode='wait'>
-            <motion.div
-              key={location.pathname}
-              initial={{ opacity: 0, y: 16, filter: 'blur(4px)' }}
-              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-              exit={{ opacity: 0, y: -16, filter: 'blur(4px)' }}
-              transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-            >
-              {children}
-            </motion.div>
-          </AnimatePresence>
+        <div className='mx-auto max-w-6xl px-4 py-8 sm:px-6'>
+          {children}
         </div>
       </main>
     </div>

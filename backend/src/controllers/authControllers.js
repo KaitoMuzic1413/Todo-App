@@ -8,7 +8,6 @@ const JWT_SECRET = process.env.JWT_SECRET || 'SECRET_KEY';
 const JWT_EXPIRES_IN = '30d';
 const PASSWORD_RESET_MESSAGE = 'If an account exists for that email, a password reset code has been sent.';
 
-// 1. Controller Đăng ký
 export const register = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -59,7 +58,6 @@ export const register = async (req, res) => {
   }
 };
 
-// 2. Controller Đăng nhập
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -156,7 +154,6 @@ export const verifyResetOtp = async (req, res) => {
   }
 };
 
-// 3. Controller Quên mật khẩu (Gửi email)
 export const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
@@ -213,7 +210,6 @@ export const forgotPassword = async (req, res) => {
   }
 };
 
-// 4. Controller Đặt lại mật khẩu mới
 export const resetPassword = async (req, res) => {
   try {
     const { email, otp, newPassword } = req.body;

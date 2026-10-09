@@ -14,6 +14,8 @@ import {
 import { useLanguage } from '@/lib/i18n';
 import { Check, FileArchive, RotateCcw, Trash2, X } from 'lucide-react';
 import TaskListPagination from '@/components/TaskListPagination';
+import DateTimeFilter from '@/components/DateTimeFilter';
+import { getCreatedAtRange, isDateInRange } from '@/lib/dateFilters';
 
 const PAGE_SIZE = 5;
 
@@ -58,12 +60,21 @@ const TrashPage = () => {
     const loadTrash = async () => {
       try {
         setLoading(true);
+        const dateRange = getCreatedAtRange(periodFilter);
         const [taskResponse, attachmentResponse] = await Promise.all([
-          fetchTrashTasks(currentUser._id, { status: statusFilter, period: periodFilter }),
+          fetchTrashTasks(currentUser._id, {
+            status: statusFilter,
+            period: periodFilter,
+            start: dateRange?.start?.toISOString(),
+            endExclusive: dateRange?.endExclusive?.toISOString(),
+          }),
           fetchTrashAttachments(),
         ]);
         setTasks(taskResponse.data || []);
-        setAttachments(attachmentResponse.data || []);
+        const trashAttachments = attachmentResponse.data || [];
+        setAttachments(dateRange
+          ? trashAttachments.filter((attachment) => isDateInRange(attachment.createdAt, dateRange))
+          : trashAttachments);
         setPage(1);
         setSelectedTaskIds([]);
         setIsSelectMode(false);
@@ -201,13 +212,6 @@ const TrashPage = () => {
     { key: 'active', label: t.statusPending },
   ];
 
-  const periodOptions = [
-    { key: 'all', label: t.allTime },
-    { key: 'today', label: t.today },
-    { key: 'week', label: t.thisWeek },
-    { key: 'month', label: t.thisMonth },
-  ];
-
   const formatDate = (dateString) => {
     if (!dateString) return '';
     const date = new Date(dateString);
@@ -281,30 +285,7 @@ const TrashPage = () => {
               <p className='mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400'>
                 {t.period || 'Time Period'}
               </p>
-              <div className='relative inline-grid w-full grid-cols-4 gap-2 rounded-full bg-slate-100 p-1 dark:bg-slate-800 sm:w-auto'>
-                <div
-                  className='pointer-events-none absolute inset-y-1 rounded-full bg-violet-600 shadow-[0_12px_30px_rgba(124,58,237,0.35)] transition-all duration-300 ease-out'
-                  style={{
-                    width: `calc(${100 / 4}% - 0.5rem)`,
-                    left: `calc(${Math.max(0, ['all', 'today', 'week', 'month'].indexOf(periodFilter)) * (100 / 4)}% + 0.25rem)`,
-                  }}
-                />
-
-                {periodOptions.map(({ key, label }) => (
-                  <button
-                    key={key}
-                    type='button'
-                    onClick={() => setPeriodFilter(key)}
-                    className={`relative z-10 cursor-pointer rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
-                      periodFilter === key
-                        ? 'text-white'
-                        : 'text-slate-600 hover:text-slate-900 dark:text-slate-200 dark:hover:text-white'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
+              <DateTimeFilter value={periodFilter} onChange={setPeriodFilter} />
             </div>
           </div>
         </header>

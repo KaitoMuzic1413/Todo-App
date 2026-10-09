@@ -36,18 +36,15 @@ app.use(async (req, res, next) => {
   }
 });
 
-// 1. Root route kiểm tra Server
 app.get("/", (req, res) => {
   res.status(200).json({ message: "API Server is running..." });
 });
 
-// 2. Routes chính
 app.use("/api/auth", authRoute);
 app.use("/api/users", userRoute);
 app.use("/api/tasks", taskRoute);
 app.use("/api/attachments", attachmentRoute);
 
-// 3. Middleware bắt tất cả route không tồn tại (404 Handler)
 app.use((req, res) => {
   res.status(404).json({
     message: `Cannot ${req.method} ${req.originalUrl} - Route not found`,
@@ -69,7 +66,6 @@ const runMaintenanceJobs = async () => {
   }
 };
 
-// Kiểm tra nếu không phải môi trường Serverless (Vercel) thì khởi chạy app.listen
 if (!process.env.VERCEL) {
   const startMaintenanceJobs = () => {
     runMaintenanceJobs();
@@ -83,5 +79,4 @@ if (!process.env.VERCEL) {
   });
 }
 
-// Export app để Vercel Serverless Function có thể sử dụng
 export default app;

@@ -4,12 +4,12 @@ import { useLanguage } from '@/lib/i18n';
 const DateTimeFilter = ({ value = 'all', onChange, isArchive = false }) => {
   const { t } = useLanguage();
 
-  // Đổi thứ tự mảng filters nếu là trang archive
   const filters = isArchive
     ? [
         { key: 'today', label: t.today || 'Today' },
         { key: 'week', label: t.thisWeek || 'This Week' },
         { key: 'month', label: t.thisMonth || 'This Month' },
+        { key: 'beforeMonth', label: t.beforeThisMonth || 'Earlier' },
         { key: 'all', label: t.allTime || t.all || 'All time' },
       ]
     : [
@@ -17,45 +17,35 @@ const DateTimeFilter = ({ value = 'all', onChange, isArchive = false }) => {
         { key: 'today', label: t.today || 'Today' },
         { key: 'week', label: t.thisWeek || 'This Week' },
         { key: 'month', label: t.thisMonth || 'This Month' },
+        { key: 'beforeMonth', label: t.beforeThisMonth || 'Earlier' },
       ];
-
-  const activeIndex = filters.findIndex((filter) => filter.key === value);
-  const activeTrackStyle =
-    activeIndex < 0
-      ? { opacity: 0 }
-      : {
-          width: 'calc((100% - 0.5rem) / 4)',
-          transform: `translateX(${activeIndex * 100}%)`,
-          left: '0.25rem',
-        };
 
   const handleSelect = (nextValue) => {
     onChange?.(nextValue);
   };
 
   return (
-    <div className='flex w-full flex-col items-stretch gap-2 rounded-full border border-slate-200 bg-white/80 px-3 py-2 shadow-sm sm:w-auto sm:flex-row sm:items-center dark:border-slate-700 dark:bg-slate-900/70'>
+    <div className='flex w-full flex-col items-center gap-2 rounded-2xl border border-slate-200 bg-white/80 px-3 py-2 shadow-sm sm:w-auto sm:flex-row sm:rounded-full sm:items-center dark:border-slate-700 dark:bg-slate-900/70'>
       <div className='flex items-center justify-center sm:justify-start'>
         <CalendarDays className='h-4 w-4 text-violet-500' />
       </div>
 
-      <div className='relative grid w-full grid-cols-4 gap-1 rounded-full bg-slate-100 p-1 text-sm sm:w-auto dark:bg-slate-800'>
-        <div
-          className='pointer-events-none absolute inset-y-1 rounded-full bg-violet-600 shadow-[0_12px_30px_rgba(124,58,237,0.30)] transition-transform duration-300 ease-out'
-          style={activeTrackStyle}
-        />
-
-        {filters.map((filter) => (
+      <div className='grid w-full grid-cols-6 gap-1 rounded-2xl bg-slate-100 p-1 text-sm dark:bg-slate-800 sm:w-[560px] sm:grid-cols-5 sm:rounded-full'>
+        {filters.map((filter, index) => (
           <button
             key={filter.key}
             type='button'
             aria-pressed={value === filter.key}
             onClick={() => handleSelect(filter.key)}
-            className={`relative z-10 flex min-w-0 items-center justify-center rounded-full px-2 py-1.5 text-center text-[11px] transition-all sm:text-sm ${
-              value === filter.key ? 'text-white' : 'text-slate-600 dark:text-slate-200'
+            className={`col-span-2 flex min-w-0 items-center justify-center rounded-full px-1 py-2 text-center text-[11px] leading-tight transition-colors sm:col-span-1 sm:px-2 sm:py-1.5 sm:text-sm ${
+              index === 3 ? 'col-start-2 sm:col-start-auto' : ''
+            } ${
+              index === 4 ? 'col-start-4 sm:col-start-auto' : ''
+            } ${
+              value === filter.key ? 'bg-violet-600 text-white shadow-sm' : 'text-slate-600 dark:text-slate-200'
             }`}
           >
-            <span className='truncate'>{filter.label}</span>
+            <span className='line-clamp-2'>{filter.label}</span>
           </button>
         ))}
       </div>

@@ -10,6 +10,7 @@ import StatsAndFilters from '@/components/StatsAndFilters';
 import TaskList from '@/components/TaskList';
 import TaskListPagination from '@/components/TaskListPagination';
 import { createTask, deleteTask, fetchTasks, toggleTaskStatus, updateTask } from '@/lib/api';
+import { getCreatedAtRange, isDateInRange } from '@/lib/dateFilters';
 
 const PAGE_SIZE = 5;
 
@@ -25,53 +26,14 @@ const getStoredUser = () => {
 };
 
 const getDateRange = (value) => {
-  const now = new Date();
-
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-  const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
-
-  if (!value || value === 'all') {
-    return null;
-  }
-
-  if (value === 'today') {
-    return { start: startOfToday, end: endOfToday };
-  }
-
-  const dayOfWeek = now.getDay();
-  if (value === 'week') {
-    const diffToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-    const startOfWeek = new Date(startOfToday);
-    startOfWeek.setDate(startOfToday.getDate() - diffToMonday);
-
-    return { start: startOfWeek, end: endOfToday };
-  }
-
-  if (value === 'month') {
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
-    return { start: startOfMonth, end: endOfToday };
-  }
-
-  return null;
+  return getCreatedAtRange(value);
 };
 
 const taskMatchesDateRange = (task, value) => {
   const range = getDateRange(value);
   if (!range) return true;
 
-  const { start, end } = range;
-
-  if (start && end && start > end) return false;
-
-  const candidateDates = [task?.createdAt, task?.updatedAt, task?.completedAt].filter(Boolean);
-
-  return candidateDates.some((dateValue) => {
-    const date = new Date(dateValue);
-    if (Number.isNaN(date.getTime())) {
-      return false;
-    }
-    return date >= start && date <= end;
-  });
+  return isDateInRange(task?.createdAt, range);
 };
 
 const HomePage = ({ contentType = 'task' }) => {

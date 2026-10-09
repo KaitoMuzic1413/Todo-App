@@ -16,10 +16,8 @@ const ForgotPasswordPage = () => {
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
-    // 1. Chặn tuyệt đối hành vi submit/reload mặc định của trình duyệt
     if (e) e.preventDefault();
 
-    // 2. Không cho phép gửi trùng request khi đang chờ xử lý
     if (loading) return;
 
     setError('');
@@ -44,7 +42,6 @@ const ForgotPasswordPage = () => {
         setNewPassword('');
       }
     } catch (err) {
-      // Lấy thông báo lỗi từ server hoặc fallback báo lỗi chung
       const errorMsg =
         err?.response?.data?.message ||
         err?.message ||
