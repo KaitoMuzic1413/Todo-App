@@ -21,6 +21,10 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    inactiveDeletionNoticeSentAt: {
+      type: Date,
+      default: null,
+    },
     sessionVersion: {
       type: Number,
       default: 0,
@@ -34,12 +38,19 @@ const userSchema = new mongoose.Schema(
       expiresAt: { type: Date, default: null },
       unlimitedUntil: { type: Date, default: null },
     },
-    // Các trường phục vụ Quên / Đặt lại mật khẩu
-    resetPasswordTokenHash: {
+    resetPasswordOtpHash: {
       type: String,
       default: null,
     },
-    resetPasswordExpires: {
+    resetPasswordOtpExpires: {
+      type: Date,
+      default: null,
+    },
+    resetPasswordOtpAttempts: {
+      type: Number,
+      default: 0,
+    },
+    resetPasswordOtpRequestedAt: {
       type: Date,
       default: null,
     },

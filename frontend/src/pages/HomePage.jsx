@@ -29,7 +29,6 @@ const getDateRange = (value) => {
 
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
   const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
-  const endOfYesterday = new Date(startOfToday.getTime() - 1);
 
   if (!value || value === 'all') {
     return null;
@@ -41,38 +40,16 @@ const getDateRange = (value) => {
 
   const dayOfWeek = now.getDay();
   if (value === 'week') {
-    if (dayOfWeek === 1) {
-      const startOfLastWeek = new Date(startOfToday);
-      startOfLastWeek.setDate(startOfToday.getDate() - 7);
-
-      return { start: startOfLastWeek, end: endOfYesterday };
-    }
-
     const diffToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
     const startOfWeek = new Date(startOfToday);
     startOfWeek.setDate(startOfToday.getDate() - diffToMonday);
 
-    return { start: startOfWeek, end: endOfYesterday };
+    return { start: startOfWeek, end: endOfToday };
   }
 
   if (value === 'month') {
-    const isFirstDayOfMonth = now.getDate() === 1;
-
-    if (isFirstDayOfMonth) {
-      const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0);
-      return { start: startOfLastMonth, end: endOfYesterday };
-    }
-
-    const diffToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-    const startOfWeek = new Date(startOfToday);
-    startOfWeek.setDate(startOfToday.getDate() - diffToMonday);
-
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
-    const endOfPriorWeek = new Date(startOfWeek.getTime() - 1);
-
-    const endRange = endOfPriorWeek < startOfMonth ? endOfYesterday : endOfPriorWeek;
-
-    return { start: startOfMonth, end: endRange };
+    return { start: startOfMonth, end: endOfToday };
   }
 
   return null;
@@ -144,21 +121,21 @@ const HomePage = ({ contentType = 'task' }) => {
   const toggleTaskMutation = useMutation({
     mutationFn: (taskId) => toggleTaskStatus(taskId, currentUser._id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks', currentUser?._id] });
+      queryClient.invalidateQueries({ queryKey: ['tasks', currentUser?._id, contentType] });
     },
   });
 
   const deleteTaskMutation = useMutation({
     mutationFn: (taskId) => deleteTask(taskId, currentUser._id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks', currentUser?._id] });
+      queryClient.invalidateQueries({ queryKey: ['tasks', currentUser?._id, contentType] });
     },
   });
 
   const updateTaskMutation = useMutation({
     mutationFn: ({ taskId, body }) => updateTask(taskId, currentUser._id, body),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks', currentUser?._id] });
+      queryClient.invalidateQueries({ queryKey: ['tasks', currentUser?._id, contentType] });
     },
   });
 
@@ -195,6 +172,8 @@ const HomePage = ({ contentType = 'task' }) => {
 
     if (filterKey === 'important') {
       nextTasks = nextTasks.filter((task) => !!task.important);
+    } else if (filterKey === 'pinned') {
+      nextTasks = nextTasks.filter((task) => !!task.pinned || task.status === 'pinned');
     } else if (filterKey === 'completed') {
       nextTasks = nextTasks.filter((task) => task.status === 'complete');
     } else if (filterKey === 'pending') {
@@ -231,12 +210,13 @@ const HomePage = ({ contentType = 'task' }) => {
         <AddTask onAdd={handleAddTask} contentType={contentType} />
 
         <StatsAndFilters
-          tasks={filteredTasks}
+          tasks={tasks}
           activeFilter={filterKey}
           onFilterChange={(key) => {
             setFilterKey(key);
             setCurrentPage(1);
           }}
+          contentType={contentType}
         />
 
         {isLoading ? (
@@ -248,11 +228,15 @@ const HomePage = ({ contentType = 'task' }) => {
             <TaskList
               title={
                 filterKey === 'important'
-                  ? 'Important Tasks'
+                  ? 'Important'
+                  : filterKey === 'pinned'
+                  ? 'Pinned Files'
                   : filterKey === 'completed'
                   ? 'Completed Tasks'
                   : filterKey === 'pending'
                   ? 'Pending Tasks'
+                  : contentType === 'archive'
+                  ? 'All Files'
                   : contentType === 'note'
                   ? 'Notes'
                   : contentType === 'list'
@@ -282,6 +266,7 @@ const HomePage = ({ contentType = 'task' }) => {
               setTimeFilter(value);
               setCurrentPage(1);
             }}
+            isArchive={contentType === 'archive'}
           />
         </div>
 

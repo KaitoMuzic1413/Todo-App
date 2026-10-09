@@ -52,22 +52,23 @@ const AnimatedNumber = ({ value }) => {
   );
 };
 
-const StatsAndFilters = ({ tasks = [], onFilterChange, activeFilter = 'all' }) => {
+const StatsAndFilters = ({ tasks = [], onFilterChange, activeFilter = 'all', customFilters, customStats }) => {
   const { t } = useLanguage();
 
-  const filters = [
+  const defaultFilters = [
     { key: 'all', label: t.allTasks || 'All tasks' },
     { key: 'important', label: t.important || 'Important' },
     { key: 'pending', label: t.statusPending || 'Pending' },
     { key: 'completed', label: t.statusCompleted || 'Completed' },
   ];
+  const filters = customFilters?.map(([key, label]) => ({ key, label })) || defaultFilters;
 
   const total = tasks.length;
   const importantCount = tasks.filter((task) => task.important).length;
   const completed = tasks.filter((task) => task.status === 'complete').length;
   const pending = total - completed;
 
-  const stats = [
+  const stats = customStats || [
     { label: t.total || 'Total', value: total, tone: 'violet' },
     { label: t.important || 'Important', value: importantCount, tone: 'amber' },
     { label: t.statusPending || 'Pending', value: pending, tone: 'sky' },
@@ -82,7 +83,7 @@ const StatsAndFilters = ({ tasks = [], onFilterChange, activeFilter = 'all' }) =
 
   return (
     <div className='space-y-4 rounded-[28px] border border-slate-200/80 bg-white/80 p-4 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/70'>
-      <div className='grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3'>
+      <div className={`grid grid-cols-2 gap-2 sm:gap-3 ${stats.length === 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-4'}`}>
         {stats.map(({ label, value, tone }) => (
           <div
             key={label}
@@ -122,7 +123,7 @@ const StatsAndFilters = ({ tasks = [], onFilterChange, activeFilter = 'all' }) =
         ))}
       </div>
 
-      <div className='relative grid w-full grid-cols-4 rounded-full bg-slate-100 p-1 dark:bg-slate-800'>
+      <div className='relative grid w-full rounded-full bg-slate-100 p-1 dark:bg-slate-800' style={{ gridTemplateColumns: `repeat(${filters.length}, minmax(0, 1fr))` }}>
         <div
           className='pointer-events-none absolute inset-y-1 rounded-full bg-violet-600 shadow-[0_12px_30px_rgba(124,58,237,0.35)] transition-all duration-300 ease-out'
           style={activeTrackStyle}

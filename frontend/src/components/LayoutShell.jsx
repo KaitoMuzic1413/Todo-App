@@ -29,6 +29,7 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
   });
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const signInNavigationTimer = useRef(null);
   const [sidebarOffset, setSidebarOffset] = useState(-SIDEBAR_WIDTH);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -42,24 +43,48 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
   const isEligibleSwipe = useRef(false);
   const isHorizontalSwipe = useRef(false);
 
+  // Contact is always available, other items only if authenticated
   const navItems = [
-    { name: t.home, to: '/home' },
-    { name: t.lists, to: '/lists' },
-    { name: t.notes, to: '/notes' },
-    { name: t.archive, to: '/archive' },
-    { name: t.trash, to: '/trash' },
     { name: t.contact, to: '/about' },
+    ...(currentUser ? [
+      { name: t.home, to: '/home' },
+      { name: t.lists, to: '/lists' },
+      { name: t.notes, to: '/notes' },
+      { name: t.archive, to: '/archive' },
+      { name: t.trash, to: '/trash' },
+    ] : [])
   ];
 
   const handleNavClick = (to) => {
+    if (signInNavigationTimer.current) {
+      window.clearTimeout(signInNavigationTimer.current);
+      signInNavigationTimer.current = null;
+    }
+
     if (location.pathname === to) {
       setIsSidebarOpen(false);
       return;
     }
 
     setIsSidebarOpen(false);
+
+    // Give the sidebar time to begin closing before switching to the sign-in page.
+    if (to === '/signin') {
+      signInNavigationTimer.current = window.setTimeout(() => {
+        navigate(to);
+        signInNavigationTimer.current = null;
+      }, 300);
+      return;
+    }
+
     navigate(to);
   };
+
+  useEffect(() => () => {
+    if (signInNavigationTimer.current) {
+      window.clearTimeout(signInNavigationTimer.current);
+    }
+  }, []);
 
   useEffect(() => {
     if ((isSidebarOpen || isDragging) && window.innerWidth < 1024) {
@@ -194,7 +219,7 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
 
   return (
     <div ref={shellRef} className='min-h-screen overflow-x-hidden bg-[#f5f7fb] text-slate-900 transition-colors duration-500 dark:bg-[#0f172a] dark:text-slate-50'>
-      <div className={`fixed left-0 top-0 z-40 flex items-center transition-opacity duration-500 ${isSidebarOpen ? 'pointer-events-none opacity-0' : 'opacity-100'}`}>
+      <div className={`fixed left-0 top-0 z-40 flex items-center transition-opacity duration-[450ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${isSidebarOpen ? 'pointer-events-none opacity-0' : 'opacity-100'}`}>
         <button
           type='button'
           onClick={() => setIsSidebarOpen(true)}
@@ -213,7 +238,7 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
               className='fixed inset-0 z-20 bg-slate-950/40 backdrop-blur-xs lg:hidden'
               onClick={() => setIsSidebarOpen(false)}
               aria-hidden='true'
@@ -221,13 +246,17 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
 
             <motion.aside
               key='sidebar'
-              initial={{ x: -SIDEBAR_WIDTH }}
-              animate={{ x: isDragging ? sidebarOffset : 0 }}
-              exit={{ x: -SIDEBAR_WIDTH }}
+              initial={{ x: -SIDEBAR_WIDTH, opacity: 0, filter: 'blur(5px)' }}
+              animate={{
+                x: isDragging ? sidebarOffset : 0,
+                opacity: 1,
+                filter: 'blur(0px)',
+              }}
+              exit={{ x: -SIDEBAR_WIDTH, opacity: 0, filter: 'blur(5px)' }}
               transition={
                 isDragging
                   ? { duration: 0 }
-                  : { duration: 0.7, ease: [0.16, 1, 0.3, 1] }
+                  : { duration: 0.45, ease: [0.16, 1, 0.3, 1] }
               }
               className='fixed left-0 top-0 z-30 flex h-screen h-[100dvh] w-[320px] flex-col border-r border-slate-200/80 bg-white/80 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/80'
               style={{ touchAction: 'none' }}
@@ -372,7 +401,7 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
                     >
                       <button
                         type='button'
-                        onClick={() => navigate('/signin')}
+                        onClick={() => handleNavClick('/signin')}
                         className='inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-500 to-indigo-500 px-3 py-2.5 text-sm font-semibold text-white shadow-md shadow-violet-200 transition-transform disabled:opacity-60 dark:shadow-violet-900/30'
                       >
                         {t.signIn}
@@ -386,7 +415,7 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
         )}
       </AnimatePresence>
 
-      <main className={`min-h-screen transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${isSidebarOpen ? 'lg:ml-[320px]' : 'lg:ml-0'}`}>
+      <main className={`min-h-screen transition-all duration-[450ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${isSidebarOpen ? 'lg:ml-[320px]' : 'lg:ml-0'}`}>
         <div className='mx-auto max-w-5xl px-4 py-8 sm:px-6'>
           <AnimatePresence mode='wait'>
             <motion.div

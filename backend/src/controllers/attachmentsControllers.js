@@ -3,7 +3,7 @@ import Attachment from '../models/Attachment.js';
 import Task from '../models/Task.js';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
-const ALLOWED_TYPES = /^(image\/(jpeg|png|gif|webp)|application\/pdf|text\/plain|text\/markdown)$/;
+const ALLOWED_TYPES = /^(image\/(jpeg|png|gif|webp)|video\/(mp4|webm|quicktime)|audio\/(mpeg|wav|ogg|webm)|application\/pdf|text\/plain|text\/markdown)$/;
 
 const getOwnerId = (req) => req.user?.userId;
 
@@ -27,11 +27,14 @@ export const deleteAttachmentRecords = async ({ taskId, ownerId }) => {
 export const uploadAttachment = async (req, res) => {
   try {
     const ownerId = getOwnerId(req);
-    const { taskId = null } = req.body;
+    const { taskId = null, title = '', description = '' } = req.body;
     const file = req.file;
 
     if (!ownerId || !file) {
       return res.status(400).json({ message: 'A file is required.' });
+    }
+    if (!title.trim()) {
+      return res.status(400).json({ message: 'Image title is required.' });
     }
 
     if (taskId && !mongoose.isValidObjectId(taskId)) {
@@ -67,6 +70,8 @@ export const uploadAttachment = async (req, res) => {
       taskId,
       fileId,
       originalName: file.originalname,
+      title: title.trim(),
+      description: description.trim(),
       mimeType: file.mimetype,
       size: file.size,
     });
@@ -80,7 +85,8 @@ export const uploadAttachment = async (req, res) => {
 
 export const listAttachments = async (req, res) => {
   try {
-    const attachments = await Attachment.find({ ownerId: getOwnerId(req), isDeleted: false }).sort({ createdAt: -1 });
+    const attachments = await Attachment.find({ ownerId: getOwnerId(req), isDeleted: false })
+      .sort({ pinned: -1, createdAt: -1 });
     return res.status(200).json(attachments);
   } catch (error) {
     console.error('List attachments error:', error);
@@ -115,6 +121,31 @@ export const deleteAttachment = async (req, res) => {
   } catch (error) {
     console.error('Delete attachment error:', error);
     return res.status(500).json({ message: 'Unable to delete attachment.' });
+  }
+};
+
+export const updateAttachment = async (req, res) => {
+  try {
+    const attachment = await Attachment.findOne({
+      _id: req.params.id,
+      ownerId: getOwnerId(req),
+      isDeleted: false,
+    });
+    if (!attachment) return res.status(404).json({ message: 'Attachment not found.' });
+
+    const { title, description, pinned, important } = req.body;
+    if (title !== undefined && !String(title).trim()) {
+      return res.status(400).json({ message: 'Image title is required.' });
+    }
+    if (title !== undefined) attachment.title = String(title).trim();
+    if (description !== undefined) attachment.description = String(description).trim();
+    if (pinned !== undefined) attachment.pinned = Boolean(pinned);
+    if (important !== undefined) attachment.important = Boolean(important);
+    await attachment.save();
+    return res.status(200).json({ attachment });
+  } catch (error) {
+    console.error('Update attachment error:', error);
+    return res.status(500).json({ message: 'Unable to update file.' });
   }
 };
 
@@ -181,7 +212,8 @@ export const downloadAttachment = async (req, res) => {
     const bucket = getBucket();
     const downloadStream = bucket.openDownloadStream(attachment.fileId);
     res.setHeader('Content-Type', attachment.mimeType);
-    res.setHeader('Content-Disposition', `attachment; filename="${attachment.originalName.replace(/"/g, '')}"`);
+    const disposition = req.query.preview === 'true' ? 'inline' : 'attachment';
+    res.setHeader('Content-Disposition', `${disposition}; filename="${attachment.originalName.replace(/"/g, '')}"`);
     downloadStream.on('error', () => res.status(404).json({ message: 'File data not found.' }));
     downloadStream.pipe(res);
   } catch (error) {

@@ -19,6 +19,7 @@ const corsOptions = {
   credentials: false,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  exposedHeaders: ["X-Auth-Token"],
 };
 
 app.use(cors(corsOptions));
@@ -77,6 +78,7 @@ if (!process.env.VERCEL) {
 
   app.listen(PORT, async () => {
     console.log(`Server running on port ${PORT}`);
+    await connectDB();
     startMaintenanceJobs();
   });
 }

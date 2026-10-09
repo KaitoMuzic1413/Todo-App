@@ -9,6 +9,7 @@ import {
 	listAttachments,
 	listTrashAttachments,
 	restoreAttachment,
+	updateAttachment,
 	uploadAttachment,
 } from '../controllers/attachmentsControllers.js';
 
@@ -27,6 +28,7 @@ router.post('/upload', (req, res, next) => {
 router.get('/', listAttachments);
 router.get('/trash/all', listTrashAttachments);
 router.delete('/trash/clear', clearTrashAttachments);
+router.patch('/:id', updateAttachment);
 router.get('/:id/download', downloadAttachment);
 router.patch('/:id/restore', restoreAttachment);
 router.delete('/:id/permanent', deleteAttachmentPermanently);

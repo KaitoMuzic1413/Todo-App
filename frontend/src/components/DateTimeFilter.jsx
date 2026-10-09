@@ -1,15 +1,23 @@
 import { CalendarDays } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n';
 
-const DateTimeFilter = ({ value = 'all', onChange }) => {
+const DateTimeFilter = ({ value = 'all', onChange, isArchive = false }) => {
   const { t } = useLanguage();
 
-  const filters = [
-    { key: 'all', label: t.allTime || t.all || 'All time' },
-    { key: 'today', label: t.today || 'Today' },
-    { key: 'week', label: t.thisWeek || 'This Week' },
-    { key: 'month', label: t.thisMonth || 'This Month' },
-  ];
+  // Đổi thứ tự mảng filters nếu là trang archive
+  const filters = isArchive
+    ? [
+        { key: 'today', label: t.today || 'Today' },
+        { key: 'week', label: t.thisWeek || 'This Week' },
+        { key: 'month', label: t.thisMonth || 'This Month' },
+        { key: 'all', label: t.allTime || t.all || 'All time' },
+      ]
+    : [
+        { key: 'all', label: t.allTime || t.all || 'All time' },
+        { key: 'today', label: t.today || 'Today' },
+        { key: 'week', label: t.thisWeek || 'This Week' },
+        { key: 'month', label: t.thisMonth || 'This Month' },
+      ];
 
   const activeIndex = filters.findIndex((filter) => filter.key === value);
   const activeTrackStyle =

@@ -50,12 +50,9 @@ const contactMethods = [
 
 const AboutPage = () => {
   const { t } = useLanguage();
-  const isAuthenticated = Boolean(
-    localStorage.getItem('todo-user') && localStorage.getItem('token')
-  );
 
   return (
-    <LayoutShell hideAccountPanel={!isAuthenticated}>
+    <LayoutShell hideAccountPanel={false}>
       <div className='space-y-8'>
         <Header />
 

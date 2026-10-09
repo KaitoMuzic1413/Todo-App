@@ -215,7 +215,10 @@ const TaskList = ({
                         opacity: { duration: 0.2 },
                         y: { duration: 0.25 },
                       }}
-                      onClick={() => isSelectMode && handleToggleSelectTask(task._id)}
+                      onClick={(event) => {
+                        if (event.button === 0 && isSelectMode) handleToggleSelectTask(task._id);
+                      }}
+                      onContextMenu={(event) => event.preventDefault()}
                       className={`flex min-h-[72px] items-center justify-between gap-4 rounded-2xl border p-4 transition-colors will-change-transform ${
                         isSelectMode ? 'cursor-pointer hover:border-violet-300 dark:hover:border-violet-700' : ''
                       } ${

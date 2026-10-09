@@ -25,8 +25,17 @@ const verifyToken = async (req, res, next) => {
       return res.status(401).json({ message: 'Session revoked. Please sign in again.', code: 'SESSION_REVOKED' });
     }
 
+    const refreshedToken = jwt.sign(
+      { userId: user._id, sessionVersion: user.sessionVersion },
+      process.env.JWT_SECRET || 'SECRET_KEY',
+      { expiresIn: '30d' }
+    );
+    res.set('X-Auth-Token', refreshedToken);
     req.user = decoded;
-    await User.findByIdAndUpdate(user._id, { lastActiveAt: new Date() });
+    await User.findByIdAndUpdate(user._id, {
+      lastActiveAt: new Date(),
+      inactiveDeletionNoticeSentAt: null,
+    });
     next();
   } catch {
     return res.status(401).json({ message: 'Token invalid or expired!' });

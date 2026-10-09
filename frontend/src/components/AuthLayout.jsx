@@ -41,14 +41,15 @@ const AuthLayout = ({ children }) => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
+              transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
               className='fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-xs'
               onClick={() => setIsOpen(false)}
             />
             <motion.aside
-              initial={{ x: -320 }}
-              animate={{ x: 0 }}
-              exit={{ x: -320 }}
-              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+              initial={{ x: -320, opacity: 0, filter: 'blur(5px)' }}
+              animate={{ x: 0, opacity: 1, filter: 'blur(0px)' }}
+              exit={{ x: -320, opacity: 0, filter: 'blur(5px)' }}
+              transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
               className='fixed left-0 top-0 z-50 flex h-[100dvh] w-[320px] flex-col border-r border-slate-200/80 bg-white/95 p-4 shadow-2xl dark:border-slate-800 dark:bg-slate-950/95'
             >
               <div className='flex items-center justify-between border-b border-slate-200/80 pb-4 dark:border-slate-800'>
@@ -97,7 +98,16 @@ const AuthLayout = ({ children }) => {
         ) : null}
       </AnimatePresence>
 
-      <main className='flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(168,85,247,0.22),transparent_40%),linear-gradient(135deg,#f5f7fb,#eef2ff)] p-6 dark:bg-[radial-gradient(circle_at_top,_rgba(168,85,247,0.2),transparent_38%),linear-gradient(135deg,#0f172a,#111827)]'>{children}</main>
+      <main className='flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(168,85,247,0.22),transparent_40%),linear-gradient(135deg,#f5f7fb,#eef2ff)] p-6 dark:bg-[radial-gradient(circle_at_top,_rgba(168,85,247,0.2),transparent_38%),linear-gradient(135deg,#0f172a,#111827)]'>
+        <motion.div
+          initial={{ opacity: 0, y: 18, scale: 0.985, filter: 'blur(5px)' }}
+          animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
+          transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+          className='flex w-full justify-center'
+        >
+          {children}
+        </motion.div>
+      </main>
     </div>
   );
 };

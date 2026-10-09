@@ -1,77 +1,12 @@
 import crypto from 'crypto';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import nodemailer from 'nodemailer';
 import User from '../models/User.js';
+import { sendEmail } from '../utils/email.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'SECRET_KEY';
 const JWT_EXPIRES_IN = '30d';
-const PASSWORD_RESET_MESSAGE = 'If an account exists for that email, a password reset link has been sent.';
-
-const sendResetEmail = async ({ to, resetUrl }) => {
-  const emailUser = process.env.EMAIL_USER;
-  const emailProvider = String(process.env.EMAIL_PROVIDER || '').toLowerCase();
-  const subject = 'Password Reset Request';
-  const html = `
-    <div style="font-family: sans-serif; padding: 20px;">
-      <h2>Password Reset Request</h2>
-      <p>Click the button below to set a new password. This link expires in 15 minutes.</p>
-      <a href="${resetUrl}" style="display: inline-block; padding: 12px 24px; background-color: #8b5cf6; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; margin-top: 10px;">Reset Password</a>
-    </div>
-  `;
-
-  const apiProvider = emailProvider || (process.env.SENDGRID_API_KEY ? 'sendgrid' : 'resend');
-  const apiKey = apiProvider === 'sendgrid' ? process.env.SENDGRID_API_KEY : process.env.RESEND_API_KEY;
-  const from = process.env.EMAIL_FROM || emailUser;
-
-  if (apiKey) {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000);
-    try {
-      const endpoint = apiProvider === 'sendgrid'
-        ? 'https://api.sendgrid.com/v3/mail/send'
-        : 'https://api.resend.com/emails';
-      const payload = apiProvider === 'sendgrid'
-        ? { personalizations: [{ to: [{ email: to }] }], from: { email: from }, subject, content: [{ type: 'text/html', value: html }] }
-        : { from, to: [to], subject, html };
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-        signal: controller.signal,
-      });
-
-      if (!response.ok && response.status !== 202) {
-        const providerMessage = (await response.text()).slice(0, 500);
-        throw new Error(`${apiProvider} request failed with status ${response.status}: ${providerMessage}`);
-      }
-      return;
-    } finally {
-      clearTimeout(timeout);
-    }
-  }
-
-  const emailPass = process.env.EMAIL_PASS;
-  if (!emailUser || !emailPass) {
-    throw new Error('Server misconfiguration: configure SendGrid, Resend, or SMTP credentials.');
-  }
-
-  const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false,
-    requireTLS: true,
-    auth: { user: emailUser, pass: emailPass },
-    connectionTimeout: 15000,
-    greetingTimeout: 10000,
-    socketTimeout: 15000,
-  });
-
-  await transporter.sendMail({ from: `"Todo App" <${emailUser}>`, to, subject, html });
-};
+const PASSWORD_RESET_MESSAGE = 'If an account exists for that email, a password reset code has been sent.';
 
 // 1. Controller Đăng ký
 export const register = async (req, res) => {
@@ -105,6 +40,8 @@ export const register = async (req, res) => {
 
     if (user) {
       user.password = hashedPassword;
+      user.lastActiveAt = new Date();
+      user.inactiveDeletionNoticeSentAt = null;
       await user.save();
     } else {
       user = await User.create({
@@ -113,20 +50,8 @@ export const register = async (req, res) => {
       });
     }
 
-    const token = jwt.sign(
-      { userId: user._id, sessionVersion: user.sessionVersion },
-      JWT_SECRET,
-      { expiresIn: JWT_EXPIRES_IN }
-    );
-
     return res.status(201).json({
       message: 'Account created successfully.',
-      token,
-      user: {
-        _id: user._id,
-        email: user.email,
-        name: user.name || '',
-      },
     });
   } catch (error) {
     console.error('Register error:', error);
@@ -160,6 +85,7 @@ export const login = async (req, res) => {
     }
 
     user.lastActiveAt = new Date();
+    user.inactiveDeletionNoticeSentAt = null;
     await user.save();
 
     const token = jwt.sign(
@@ -196,22 +122,41 @@ export const forgotPassword = async (req, res) => {
     const user = await User.findOne({ email: trimmedEmail });
 
     if (!user) return res.status(200).json({ message: PASSWORD_RESET_MESSAGE });
+    const requestedAt = user.resetPasswordOtpRequestedAt?.getTime();
+    if (requestedAt && Date.now() - requestedAt < 60 * 1000) {
+      return res.status(200).json({ message: PASSWORD_RESET_MESSAGE });
+    }
 
-    const resetToken = crypto.randomBytes(32).toString('hex');
-    user.resetPasswordTokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
-    user.resetPasswordExpires = Date.now() + 15 * 60 * 1000;
+    const otp = String(crypto.randomInt(100000, 1000000));
+    user.resetPasswordOtpHash = crypto.createHmac('sha256', JWT_SECRET)
+      .update(`${user._id}:${otp}`)
+      .digest('hex');
+    user.resetPasswordOtpExpires = new Date(Date.now() + 2 * 60 * 1000);
+    user.resetPasswordOtpAttempts = 0;
+    user.resetPasswordOtpRequestedAt = new Date();
     await user.save();
 
-    // Nếu chạy ở Render -> dùng link Vercel
-    // Nếu chạy ở Local -> dùng http://localhost:5173
-    const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/+$/, '');
-
-    const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
-
-    await sendResetEmail({ to: user.email, resetUrl });
+    await sendEmail({
+      to: user.email,
+      subject: 'Your password reset code',
+      html: `
+        <div style="font-family: sans-serif; padding: 20px;">
+          <h2>Password Reset</h2>
+          <p>Use this verification code to reset your password. It expires in 2 minutes.</p>
+          <p style="font-size: 28px; font-weight: bold; letter-spacing: 4px;">${otp}</p>
+          <p>If you did not request a password reset, you can ignore this email.</p>
+        </div>
+      `,
+    });
     return res.status(200).json({ message: PASSWORD_RESET_MESSAGE });
   } catch (error) {
     console.error('Password reset email delivery failed:', error);
+    if (typeof req.body?.email === 'string') {
+      await User.updateOne(
+        { email: req.body.email.trim().toLowerCase() },
+        { $unset: { resetPasswordOtpHash: 1, resetPasswordOtpExpires: 1, resetPasswordOtpRequestedAt: 1 }, $set: { resetPasswordOtpAttempts: 0 } }
+      );
+    }
     const isProviderError = error.message?.includes('request failed') || error.name === 'AbortError';
     return res.status(isProviderError ? 502 : 500).json({
       message: isProviderError
@@ -224,10 +169,10 @@ export const forgotPassword = async (req, res) => {
 // 4. Controller Đặt lại mật khẩu mới
 export const resetPassword = async (req, res) => {
   try {
-    const { token, newPassword } = req.body;
+    const { email, otp, newPassword } = req.body;
 
-    if (typeof token !== 'string' || typeof newPassword !== 'string' || !token || !newPassword) {
-      return res.status(400).json({ message: 'Token and new password are required.' });
+    if (typeof email !== 'string' || typeof otp !== 'string' || typeof newPassword !== 'string' || !email.trim() || !/^\d{6}$/.test(otp) || !newPassword) {
+      return res.status(400).json({ message: 'Email, verification code, and new password are required.' });
     }
 
     const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z0-9]{8,20}$/;
@@ -237,21 +182,63 @@ export const resetPassword = async (req, res) => {
       });
     }
 
-    const user = await User.findOne({
-      resetPasswordTokenHash: crypto.createHash('sha256').update(token).digest('hex'),
-      resetPasswordExpires: { $gt: Date.now() },
-    });
+    const user = await User.findOne({ email: email.trim().toLowerCase() });
+    const invalidCodeMessage = 'Invalid or expired verification code.';
+    if (!user || !user.resetPasswordOtpHash || !user.resetPasswordOtpExpires || user.resetPasswordOtpExpires <= new Date()) {
+      return res.status(400).json({ message: invalidCodeMessage });
+    }
 
-    if (!user) {
-      return res.status(400).json({ message: 'Invalid or expired password reset token.' });
+    if (user.resetPasswordOtpAttempts >= 5) {
+      return res.status(400).json({ message: invalidCodeMessage });
+    }
+
+    const submittedHash = crypto.createHmac('sha256', JWT_SECRET)
+      .update(`${user._id}:${otp}`)
+      .digest('hex');
+    const submittedBuffer = Buffer.from(submittedHash, 'hex');
+    const storedBuffer = Buffer.from(user.resetPasswordOtpHash, 'hex');
+    if (submittedBuffer.length !== storedBuffer.length || !crypto.timingSafeEqual(submittedBuffer, storedBuffer)) {
+      const attemptsReachedLimit = user.resetPasswordOtpAttempts + 1 >= 5;
+      await User.updateOne(
+        {
+          _id: user._id,
+          resetPasswordOtpHash: user.resetPasswordOtpHash,
+          resetPasswordOtpExpires: { $gt: new Date() },
+          resetPasswordOtpAttempts: { $lt: 5 },
+        },
+        {
+          $inc: { resetPasswordOtpAttempts: 1 },
+          ...(attemptsReachedLimit ? { $set: { resetPasswordOtpHash: null, resetPasswordOtpExpires: null } } : {}),
+        }
+      );
+      return res.status(400).json({ message: invalidCodeMessage });
     }
 
     const saltRounds = 10;
-    user.password = await bcrypt.hash(newPassword, saltRounds);
-    user.sessionVersion = (user.sessionVersion || 0) + 1;
-    user.resetPasswordTokenHash = null;
-    user.resetPasswordExpires = null;
-    await user.save();
+    const updatedUser = await User.findOneAndUpdate(
+      {
+        _id: user._id,
+        resetPasswordOtpHash: user.resetPasswordOtpHash,
+        resetPasswordOtpExpires: { $gt: new Date() },
+        resetPasswordOtpAttempts: { $lt: 5 },
+      },
+      {
+        $set: {
+          password: await bcrypt.hash(newPassword, saltRounds),
+          sessionVersion: (user.sessionVersion || 0) + 1,
+          lastActiveAt: new Date(),
+          inactiveDeletionNoticeSentAt: null,
+          resetPasswordOtpHash: null,
+          resetPasswordOtpExpires: null,
+          resetPasswordOtpAttempts: 0,
+          resetPasswordOtpRequestedAt: null,
+        },
+      },
+      { new: true }
+    );
+    if (!updatedUser) {
+      return res.status(400).json({ message: invalidCodeMessage });
+    }
 
     return res.status(200).json({ message: 'Password updated successfully.' });
   } catch (error) {

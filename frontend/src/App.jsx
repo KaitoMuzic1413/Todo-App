@@ -34,7 +34,7 @@ const ProtectedRoute = () => {
   const token = localStorage.getItem('token');
 
   if (!user?._id || !token?.trim()) {
-    return <Navigate to='/404' replace />;
+    return <Navigate to='/signin' replace />;
   }
 
   return <Outlet />;

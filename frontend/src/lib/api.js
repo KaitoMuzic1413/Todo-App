@@ -21,7 +21,11 @@ api.interceptors.request.use((config) => {
 });
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    const refreshedToken = response.headers?.['x-auth-token'];
+    if (refreshedToken) localStorage.setItem('token', refreshedToken);
+    return response;
+  },
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('todo-user');
@@ -40,7 +44,7 @@ export const registerWithEmail = (email, password) => api.post('/auth/register',
 
 export const forgotPassword = (email) => api.post('/auth/forgot-password', { email });
 
-export const resetPassword = (token, newPassword) => api.post('/auth/reset-password', { token, newPassword });
+export const resetPassword = (email, otp, newPassword) => api.post('/auth/reset-password', { email, otp, newPassword });
 
 // Task APIs
 export const fetchTasks = (userId, contentType) => api.get('/tasks', { params: { userId, ...(contentType ? { contentType } : {}) } });
@@ -70,18 +74,24 @@ export const clearTrash = (userId) => api.delete('/tasks/trash/clear', { data: {
 
 export const getUserQuota = (userId) => api.get(`/tasks/quota/${userId}`);
 
-export const uploadAttachment = (file, taskId = null) => {
+export const uploadAttachment = (file, { taskId = null, title, description = '' } = {}) => {
   const formData = new FormData();
   formData.append('file', file);
+  formData.append('title', title);
+  formData.append('description', description);
   if (taskId) formData.append('taskId', taskId);
   return api.post('/attachments/upload', formData);
 };
 export const fetchAttachments = () => api.get('/attachments');
+export const updateAttachment = (attachmentId, payload) => api.patch(`/attachments/${attachmentId}`, payload);
 export const deleteAttachment = (attachmentId) => api.delete(`/attachments/${attachmentId}`);
 export const fetchTrashAttachments = () => api.get('/attachments/trash/all');
 export const restoreAttachment = (attachmentId) => api.patch(`/attachments/${attachmentId}/restore`);
 export const deleteAttachmentPermanently = (attachmentId) => api.delete(`/attachments/${attachmentId}/permanent`);
 export const clearTrashAttachments = () => api.delete('/attachments/trash/clear');
-export const downloadAttachment = (attachmentId) => api.get(`/attachments/${attachmentId}/download`, { responseType: 'blob' });
+export const downloadAttachment = (attachmentId, preview = false) => api.get(`/attachments/${attachmentId}/download`, {
+  params: preview ? { preview: 'true' } : undefined,
+  responseType: 'blob',
+});
 
 export default api;

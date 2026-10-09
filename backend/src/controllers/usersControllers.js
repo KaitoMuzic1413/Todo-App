@@ -1,30 +1,99 @@
+import mongoose from 'mongoose';
 import User from '../models/User.js';
 import Task from '../models/Task.js';
+import Attachment from '../models/Attachment.js';
+import { sendEmail } from '../utils/email.js';
 
 const INACTIVE_ACCOUNT_DAYS = 90;
+const DELETION_NOTICE_DAYS = 3;
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
 export const markUserActive = async (userId) => {
   if (!userId) return;
-  await User.findByIdAndUpdate(userId, { lastActiveAt: new Date() }, { returnDocument: 'after' });
+  await User.findByIdAndUpdate(userId, {
+    lastActiveAt: new Date(),
+    inactiveDeletionNoticeSentAt: null,
+  }, { returnDocument: 'after' });
 };
 
 export const cleanupInactiveUsers = async () => {
   try {
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - INACTIVE_ACCOUNT_DAYS);
+    const now = new Date();
+    const deletionCutoff = new Date(now.getTime() - INACTIVE_ACCOUNT_DAYS * DAY_IN_MS);
+    const noticeCutoff = new Date(now.getTime() - (INACTIVE_ACCOUNT_DAYS - DELETION_NOTICE_DAYS) * DAY_IN_MS);
+    const inactivityFilter = [
+      { lastActiveAt: { $lte: noticeCutoff } },
+      { lastActiveAt: null },
+      { lastActiveAt: { $exists: false } },
+    ];
+    const usersNeedingNotice = await User.find({
+      $or: inactivityFilter,
+      inactiveDeletionNoticeSentAt: null,
+    }).select('_id email lastActiveAt createdAt');
 
-    const inactiveUsers = await User.find({
-      $or: [{ lastActiveAt: { $lt: cutoffDate } }, { lastActiveAt: null }, { lastActiveAt: { $exists: false } }],
-    }).select('_id email');
+    for (const user of usersNeedingNotice) {
+      const claimedAt = new Date();
+      const claimedUser = await User.findOneAndUpdate(
+        {
+          _id: user._id,
+          inactiveDeletionNoticeSentAt: null,
+          $or: inactivityFilter,
+        },
+        { $set: { inactiveDeletionNoticeSentAt: claimedAt } },
+        { new: true }
+      );
+      if (!claimedUser) continue;
 
-    if (!inactiveUsers.length) {
-      return { deletedUsers: 0, deletedTasks: 0 };
+      const lastActive = user.lastActiveAt || user.createdAt || now;
+      const inactiveDeletionDate = lastActive.getTime() + INACTIVE_ACCOUNT_DAYS * DAY_IN_MS;
+      const minimumGraceDate = claimedAt.getTime() + DELETION_NOTICE_DAYS * DAY_IN_MS;
+      const deletionDate = new Date(Math.max(inactiveDeletionDate, minimumGraceDate));
+      try {
+        await sendEmail({
+          to: user.email,
+          subject: 'Your Todo App account will be deleted soon',
+          html: `
+            <div style="font-family: sans-serif; padding: 20px;">
+              <h2>Your account is scheduled for deletion</h2>
+              <p>We noticed that you have not signed in to your Todo App account for a while.</p>
+              <p>Your account and its associated data are scheduled to be deleted on ${deletionDate.toUTCString()} because of inactivity.</p>
+              <p>Sign in before that date to keep your account. Your inactivity period will then restart.</p>
+              <p>If you no longer need your account, no action is required.</p>
+            </div>
+          `,
+        });
+      } catch (error) {
+        await User.updateOne(
+          { _id: user._id, inactiveDeletionNoticeSentAt: claimedAt },
+          { $set: { inactiveDeletionNoticeSentAt: null } }
+        );
+        console.error(`Could not send account deletion notice to ${user.email}:`, error);
+      }
     }
+
+    const noticeMaturedAt = new Date(now.getTime() - DELETION_NOTICE_DAYS * DAY_IN_MS);
+    const inactiveUsers = await User.find({
+      inactiveDeletionNoticeSentAt: { $lte: noticeMaturedAt },
+      $or: [
+        { lastActiveAt: { $lte: deletionCutoff } },
+        { lastActiveAt: null },
+        { lastActiveAt: { $exists: false } },
+      ],
+    }).select('_id email');
 
     let deletedTasks = 0;
     for (const user of inactiveUsers) {
       const taskResult = await Task.deleteMany({ userId: user._id });
       deletedTasks += taskResult.deletedCount || 0;
+      const attachments = await Attachment.find({ ownerId: user._id }).select('fileId');
+      if (mongoose.connection.db) {
+        const bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, { bucketName: 'attachments' });
+        const deleteResults = await Promise.allSettled(attachments.map(({ fileId }) => bucket.delete(fileId)));
+        deleteResults.forEach((result) => {
+          if (result.status === 'rejected') console.error('Could not delete an inactive user attachment file:', result.reason);
+        });
+      }
+      await Attachment.deleteMany({ ownerId: user._id });
       await User.findByIdAndDelete(user._id);
     }
 
@@ -58,6 +127,7 @@ export const loginUserWithEmail = async (req, res) => {
       });
     } else {
       user.lastActiveAt = new Date();
+      user.inactiveDeletionNoticeSentAt = null;
       if (adminEmail && user.email === adminEmail && !user.isAdmin) {
         user.isAdmin = true;
       }
