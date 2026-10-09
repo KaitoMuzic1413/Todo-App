@@ -1,0 +1,241 @@
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import AddTask from '@/components/AddTask';
+import DateTimeFilter from '@/components/DateTimeFilter';
+import Footer from '@/components/Footer';
+import Header from '@/components/Header';
+import { LayoutShell } from '@/components/LayoutShell';
+import StatsAndFilters from '@/components/StatsAndFilters';
+import TaskList from '@/components/TaskList';
+import TaskListPagination from '@/components/TaskListPagination';
+import { createTask, deleteTask, fetchTasks, toggleTaskStatus, updateTask } from '@/lib/api';
+import { getCreatedAtRange, isDateInRange } from '@/lib/dateFilters';
+
+const PAGE_SIZE = 5;
+
+const getStoredUser = () => {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    const storedUser = localStorage.getItem('todo-user');
+    return storedUser ? JSON.parse(storedUser) : null;
+  } catch {
+    return null;
+  }
+};
+
+const getDateRange = (value) => {
+  return getCreatedAtRange(value);
+};
+
+const taskMatchesDateRange = (task, value) => {
+  const range = getDateRange(value);
+  if (!range) return true;
+
+  return isDateInRange(task?.createdAt, range);
+};
+
+const HomePage = ({ contentType = 'task' }) => {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [currentUser, setCurrentUser] = useState(getStoredUser);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [filterKey, setFilterKey] = useState('all');
+  const [timeFilter, setTimeFilter] = useState('all');
+
+  useEffect(() => {
+    const syncUser = () => setCurrentUser(getStoredUser());
+
+    syncUser();
+    window.addEventListener('todo-auth-changed', syncUser);
+
+    return () => {
+      window.removeEventListener('todo-auth-changed', syncUser);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!currentUser?._id) {
+      navigate('/signin', { replace: true });
+    }
+  }, [currentUser, navigate]);
+
+  const { data: tasks = [], isLoading } = useQuery({
+    queryKey: ['tasks', currentUser?._id, contentType],
+    queryFn: async () => {
+      const response = await fetchTasks(currentUser._id, contentType);
+      return response.data || [];
+    },
+    enabled: !!currentUser?._id,
+    refetchInterval: 3000,
+    refetchIntervalInBackground: true,
+  });
+
+  const addTaskMutation = useMutation({
+    mutationFn: (payload) => createTask({ ...payload, userId: currentUser._id }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks', currentUser?._id, contentType] });
+      setCurrentPage(1);
+    },
+  });
+
+  const toggleTaskMutation = useMutation({
+    mutationFn: (taskId) => toggleTaskStatus(taskId, currentUser._id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks', currentUser?._id, contentType] });
+    },
+  });
+
+  const deleteTaskMutation = useMutation({
+    mutationFn: (taskId) => deleteTask(taskId, currentUser._id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks', currentUser?._id, contentType] });
+    },
+  });
+
+  const updateTaskMutation = useMutation({
+    mutationFn: ({ taskId, body }) => updateTask(taskId, currentUser._id, body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks', currentUser?._id, contentType] });
+    },
+  });
+
+  const handleAddTask = (payload) => {
+    if (!currentUser?._id) return;
+    addTaskMutation.mutate(payload);
+  };
+
+  const handleToggleTask = (taskId) => {
+    if (!currentUser?._id) return;
+    toggleTaskMutation.mutate(taskId);
+  };
+
+  const handleDeleteTask = (taskId) => {
+    if (!currentUser?._id) return;
+    deleteTaskMutation.mutate(taskId);
+  };
+
+  const handleUpdateTask = (taskId, nextTitle, payload = {}) => {
+    if (!currentUser?._id) return;
+
+    const body = { ...(payload || {}) };
+    if (nextTitle !== undefined) {
+      const trimmed = String(nextTitle || '').trim();
+      if (!trimmed) return;
+      body.title = trimmed;
+    }
+
+    updateTaskMutation.mutate({ taskId, body });
+  };
+
+  const filteredTasks = useMemo(() => {
+    let nextTasks = [...tasks];
+
+    if (filterKey === 'important') {
+      nextTasks = nextTasks.filter((task) => !!task.important);
+    } else if (filterKey === 'pinned') {
+      nextTasks = nextTasks.filter((task) => !!task.pinned || task.status === 'pinned');
+    } else if (filterKey === 'completed') {
+      nextTasks = nextTasks.filter((task) => task.status === 'complete');
+    } else if (filterKey === 'pending') {
+      nextTasks = nextTasks.filter((task) => task.status !== 'complete');
+    }
+
+    if (timeFilter !== 'all') {
+      nextTasks = nextTasks.filter((task) => taskMatchesDateRange(task, timeFilter));
+    }
+
+    return nextTasks;
+  }, [tasks, filterKey, timeFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredTasks.length / PAGE_SIZE));
+  const safeCurrentPage = Math.min(Math.max(currentPage, 1), totalPages);
+  const visibleTasks = useMemo(
+    () => filteredTasks.slice((safeCurrentPage - 1) * PAGE_SIZE, safeCurrentPage * PAGE_SIZE),
+    [safeCurrentPage, filteredTasks]
+  );
+
+  if (!currentUser?._id) {
+    return (
+      <div className='flex min-h-screen items-center justify-center bg-[#0f172a] text-slate-300'>
+        <p className='animate-pulse text-sm font-medium'>Redirecting to Sign In...</p>
+      </div>
+    );
+  }
+
+  return (
+    <LayoutShell>
+      <div className='space-y-6'>
+        <Header />
+
+        <AddTask onAdd={handleAddTask} contentType={contentType} />
+
+        <StatsAndFilters
+          tasks={tasks}
+          activeFilter={filterKey}
+          onFilterChange={(key) => {
+            setFilterKey(key);
+            setCurrentPage(1);
+          }}
+          contentType={contentType}
+        />
+
+        {isLoading ? (
+          <div className='rounded-[28px] border border-slate-200 bg-white/80 p-5 text-slate-500 dark:border-slate-800 dark:bg-slate-900/70'>
+            Loading tasks...
+          </div>
+        ) : (
+          <div className='space-y-4'>
+            <TaskList
+              title={
+                filterKey === 'important'
+                  ? 'Important'
+                  : filterKey === 'pinned'
+                  ? 'Pinned Files'
+                  : filterKey === 'completed'
+                  ? 'Completed Tasks'
+                  : filterKey === 'pending'
+                  ? 'Pending Tasks'
+                  : contentType === 'archive'
+                  ? 'All Files'
+                  : contentType === 'note'
+                  ? 'Notes'
+                  : contentType === 'list'
+                  ? 'Lists'
+                  : 'All Tasks'
+              }
+              tasks={visibleTasks}
+              page={safeCurrentPage}
+              onToggle={handleToggleTask}
+              onDelete={handleDeleteTask}
+              onUpdate={handleUpdateTask}
+            />
+          </div>
+        )}
+
+        <div className='flex w-full flex-col items-stretch justify-between gap-4 sm:flex-row sm:items-center'>
+          <TaskListPagination
+            currentPage={safeCurrentPage}
+            totalPages={totalPages}
+            onPageChange={(p) => {
+              setCurrentPage(p);
+            }}
+          />
+          <DateTimeFilter
+            value={timeFilter}
+            onChange={(value) => {
+              setTimeFilter(value);
+              setCurrentPage(1);
+            }}
+            isArchive={contentType === 'archive'}
+          />
+        </div>
+
+        <Footer />
+      </div>
+    </LayoutShell>
+  );
+};
+
+export default HomePage;
