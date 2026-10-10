@@ -3,11 +3,15 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft, Mail } from 'lucide-react';
 import { forgotPassword, resetPassword, verifyResetOtp } from '@/lib/api';
 import AuthLayout from '@/components/AuthLayout';
+import { useLanguage } from '@/lib/i18n';
 
 const ForgotPasswordPage = () => {
+  const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [changeName, setChangeName] = useState(false);
+  const [name, setName] = useState('');
   const [codeSent, setCodeSent] = useState(false);
   const [codeVerified, setCodeVerified] = useState(false);
   const [passwordReset, setPasswordReset] = useState(false);
@@ -35,7 +39,11 @@ const ForgotPasswordPage = () => {
         setCodeVerified(true);
         setMessage(res?.data?.message || 'Code verified. You can now create a new password.');
       } else {
-        const res = await resetPassword(email.trim(), otp, newPassword);
+        if (changeName && !name.trim()) {
+          setError(t.nameRequired || 'Enter your display name.');
+          return;
+        }
+        const res = await resetPassword(email.trim(), otp, newPassword, changeName ? name.trim() : undefined);
         setMessage(res?.data?.message || 'Password updated successfully. Please sign in.');
         setPasswordReset(true);
         setOtp('');
@@ -133,6 +141,24 @@ const ForgotPasswordPage = () => {
                   className='mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:ring-violet-900/40'
                 />
               </label>
+              <div className='space-y-3 rounded-2xl border border-slate-200 p-3 dark:border-slate-700'>
+                <p className='text-sm font-medium text-slate-700 dark:text-slate-200'>{t.changeNameQuestion || 'Would you like to change your display name?'}</p>
+                <label className='flex cursor-pointer items-center gap-2 text-sm text-slate-600 dark:text-slate-300'>
+                  <input type='checkbox' checked={changeName} onChange={(event) => setChangeName(event.target.checked)} className='h-4 w-4 accent-violet-600' />
+                  {t.changeName || 'Yes, update my name'}
+                </label>
+                {changeName ? (
+                  <input
+                    type='text'
+                    required
+                    maxLength={80}
+                    value={name}
+                    onChange={(event) => setName(event.target.value)}
+                    placeholder={t.displayName || 'Display name'}
+                    className='h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:ring-violet-900/40'
+                  />
+                ) : null}
+              </div>
             </>
           ) : null}
 

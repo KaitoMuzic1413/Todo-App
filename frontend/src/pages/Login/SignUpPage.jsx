@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowRight, UserPlus, Mail, Lock, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, UserPlus, Mail, Lock, Eye, EyeOff, CheckCircle2, UserRound } from 'lucide-react';
 import { registerWithEmail } from '@/lib/api';
 import { useLanguage } from '@/lib/i18n';
 import AuthLayout from '@/components/AuthLayout';
@@ -9,6 +9,7 @@ const SignUpPage = () => {
   const navigate = useNavigate();
   const { t } = useLanguage();
   const [email, setEmail] = useState(() => sessionStorage.getItem('todo-auth-email') || '');
+  const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
@@ -42,7 +43,7 @@ const SignUpPage = () => {
 
     try {
       setIsSubmitting(true);
-      await registerWithEmail(trimmedEmail, password);
+      await registerWithEmail(trimmedEmail, password, name.trim());
 
       setSuccessMessage('Account created successfully! Redirecting to Sign In...');
 
@@ -82,6 +83,21 @@ const SignUpPage = () => {
         </div>
 
         <form onSubmit={handleSubmit} className='space-y-4'>
+          <label className='block text-sm font-medium text-slate-700 dark:text-slate-200'>
+            {t.displayNameOptional || 'Display name (optional)'}
+            <div className='relative mt-2'>
+              <UserRound className='absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400' />
+              <input
+                type='text'
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                maxLength={80}
+                placeholder={t.displayName || 'Your name'}
+                disabled={Boolean(successMessage)}
+                className='h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-3 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:ring-violet-900/40'
+              />
+            </div>
+          </label>
           <label className='block text-sm font-medium text-slate-700 dark:text-slate-200'>
             {t.emailAddress || 'Email Address'}
             <div className='relative mt-2'>
@@ -137,7 +153,7 @@ const SignUpPage = () => {
           <button
             type='submit'
             disabled={isSubmitting || Boolean(successMessage)}
-            className='inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-500 to-indigo-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-200 transition-transform hover:-translate-y-0.5 disabled:opacity-60 dark:shadow-violet-900/30'
+            className='inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-500 to-indigo-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-accent transition-transform hover:-translate-y-0.5 disabled:opacity-60 '
           >
             {isSubmitting
               ? 'Creating account...'

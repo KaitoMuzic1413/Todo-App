@@ -38,6 +38,14 @@ const userSchema = new mongoose.Schema(
       expiresAt: { type: Date, default: null },
       unlimitedUntil: { type: Date, default: null },
     },
+    preferences: {
+      theme: { type: String, enum: ['light', 'dark'], default: 'dark' },
+      accent: { type: String, enum: ['violet', 'rose', 'emerald', 'amber'], default: 'violet' },
+      language: { type: String, enum: ['en', 'vi'], default: 'en' },
+      taskView: { type: String, enum: ['list', 'grid', 'kanban'], default: 'list' },
+      sortBy: { type: String, enum: ['createdAt', 'title', 'important'], default: 'createdAt' },
+      sortDirection: { type: String, enum: ['asc', 'desc'], default: 'desc' },
+    },
     resetPasswordOtpHash: {
       type: String,
       default: null,

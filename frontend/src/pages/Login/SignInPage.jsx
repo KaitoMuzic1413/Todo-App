@@ -43,7 +43,7 @@ const SignInPage = () => {
 
       window.dispatchEvent(new Event('todo-auth-changed'));
 
-      navigate('/home', { replace: true });
+      navigate('/dashboard', { replace: true });
     } catch (requestError) {
       setError(
         requestError?.response?.data?.message || 'Invalid email or password.'
@@ -121,7 +121,7 @@ const SignInPage = () => {
           <button
             type='submit'
             disabled={isSubmitting}
-            className='inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-500 to-indigo-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-200 transition-transform hover:-translate-y-0.5 disabled:opacity-60 dark:shadow-violet-900/30'
+            className='inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-500 to-indigo-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-accent transition-transform hover:-translate-y-0.5 disabled:opacity-60 '
           >
             {isSubmitting ? 'Signing in...' : 'Sign In'}
             <ArrowRight className='h-4 w-4' />

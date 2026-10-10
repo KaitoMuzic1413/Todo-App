@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, animate, motion, useMotionValue, useTransform } from 'framer-motion';
-import { ChevronLeft, Globe, Archive, ClipboardList, FileText, LogOut, Mail, Moon, SunMedium, X, Home, Trash2 } from 'lucide-react';
+import { ChevronLeft, Archive, BarChart3, CalendarDays, ClipboardList, FileText, LogOut, Mail, Timer, X, Home, Trash2, Settings2 } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n';
+import { useUserPreferences } from '@/hooks/useUserPreferences';
 
 const SIDEBAR_WIDTH = 320;
 const EDGE_WIDTH = 35;
@@ -22,14 +23,19 @@ const getStoredUser = () => {
 };
 
 export function LayoutShell({ children, hideAccountPanel = false }) {
-  const { language, setLanguage, t } = useLanguage();
+  const { setLanguage, t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
 
-  const [darkMode, setDarkMode] = useState(() => {
+  const [darkMode] = useState(() => {
     if (typeof window === 'undefined') return false;
-    return localStorage.getItem('todo-theme') === 'dark';
+    return localStorage.getItem('todo-theme') !== 'light';
   });
+  const [localAccent] = useState(() => (
+    ['violet', 'rose', 'emerald', 'amber'].includes(localStorage.getItem('todo-accent'))
+      ? localStorage.getItem('todo-accent')
+      : 'violet'
+  ));
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const navigationTimer = useRef(null);
@@ -41,6 +47,14 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
   });
 
   const [currentUser, setCurrentUser] = useState(getStoredUser);
+  const { preferences, hasLoadedPreferences } = useUserPreferences(currentUser?._id);
+  const effectiveDarkMode = hasLoadedPreferences ? preferences.theme === 'dark' : darkMode;
+
+  useEffect(() => {
+    const syncUser = () => setCurrentUser(getStoredUser());
+    window.addEventListener('todo-auth-changed', syncUser);
+    return () => window.removeEventListener('todo-auth-changed', syncUser);
+  }, []);
 
   const shellRef = useRef(null);
   const touchStartX = useRef(0);
@@ -54,9 +68,12 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
     { name: t.contact, to: '/about' },
     ...(currentUser ? [
       { name: t.home, to: '/home' },
-      { name: t.lists, to: '/lists' },
       { name: t.notes, to: '/notes' },
+      { name: t.lists, to: '/lists' },
       { name: t.archive, to: '/archive' },
+      { name: t.calendarTitle, to: '/calendar' },
+      { name: t.productivityDashboard, to: '/dashboard' },
+      { name: t.focusMode, to: '/focus' },
       { name: t.trash, to: '/trash' },
     ] : [])
   ];
@@ -199,9 +216,21 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
   }, [isSidebarOpen, sidebarX]);
 
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', darkMode);
-    localStorage.setItem('todo-theme', darkMode ? 'dark' : 'light');
-  }, [darkMode]);
+    document.documentElement.classList.toggle('dark', effectiveDarkMode);
+    localStorage.setItem('todo-theme', effectiveDarkMode ? 'dark' : 'light');
+  }, [effectiveDarkMode]);
+
+  useEffect(() => {
+    if (!hasLoadedPreferences) return;
+
+    document.documentElement.dataset.accent = preferences.accent;
+    setLanguage(preferences.language);
+  }, [hasLoadedPreferences, preferences.theme, preferences.accent, preferences.language, setLanguage]);
+
+  useEffect(() => {
+    if (hasLoadedPreferences) return;
+    document.documentElement.dataset.accent = localAccent;
+  }, [hasLoadedPreferences, localAccent]);
 
   const emitAuthChange = () => {
     if (typeof window !== 'undefined') {
@@ -227,7 +256,8 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
   };
 
   const userEmail = currentUser?.email || '';
-  const userInitial = userEmail ? userEmail.split('@')[0].slice(0, 2).toUpperCase() : 'G';
+  const displayName = currentUser?.name?.trim() || userEmail;
+  const userInitial = displayName ? displayName.slice(0, 2).toUpperCase() : 'G';
 
   return (
     <div ref={shellRef} className='min-h-screen overflow-x-hidden bg-[#f5f7fb] text-slate-900 transition-colors duration-500 dark:bg-[#0f172a] dark:text-slate-50'>
@@ -238,7 +268,7 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
           className='m-3 flex h-12 w-12 cursor-pointer items-center justify-center rounded-2xl border border-slate-200 bg-white/80 shadow-md backdrop-blur-md dark:border-slate-700 dark:bg-slate-900/80'
           aria-label='Open sidebar'
         >
-          <img src='/Logo.jpg' alt='Redhat logo' className='h-9 w-9 rounded-xl object-cover' />
+          <img src='/Logo.jpg' alt='Redhat logo' draggable={false} onDragStart={(event) => event.preventDefault()} className='h-9 w-9 select-none rounded-xl object-cover [-webkit-touch-callout:none]' />
         </button>
       </div>
 
@@ -264,7 +294,7 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
             >
               <div className='flex shrink-0 items-center justify-between border-b border-slate-200/80 bg-white/60 p-4 dark:border-slate-800 dark:bg-slate-950/60'>
                 <div className='flex items-center gap-3 rounded-2xl bg-slate-100/80 px-3 py-3 shadow-sm dark:bg-slate-900'>
-                  <img src='/Logo.jpg' alt='Redhat logo' className='h-12 w-12 rounded-xl object-cover shadow-sm' />
+                  <img src='/Logo.jpg' alt='Redhat logo' draggable={false} onDragStart={(event) => event.preventDefault()} className='h-12 w-12 select-none rounded-xl object-cover shadow-sm [-webkit-touch-callout:none]' />
                   <div className='min-w-0'>
                     <p className='truncate text-xl font-bold tracking-tight text-slate-900 dark:text-white'>Redhat</p>
                     <p className='text-xs text-slate-500 dark:text-slate-400'>{t.productivityHub}</p>
@@ -307,6 +337,9 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
                       >
                         <span className='flex items-center gap-2'>
                           {item.to === '/home' ? <Home className='h-4 w-4' /> : null}
+                          {item.to === '/dashboard' ? <BarChart3 className='h-4 w-4' /> : null}
+                          {item.to === '/calendar' ? <CalendarDays className='h-4 w-4' /> : null}
+                          {item.to === '/focus' ? <Timer className='h-4 w-4' /> : null}
                           {item.to === '/lists' ? <ClipboardList className='h-4 w-4' /> : null}
                           {item.to === '/notes' ? <FileText className='h-4 w-4' /> : null}
                           {item.to === '/archive' ? <Archive className='h-4 w-4' /> : null}
@@ -319,43 +352,16 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
                     );
                   })}
 
-                  <button
-                    type='button'
-                    onClick={() => setDarkMode((current) => !current)}
-                    className='flex w-full cursor-pointer items-center justify-between rounded-2xl px-3 py-2.5 text-left text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-900'
-                  >
-                    <span className='flex items-center gap-2'>
-                      {darkMode ? <SunMedium className='h-4 w-4' /> : <Moon className='h-4 w-4' />}
-                      <span>{darkMode ? t.lightMode : t.darkMode}</span>
-                    </span>
-                    <span className='text-xs text-slate-400'>→</span>
-                  </button>
-
-                  <button
-                    type='button'
-                    onClick={() => setLanguage(language === 'en' ? 'vi' : 'en')}
-                    className='group relative flex w-full cursor-pointer items-center justify-between overflow-hidden rounded-2xl px-3 py-2.5 text-left text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-900'
-                  >
-                    <span className='z-10 flex items-center gap-2'>
-                      <Globe className='h-4 w-4 text-violet-500 transition-transform duration-500 group-hover:rotate-45' />
-                      <span>{t.language}:</span>
-                    </span>
-
-                    <div className='relative h-5 min-w-[85px] overflow-hidden text-right'>
-                      <AnimatePresence mode='wait' initial={false}>
-                        <motion.span
-                          key={language}
-                          initial={{ y: 15, opacity: 0, filter: 'blur(3px)' }}
-                          animate={{ y: 0, opacity: 1, filter: 'blur(0px)' }}
-                          exit={{ y: -15, opacity: 0, filter: 'blur(3px)' }}
-                          transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-                          className='absolute right-0 top-0 inline-block rounded-md bg-violet-100 px-2 py-0.5 text-xs font-semibold text-violet-700 dark:bg-violet-500/20 dark:text-violet-300'
-                        >
-                          {language === 'en' ? t.english : t.vietnamese}
-                        </motion.span>
-                      </AnimatePresence>
-                    </div>
-                  </button>
+                  {currentUser ? (
+                    <button
+                      type='button'
+                      onClick={() => handleNavClick('/settings')}
+                      className={`flex w-full cursor-pointer items-center justify-between rounded-2xl px-3 py-2.5 text-sm font-medium transition-colors ${location.pathname === '/settings' ? 'bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-200' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-900'}`}
+                    >
+                      <span className='flex items-center gap-2'><Settings2 className='h-4 w-4' />{t.settings}</span>
+                      <span className='text-xs text-slate-400'>→</span>
+                    </button>
+                  ) : null}
                 </nav>
               </div>
 
@@ -375,16 +381,16 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
                           <div className='flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500 text-sm font-semibold text-white'>
                             {userInitial}
                           </div>
-                          <div className='min-w-0'>
-                            <p className='truncate text-sm font-medium text-slate-700 dark:text-slate-100'>{userEmail}</p>
-                            <p className='text-[11px] text-emerald-700 dark:text-emerald-300'>{t.signedIn}</p>
+                          <div className='min-w-0 flex-1'>
+                            <p className='truncate text-sm font-medium text-slate-700 dark:text-slate-100'>{displayName}</p>
+                            <p className='text-xs text-emerald-700 dark:text-emerald-300'>{t.signedIn}</p>
                           </div>
                         </div>
 
                         <button
                           type='button'
                           onClick={handleLogout}
-                          className='inline-flex cursor-pointer items-center gap-1 rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-[11px] font-medium text-slate-600 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800'
+                          className='inline-flex cursor-pointer items-center gap-1 rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800'
                         >
                           <LogOut className='h-3.5 w-3.5' />
                           {t.signOut}
@@ -403,7 +409,7 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
                       <button
                         type='button'
                         onClick={() => handleNavClick('/signin')}
-                        className='inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-500 to-indigo-500 px-3 py-2.5 text-sm font-semibold text-white shadow-md shadow-violet-200 transition-transform disabled:opacity-60 dark:shadow-violet-900/30'
+                        className='inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-500 to-indigo-500 px-3 py-2.5 text-sm font-semibold text-white shadow-md shadow-accent transition-transform disabled:opacity-60 '
                       >
                         {t.signIn}
                       </button>

@@ -49,6 +49,8 @@ const TaskList = ({
   onDelete,
   onUpdate,
   onDeleteMany,
+  viewMode = 'list',
+  compact = false,
 }) => {
   const { t, language } = useLanguage();
   const [editingTaskId, setEditingTaskId] = useState(null);
@@ -65,7 +67,9 @@ const TaskList = ({
     setPrevPage(page);
   }
 
-  const emptySlotsCount = Math.max(0, MAX_TASKS_PER_PAGE - tasks.length);
+  const emptySlotsCount = compact || viewMode === 'grid'
+    ? 0
+    : Math.max(0, MAX_TASKS_PER_PAGE - tasks.length);
 
   const startEditing = (task) => {
     setEditingTaskId(task._id);
@@ -178,7 +182,7 @@ const TaskList = ({
         </div>
       </div>
 
-      <div className='relative w-full overflow-hidden'>
+      <div className={`relative w-full overflow-hidden ${compact ? '' : 'min-h-[408px]'}`}>
         <AnimatePresence mode='wait' custom={direction}>
           <motion.div
             key={`${dateFilter}-${page}`}
@@ -188,10 +192,10 @@ const TaskList = ({
             animate='center'
             exit='exit'
             transition={{ duration: 0.25, ease: 'easeInOut' }}
-            className='space-y-3 will-change-transform'
+            className={`${viewMode === 'grid' ? 'grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3' : 'space-y-3'} will-change-transform`}
           >
             {tasks.length === 0 ? (
-              <div className='flex h-[410px] items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-950/40 dark:text-slate-300'>
+              <div className={`col-span-full flex ${compact ? 'min-h-40' : 'h-[410px]'} items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-950/40 dark:text-slate-300`}>
                 {t.noTasks}
               </div>
             ) : (
@@ -201,6 +205,8 @@ const TaskList = ({
                   const isEditing = editingTaskId === task._id;
                   const isSelected = selectedTaskIds.includes(task._id);
                   const createdDateStr = formatTaskCreatedAt(task.createdAt, language);
+                  const scheduledAt = task.startAt || task.dueAt;
+                  const scheduledDateStr = formatTaskCreatedAt(scheduledAt, language);
 
                   return (
                     <motion.div
@@ -219,7 +225,7 @@ const TaskList = ({
                         if (event.button === 0 && isSelectMode) handleToggleSelectTask(task._id);
                       }}
                       onContextMenu={(event) => event.preventDefault()}
-                      className={`flex min-h-[72px] items-center justify-between gap-4 rounded-2xl border p-4 transition-colors will-change-transform ${
+                      className={`flex min-h-[72px] items-center justify-between gap-4 rounded-2xl border p-4 shadow-sm transition-all duration-300 hover:border-violet-300 hover:shadow-md dark:hover:border-violet-700 will-change-transform ${
                         isSelectMode ? 'cursor-pointer hover:border-violet-300 dark:hover:border-violet-700' : ''
                       } ${
                         isSelected
@@ -266,14 +272,14 @@ const TaskList = ({
                               <button
                                 type='button'
                                 onClick={() => saveEditing(task._id)}
-                                className='cursor-pointer rounded-full bg-violet-600 px-2.5 py-1 text-[11px] font-medium text-white'
+                                className='cursor-pointer rounded-full bg-violet-600 px-2.5 py-1 text-xs font-medium text-white'
                               >
                                 {t.save}
                               </button>
                               <button
                                 type='button'
                                 onClick={cancelEditing}
-                                className='cursor-pointer rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'
+                                className='cursor-pointer rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'
                               >
                                 {t.cancel}
                               </button>
@@ -316,10 +322,16 @@ const TaskList = ({
                                 </div>
                               ) : null}
                               {createdDateStr && (
-                                <p className='mt-0.5 text-[11px] text-slate-400 dark:text-slate-400'>
+                                <p className='mt-0.5 text-xs text-slate-400 dark:text-slate-400'>
                                   {t.createdAt || 'Created at'}: {createdDateStr}
                                 </p>
                               )}
+                              {scheduledDateStr ? (
+                                <p className='mt-0.5 text-xs text-violet-600 dark:text-violet-300'>
+                                  {task.startAt ? t.startTime : t.dueDate}: {scheduledDateStr}
+                                  {task.estimatedMinutes ? ` · ${task.estimatedMinutes} min` : ''}
+                                </p>
+                              ) : null}
                             </>
                           )}
                         </div>

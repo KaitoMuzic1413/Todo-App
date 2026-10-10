@@ -10,13 +10,17 @@ const PASSWORD_RESET_MESSAGE = 'If an account exists for that email, a password 
 
 export const register = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, name } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({ message: 'Email and password are required.' });
     }
 
     const trimmedEmail = email.trim().toLowerCase();
+    const trimmedName = typeof name === 'string' ? name.trim() : '';
+    if (trimmedName.length > 80) {
+      return res.status(400).json({ message: 'Name must be 80 characters or fewer.' });
+    }
 
     const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z0-9]{8,20}$/;
     if (!passwordRegex.test(password)) {
@@ -39,6 +43,7 @@ export const register = async (req, res) => {
 
     if (user) {
       user.password = hashedPassword;
+      if (trimmedName) user.name = trimmedName;
       user.lastActiveAt = new Date();
       user.inactiveDeletionNoticeSentAt = null;
       await user.save();
@@ -46,6 +51,7 @@ export const register = async (req, res) => {
       user = await User.create({
         email: trimmedEmail,
         password: hashedPassword,
+        ...(trimmedName ? { name: trimmedName } : {}),
       });
     }
 
@@ -212,7 +218,7 @@ export const forgotPassword = async (req, res) => {
 
 export const resetPassword = async (req, res) => {
   try {
-    const { email, otp, newPassword } = req.body;
+    const { email, otp, newPassword, name } = req.body;
 
     if (typeof email !== 'string' || typeof otp !== 'string' || typeof newPassword !== 'string' || !email.trim() || !/^\d{6}$/.test(otp) || !newPassword) {
       return res.status(400).json({ message: 'Email, verification code, and new password are required.' });
@@ -223,6 +229,11 @@ export const resetPassword = async (req, res) => {
       return res.status(400).json({
         message: 'Password must be 8-20 characters long, contain letters and numbers, and no special characters.',
       });
+    }
+
+    const trimmedName = typeof name === 'string' ? name.trim() : '';
+    if (name !== undefined && (!trimmedName || trimmedName.length > 80)) {
+      return res.status(400).json({ message: 'Name must contain 1 to 80 characters.' });
     }
 
     const invalidCodeMessage = 'Invalid or expired verification code.';
@@ -240,6 +251,7 @@ export const resetPassword = async (req, res) => {
       {
         $set: {
           password: await bcrypt.hash(newPassword, saltRounds),
+          ...(name !== undefined ? { name: trimmedName } : {}),
           sessionVersion: (user.sessionVersion || 0) + 1,
           lastActiveAt: new Date(),
           inactiveDeletionNoticeSentAt: null,

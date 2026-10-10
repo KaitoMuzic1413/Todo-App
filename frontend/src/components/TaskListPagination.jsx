@@ -117,7 +117,7 @@ const TaskListPagination = ({ currentPage = 1, totalPages = 1, onPageChange }) =
             className={`inline-flex h-10 items-center justify-center rounded-full px-4 text-sm font-semibold text-white transition-all duration-300 ${
               isInputEmpty
                 ? 'cursor-not-allowed bg-violet-500/40 opacity-50 dark:bg-violet-600/30'
-                : 'cursor-pointer bg-gradient-to-r from-violet-600 to-indigo-600 shadow-md shadow-violet-500/25 active:scale-95 hover:-translate-y-0.5 hover:from-violet-500 hover:to-indigo-500 hover:shadow-violet-500/40 dark:shadow-violet-900/40'
+                : 'cursor-pointer bg-gradient-to-r from-violet-600 to-indigo-600 shadow-md shadow-accent active:scale-95 hover:-translate-y-0.5 hover:from-violet-500 hover:to-indigo-500 hover:shadow-accent-strong '
             }`}
           >
             {t.goToPage || 'Go'}

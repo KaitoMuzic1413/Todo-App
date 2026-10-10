@@ -5,6 +5,7 @@ import {
   deletePermanentTask,
   deleteTask,
   getAllTasks,
+  getCalendarTasks,
   getTrashTasks,
   restoreTask,
   toggleTaskStatus,
@@ -18,6 +19,7 @@ const router = express.Router();
 router.use(verifyToken);
 
 router.get("/", getAllTasks);
+router.get('/calendar', getCalendarTasks);
 router.post("/", createTask);
 router.put("/:id", updateTask);
 router.patch("/:id/toggle", toggleTaskStatus);

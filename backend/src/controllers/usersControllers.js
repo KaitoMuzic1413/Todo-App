@@ -2,11 +2,61 @@ import mongoose from 'mongoose';
 import User from '../models/User.js';
 import Task from '../models/Task.js';
 import Attachment from '../models/Attachment.js';
+import CalendarNote from '../models/CalendarNote.js';
 import { sendEmail } from '../utils/email.js';
+import { validatePreferenceUpdates } from '../utils/userPreferences.js';
 
 const INACTIVE_ACCOUNT_DAYS = 90;
 const DELETION_NOTICE_DAYS = 3;
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
+export const getUserPreferences = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId).select('preferences');
+    if (!user) return res.status(404).json({ message: 'User not found.' });
+    return res.status(200).json({ preferences: user.preferences.toObject() });
+  } catch (error) {
+    console.error('Get user preferences error:', error);
+    return res.status(500).json({ message: 'Unable to load preferences.' });
+  }
+};
+
+export const updateUserPreferences = async (req, res) => {
+  try {
+    const { updates, error: validationError } = validatePreferenceUpdates(req.body);
+    if (validationError) return res.status(400).json({ message: validationError });
+
+    const user = await User.findByIdAndUpdate(
+      req.user.userId,
+      { $set: updates },
+      { new: true, runValidators: true, select: 'preferences' }
+    );
+    if (!user) return res.status(404).json({ message: 'User not found.' });
+    return res.status(200).json({ preferences: user.preferences.toObject() });
+  } catch (error) {
+    console.error('Update user preferences error:', error);
+    return res.status(500).json({ message: 'Unable to update preferences.' });
+  }
+};
+
+export const updateCurrentUserName = async (req, res) => {
+  try {
+    const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
+    if (!name || name.length > 80) {
+      return res.status(400).json({ message: 'Name must contain 1 to 80 characters.' });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user.userId,
+      { $set: { name } },
+      { new: true, runValidators: true, select: '_id email name' }
+    );
+    if (!user) return res.status(404).json({ message: 'User not found.' });
+    return res.status(200).json({ user: { _id: user._id, email: user.email, name: user.name } });
+  } catch (error) {
+    console.error('Update user name error:', error);
+    return res.status(500).json({ message: 'Unable to update your name.' });
+  }
+};
 
 export const markUserActive = async (userId) => {
   if (!userId) return;
@@ -85,6 +135,7 @@ export const cleanupInactiveUsers = async () => {
     for (const user of inactiveUsers) {
       const taskResult = await Task.deleteMany({ userId: user._id });
       deletedTasks += taskResult.deletedCount || 0;
+      await CalendarNote.deleteMany({ userId: user._id });
       const attachments = await Attachment.find({ ownerId: user._id }).select('fileId');
       if (mongoose.connection.db) {
         const bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, { bucketName: 'attachments' });

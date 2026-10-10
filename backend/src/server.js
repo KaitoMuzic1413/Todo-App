@@ -8,6 +8,11 @@ import authRoute from "./routes/authRoutes.js";
 import taskRoute from "./routes/tasksRouters.js";
 import userRoute from "./routes/usersRoutes.js";
 import attachmentRoute from "./routes/attachmentsRoutes.js";
+import focusRoute from "./routes/focusRoutes.js";
+import analyticsRoute from './routes/analyticsRoutes.js';
+import gamificationRoute from './routes/gamificationRoutes.js';
+import calendarNotesRoute from './routes/calendarNotesRoutes.js';
+import { runDueTaskEmailReminders } from './utils/dueTaskReminders.js';
 
 const PORT = process.env.PORT || 5001;
 const INACTIVE_ACCOUNT_CHECK_INTERVAL = 60 * 60 * 1000;
@@ -44,11 +49,21 @@ app.use("/api/auth", authRoute);
 app.use("/api/users", userRoute);
 app.use("/api/tasks", taskRoute);
 app.use("/api/attachments", attachmentRoute);
+app.use('/api/focus', focusRoute);
+app.use('/api/analytics', analyticsRoute);
+app.use('/api/gamification', gamificationRoute);
+app.use('/api/calendar-notes', calendarNotesRoute);
 
 app.use((req, res) => {
   res.status(404).json({
     message: `Cannot ${req.method} ${req.originalUrl} - Route not found`,
   });
+});
+
+app.use((error, req, res, next) => {
+  console.error('Unhandled API error:', error);
+  if (res.headersSent) return next(error);
+  return res.status(500).json({ message: 'Server error.' });
 });
 
 const runMaintenanceJobs = async () => {
@@ -70,6 +85,8 @@ if (!process.env.VERCEL) {
   const startMaintenanceJobs = () => {
     runMaintenanceJobs();
     setInterval(runMaintenanceJobs, INACTIVE_ACCOUNT_CHECK_INTERVAL);
+    runDueTaskEmailReminders();
+    setInterval(runDueTaskEmailReminders, 60 * 1000);
   };
 
   app.listen(PORT, async () => {

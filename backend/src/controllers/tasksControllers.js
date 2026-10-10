@@ -1,7 +1,11 @@
+import mongoose from 'mongoose';
 import Task from '../models/Task.js';
 import User from '../models/User.js';
 import Attachment from '../models/Attachment.js';
 import { deleteAttachmentRecords } from './attachmentsControllers.js';
+import { hasScheduleInput, validateTaskSchedule } from '../utils/taskSchedule.js';
+import GamificationEvent from '../models/GamificationEvent.js';
+import { getActivityKeys, getGoalBonusEvents, getTaskCompletionIdempotencyKey, TASK_COMPLETION_XP } from '../utils/gamification.js';
 
 const getUserFilter = (req) => {
   const userId = req.user?.userId;
@@ -14,6 +18,53 @@ const getAuthenticatedUserId = (req) => req.user?.userId;
 const touchUserActivity = async (userId) => {
   if (!userId) return;
   await User.findByIdAndUpdate(userId, { lastActiveAt: new Date() }, { returnDocument: 'after' });
+};
+
+const awardTaskCompletionXp = async ({ userId, taskId, timeZone = 'UTC' }) => {
+  const now = new Date();
+  let validatedTimeZone = timeZone;
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: validatedTimeZone }).format(now);
+  } catch {
+    validatedTimeZone = 'UTC';
+  }
+  const { activityDate, weekStart } = getActivityKeys(now, validatedTimeZone);
+  let award;
+  try {
+    award = await GamificationEvent.updateOne(
+      { userId, idempotencyKey: getTaskCompletionIdempotencyKey(taskId) },
+      {
+        $setOnInsert: {
+          userId,
+          taskId,
+          eventType: 'taskComplete',
+          idempotencyKey: getTaskCompletionIdempotencyKey(taskId),
+          xp: TASK_COMPLETION_XP,
+          activityDate,
+          weekStart,
+        },
+      },
+      { upsert: true }
+    );
+  } catch (error) {
+    if (error.code === 11000) return;
+    throw error;
+  }
+
+  if (!award.upsertedCount) return;
+
+  const [dailyCompletionCount, weeklyCompletionCount] = await Promise.all([
+    GamificationEvent.countDocuments({ userId, eventType: 'taskComplete', activityDate }),
+    GamificationEvent.countDocuments({ userId, eventType: 'taskComplete', weekStart }),
+  ]);
+  const bonusEvents = getGoalBonusEvents({ dailyCompletionCount, weeklyCompletionCount, activityDate, weekStart });
+  for (const bonus of bonusEvents) {
+    await GamificationEvent.updateOne(
+      { userId, idempotencyKey: bonus.idempotencyKey },
+      { $setOnInsert: { userId, ...bonus } },
+      { upsert: true }
+    );
+  }
 };
 
 const getTrashDateFilter = ({ start, endExclusive, period }) => {
@@ -95,6 +146,45 @@ export const getAllTasks = async (req, res) => {
   }
 };
 
+export const getCalendarTasks = async (req, res) => {
+  try {
+    const userId = getAuthenticatedUserId(req);
+    const { start, endExclusive } = req.query;
+    const rangeStart = new Date(start);
+    const rangeEnd = new Date(endExclusive);
+
+    if (!userId) return res.status(401).json({ message: 'Authentication required.' });
+    if (!Number.isFinite(rangeStart.getTime()) || !Number.isFinite(rangeEnd.getTime()) || rangeStart >= rangeEnd) {
+      return res.status(400).json({ message: 'A valid calendar range is required.' });
+    }
+    if (rangeEnd.getTime() - rangeStart.getTime() > 62 * 24 * 60 * 60 * 1000) {
+      return res.status(400).json({ message: 'Calendar ranges cannot exceed 62 days.' });
+    }
+
+    const scheduleLookback = new Date(rangeStart.getTime() - 24 * 60 * 60 * 1000);
+    const tasks = await Task.find({
+      userId,
+      isDeleted: false,
+      $and: [
+        { $or: [{ contentType: 'task' }, { contentType: { $exists: false } }] },
+        {
+          $or: [
+            { startAt: { $gte: scheduleLookback, $lt: rangeEnd } },
+            { dueAt: { $gte: rangeStart, $lt: rangeEnd } },
+            { startAt: null, dueAt: null },
+          ],
+        },
+      ],
+    }).sort({ startAt: 1, dueAt: 1, createdAt: -1 });
+
+    await touchUserActivity(userId);
+    return res.status(200).json(tasks);
+  } catch (error) {
+    console.error('Error getCalendarTasks:', error);
+    return res.status(500).json({ message: 'Unable to load calendar tasks.' });
+  }
+};
+
 export const getUserQuota = async (req, res) => {
   try {
     const userId = getAuthenticatedUserId(req);
@@ -112,7 +202,7 @@ export const getUserQuota = async (req, res) => {
 
 export const createTask = async (req, res) => {
   try {
-    const { title, contentType = 'task', content = '', items = [] } = req.body;
+    const { title, contentType = 'task', content = '', items = [], important = false, parentTaskId = null } = req.body;
     const userId = getAuthenticatedUserId(req);
 
     if (!title || !title.trim()) {
@@ -135,15 +225,30 @@ export const createTask = async (req, res) => {
       return res.status(400).json({ message: 'Note content is required.' });
     }
 
+    const schedule = validateTaskSchedule(req.body);
+    if (schedule.error) return res.status(400).json({ message: schedule.error });
+
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: 'User not found' });
+
+    if (parentTaskId && !mongoose.isValidObjectId(parentTaskId)) {
+      return res.status(400).json({ message: 'Invalid parent task id.' });
+    }
+    if (parentTaskId && (contentType !== 'task' || !(await Task.exists({
+      _id: parentTaskId,
+      userId,
+      isDeleted: false,
+      $or: [{ contentType: 'task' }, { contentType: { $exists: false } }],
+    })))) {
+      return res.status(404).json({ message: 'Parent task not found.' });
+    }
 
     const trimmedTitle = title.trim();
 
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
 
-    const existingPendingTaskToday = await Task.findOne({
+    const existingPendingTaskToday = parentTaskId || hasScheduleInput(req.body) ? null : await Task.findOne({
       userId,
       isDeleted: false,
       contentType,
@@ -162,6 +267,7 @@ export const createTask = async (req, res) => {
 
     const task = new Task({
       userId,
+      parentTaskId,
       title: trimmedTitle,
       contentType,
       content: contentType === 'note' ? String(content).trim() : '',
@@ -170,6 +276,8 @@ export const createTask = async (req, res) => {
         : undefined,
       status: 'active',
       completedAt: null,
+      important: Boolean(important),
+      ...schedule.updates,
     });
 
     const newTask = await task.save();
@@ -191,6 +299,9 @@ export const updateTask = async (req, res) => {
       return res.status(404).json({ message: 'Task not found' });
     }
 
+    const schedule = validateTaskSchedule(req.body, task);
+    if (schedule.error) return res.status(400).json({ message: schedule.error });
+
     const normalizedItems = items !== undefined && Array.isArray(items)
       ? items.map((item) => ({ text: String(item.text || item).trim(), completed: !!item.completed }))
       : null;
@@ -200,6 +311,7 @@ export const updateTask = async (req, res) => {
       : status;
 
     const nextData = {
+      ...schedule.updates,
       ...(title ? { title: title.trim() } : {}),
       ...(nextStatus ? { status: nextStatus } : {}),
       ...(normalizedItems ? { items: normalizedItems } : {}),
@@ -208,6 +320,10 @@ export const updateTask = async (req, res) => {
         : (completedAt !== undefined ? { completedAt } : {})),
       ...(content !== undefined ? { content: String(content).trim() } : {}),
     };
+
+    if (Object.hasOwn(schedule.updates, 'dueAt')) {
+      nextData.dueEmailReminderSentFor = null;
+    }
 
     if (Object.prototype.hasOwnProperty.call(req.body, 'important')) {
       nextData.important = !!req.body.important;
@@ -222,6 +338,9 @@ export const updateTask = async (req, res) => {
     }
 
     const updatedTask = await Task.findByIdAndUpdate(req.params.id, nextData, { returnDocument: 'after' });
+    if (nextStatus === 'complete' && task.contentType !== 'note' && task.contentType !== 'list') {
+      await awardTaskCompletionXp({ userId, taskId: task._id, timeZone: req.body.timeZone || task.timeZone || 'UTC' });
+    }
     await touchUserActivity(userId);
     return res.status(200).json(updatedTask);
   } catch (error) {
@@ -274,6 +393,10 @@ export const toggleTaskStatus = async (req, res) => {
       },
       { returnDocument: 'after' }
     );
+
+    if (nextStatus === 'complete' && task.contentType !== 'note' && task.contentType !== 'list') {
+      await awardTaskCompletionXp({ userId, taskId: task._id, timeZone: req.body.timeZone || task.timeZone || 'UTC' });
+    }
 
     await touchUserActivity(userId);
     return res.status(200).json(updatedTask);

@@ -57,7 +57,7 @@ const ArchivePage = () => {
       }));
       setAttachments(normalizedData);
     } catch {
-      setMessage('Không thể tải danh sách tệp lưu trữ.');
+      setMessage(t.loadArchiveFailed);
     } finally {
       setLoading(false);
     }
@@ -92,11 +92,11 @@ const ArchivePage = () => {
       await uploadAttachment(selectedFile, uploadPayload);
       setSelectedFile(null);
       setDraft({ content: '', caption: '' });
-      setMessage('Tải lên thành công.');
+      setMessage(t.uploadSuccess);
       setCurrentPage(1);
       await loadAttachments();
     } catch (error) {
-      setMessage(error?.response?.data?.message || 'Tải lên thất bại.');
+      setMessage(error?.response?.data?.message || t.uploadFailed);
     } finally {
       setUploading(false);
     }
@@ -145,7 +145,7 @@ const ArchivePage = () => {
       });
       setMessage(t.fileDownloadedSuccess);
     } catch {
-      setMessage('Tải xuống thất bại.');
+      setMessage(t.downloadFailed);
     }
   };
 
@@ -164,7 +164,7 @@ const ArchivePage = () => {
       setPreview({ attachment, url: URL.createObjectURL(response.data) });
       setZoomScale(1);
     } catch {
-      setMessage('Không thể xem trước tệp này.');
+      setMessage(t.previewFailed);
     }
   };
 
@@ -198,9 +198,9 @@ const ArchivePage = () => {
         next.delete(attachmentId);
         return next;
       });
-      setMessage('Đã xóa tệp.');
+      setMessage(t.deleteFileSuccess);
     } catch {
-      setMessage('Xóa thất bại.');
+      setMessage(t.deleteFileFailed);
     }
   };
 
@@ -241,11 +241,11 @@ const ArchivePage = () => {
         <section className='rounded-[28px] border border-slate-200/80 bg-white/80 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/70'>
           <div className='flex flex-wrap items-center justify-between gap-3'>
             <div>
-              <h3 className='text-lg font-semibold text-slate-900 dark:text-white'>Tải lên tệp lưu trữ</h3>
-              <p className='mt-1 text-sm text-slate-500 dark:text-slate-400'>Hỗ trợ ảnh, video, âm thanh và tài liệu cá nhân.</p>
+              <h3 className='text-lg font-semibold text-slate-900 dark:text-white'>{t.uploadArchiveTitle}</h3>
+              <p className='mt-1 text-sm text-slate-500 dark:text-slate-400'>{t.uploadArchiveSubtitle}</p>
             </div>
             <label className={`inline-flex items-center gap-2 rounded-2xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white transition-all ${uploading ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-violet-500'}`}>
-              <Upload className='h-4 w-4' /> Chọn tệp tải lên
+              <Upload className='h-4 w-4' /> {t.chooseFile}
               <input 
                 type='file' 
                 disabled={uploading} 
@@ -268,27 +268,27 @@ const ArchivePage = () => {
             setCurrentPage(1);
           }}
           customFilters={[
-            ['all', 'All files'],
+            ['all', t.allFiles],
             ['important', t.important || 'Important'],
             ['pinned', t.pinned || 'Pinned'],
           ]}
           customStats={[
-            { label: 'All files', value: attachments.length, tone: 'violet' },
+            { label: t.allFiles, value: attachments.length, tone: 'violet' },
             { label: t.important || 'Important', value: attachments.filter((item) => item.important).length, tone: 'amber' },
             { label: t.pinned || 'Pinned', value: attachments.filter((item) => item.pinned).length, tone: 'sky' },
           ]}
         />
 
         {loading ? (
-          <div className='rounded-[28px] border border-slate-200 bg-white/80 p-5 text-slate-500 dark:border-slate-800 dark:bg-slate-900/70'>
-            Đang tải dữ liệu lưu trữ...
+          <div className='rounded-[28px] border border-slate-200 bg-white/80 p-5 text-slate-500 shadow-md dark:border-slate-800 dark:bg-slate-900/70'>
+            {t.loadingArchive}
           </div>
         ) : (
           <div className='space-y-4'>
             <div className='grid gap-3 sm:grid-cols-1'>
               {visibleAttachments.length === 0 && (
-                <div className='rounded-[28px] border border-slate-200 bg-white/80 p-6 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900/70'>
-                  Chưa có tệp nào trong mục này.
+                <div className='rounded-[28px] border border-slate-200 bg-white/80 p-6 text-center text-sm text-slate-500 shadow-md dark:border-slate-800 dark:bg-slate-900/70'>
+                  {t.noFilesInCategory}
                 </div>
               )}
               
@@ -299,7 +299,7 @@ const ArchivePage = () => {
                   <article 
                     key={attachment._id} 
                     onClick={() => handlePreview(attachment)} 
-                    className={`rounded-2xl border p-4 transition ${kind !== 'file' ? 'cursor-pointer hover:border-violet-300 dark:hover:border-violet-700' : ''} ${attachment.pinned ? 'border-violet-300 bg-violet-50/50 dark:border-violet-900 dark:bg-violet-950/20' : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-950/50'}`}
+                    className={`cursor-pointer rounded-2xl border p-4 shadow-md transition-shadow duration-300 hover:border-violet-300 hover:shadow-lg dark:hover:border-violet-700 ${attachment.pinned ? 'border-violet-300 bg-violet-50/50 dark:border-violet-900 dark:bg-violet-950/20' : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-950/50'}`}
                   >
                     <div className='flex items-start gap-3'>
                       <div className='rounded-xl bg-white p-2.5 text-violet-500 shadow-sm dark:bg-slate-900'>
@@ -308,19 +308,19 @@ const ArchivePage = () => {
                       <div className='min-w-0 flex-1'>
                         <p className='truncate text-sm font-semibold text-slate-800 dark:text-slate-100'>{titleOf(attachment)}</p>
                         <p className='mt-1 truncate text-xs text-slate-400'>{attachment.description || attachment.originalName}</p>
-                        <p className='mt-2 text-[11px] text-slate-400'>Tải lên {formatUploadedAt(attachment.createdAt, language)} · {formatSize(attachment.size)} · {kind === 'file' ? 'Tài liệu' : 'Nhấn để xem'}{attachment.taskId ? ' · Task đã liên kết' : ''}</p>
+                        <p className='mt-2 text-xs text-slate-400'>{t.uploadedLabel} {formatUploadedAt(attachment.createdAt, language)} · {formatSize(attachment.size)} · {kind === 'file' ? t.document : t.tapToView}{attachment.taskId ? ` · ${t.linkedTask}` : ''}</p>
                       </div>
                       <div className='flex gap-1'>
-                        <button type='button' onClick={(event) => { event.stopPropagation(); toggleAttachment(attachment, 'pinned'); }} className={attachment.pinned ? 'text-violet-600' : 'text-slate-400 hover:text-slate-600'} aria-label='Ghim tệp'>
+                        <button type='button' onClick={(event) => { event.stopPropagation(); toggleAttachment(attachment, 'pinned'); }} className={attachment.pinned ? 'text-violet-600' : 'text-slate-400 hover:text-slate-600'} aria-label={t.pinFile} title={t.pinFile}>
                           <Pin className='h-4 w-4' />
                         </button>
-                        <button type='button' onClick={(event) => { event.stopPropagation(); toggleAttachment(attachment, 'important'); }} className={attachment.important ? 'text-amber-500' : 'text-slate-400 hover:text-slate-600'} aria-label='Đánh dấu sao'>
+                        <button type='button' onClick={(event) => { event.stopPropagation(); toggleAttachment(attachment, 'important'); }} className={attachment.important ? 'text-amber-500' : 'text-slate-400 hover:text-slate-600'} aria-label={t.starFile} title={t.starFile}>
                           <Star className='h-4 w-4' />
                         </button>
                       </div>
                     </div>
                     <div className='mt-3 flex justify-end gap-2'>
-                      <button type='button' onClick={(event) => { event.stopPropagation(); setEditing(attachment); setDraft({ content: titleOf(attachment), caption: attachment.description || '' }); }} aria-label='Sửa tệp' className='rounded-full border border-slate-200 p-2 text-slate-500 hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800'>
+                      <button type='button' onClick={(event) => { event.stopPropagation(); setEditing(attachment); setDraft({ content: titleOf(attachment), caption: attachment.description || '' }); }} aria-label={t.editFile} title={t.editFile} className='rounded-full border border-slate-200 p-2 text-slate-500 hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800'>
                         <Pencil className='h-4 w-4' />
                       </button>
                       <button 
@@ -336,7 +336,7 @@ const ArchivePage = () => {
                         {isDownloaded ? <Check className='h-4 w-4' /> : <Download className='h-4 w-4' />}
                         <span>{isDownloaded ? t.downloaded : t.download}</span>
                       </button>
-                      <button type='button' onClick={(event) => { event.stopPropagation(); handleDelete(attachment._id); }} aria-label='Xóa tệp' className='rounded-full border border-rose-200 p-2 text-rose-500 hover:bg-rose-50 dark:border-rose-900/50 dark:hover:bg-rose-950/30'>
+                      <button type='button' onClick={(event) => { event.stopPropagation(); handleDelete(attachment._id); }} aria-label={t.deleteFile} title={t.deleteFile} className='rounded-full border border-rose-200 p-2 text-rose-500 hover:bg-rose-50 dark:border-rose-900/50 dark:hover:bg-rose-950/30'>
                         <Trash2 className='h-4 w-4' />
                       </button>
                     </div>
@@ -400,9 +400,9 @@ const ArchivePage = () => {
             <form onSubmit={selectedFile ? handleUpload : saveAttachment} className='w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl dark:bg-slate-900' onClick={(e) => e.stopPropagation()}>
               <div className='flex items-center justify-between'>
                 <h3 className='text-lg font-semibold text-slate-900 dark:text-white'>
-                  {selectedFile ? 'Thông tin tệp tải lên' : 'Chỉnh sửa tệp'}
+                  {selectedFile ? t.fileInfoTitle : t.editFileTitle}
                 </h3>
-                <button type='button' onClick={() => selectedFile ? setSelectedFile(null) : setEditing(null)} aria-label='Đóng' className='rounded-full p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'>
+                <button type='button' onClick={() => selectedFile ? setSelectedFile(null) : setEditing(null)} aria-label={t.close} className='rounded-full p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'>
                   <X className='h-5 w-5' />
                 </button>
               </div>
@@ -410,25 +410,25 @@ const ArchivePage = () => {
               <div className='mt-4 space-y-4'>
                 <div>
                   <label className='block text-xs font-semibold uppercase tracking-wider text-slate-500'>
-                    Nội dung / Tiêu đề <span className='text-rose-500'>*</span>
+                    {t.contentOrTitle} <span className='text-rose-500'>*</span>
                   </label>
                   <input 
                     required 
                     value={draft.content} 
                     onChange={(event) => setDraft({ ...draft, content: event.target.value })} 
-                    placeholder='Nhập nội dung bắt buộc...' 
+                    placeholder={t.contentPlaceholder}
                     className='mt-1 w-full rounded-xl border border-slate-200 bg-transparent p-2.5 text-sm text-slate-800 dark:border-slate-700 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500' 
                   />
                 </div>
 
                 <div>
                   <label className='block text-xs font-semibold uppercase tracking-wider text-slate-500'>
-                    Chú thích / Caption (Tùy chọn)
+                    {t.captionOptional}
                   </label>
                   <textarea 
                     value={draft.caption} 
                     onChange={(event) => setDraft({ ...draft, caption: event.target.value })} 
-                    placeholder='Thêm mô tả cho tệp này...' 
+                    placeholder={t.captionPlaceholder}
                     rows={3}
                     className='mt-1 w-full rounded-xl border border-slate-200 bg-transparent p-2.5 text-sm text-slate-800 dark:border-slate-700 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500' 
                   />
@@ -436,7 +436,7 @@ const ArchivePage = () => {
               </div>
 
               <button type='submit' className='mt-6 w-full rounded-xl bg-violet-600 p-3 text-sm font-semibold text-white shadow-md hover:bg-violet-500 transition'>
-                {selectedFile ? 'Xác nhận tải lên' : 'Lưu thay đổi'}
+                {selectedFile ? t.confirmUpload : t.saveChanges}
               </button>
             </form>
           </div>
@@ -453,7 +453,7 @@ const ArchivePage = () => {
                       type='button' 
                       onClick={() => setZoomScale((s) => Math.max(s - 0.25, 0.5))} 
                       className='p-1.5 text-white hover:bg-slate-700 rounded-lg transition'
-                      title='Thu nhỏ'
+                      title={t.zoomOut}
                     >
                       <Minus className='h-4 w-4' />
                     </button>
@@ -464,7 +464,7 @@ const ArchivePage = () => {
                       type='button' 
                       onClick={() => setZoomScale((s) => Math.min(s + 0.25, 3))} 
                       className='p-1.5 text-white hover:bg-slate-700 rounded-lg transition'
-                      title='Phóng to'
+                      title={t.zoomIn}
                     >
                       <Plus className='h-4 w-4' />
                     </button>
@@ -475,7 +475,7 @@ const ArchivePage = () => {
                   type='button' 
                   onClick={closePreview} 
                   className='p-1.5 text-white hover:bg-rose-600 rounded-lg transition'
-                  title='Đóng'
+                  title={t.close}
                 >
                   <X className='h-4 w-4' />
                 </button>

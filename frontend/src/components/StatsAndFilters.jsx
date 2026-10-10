@@ -114,7 +114,7 @@ const StatsAndFilters = ({ tasks = [], onFilterChange, activeFilter = 'all', cus
 
               <div className='min-w-0'>
                 <AnimatedNumber value={value} />
-                <p className='truncate text-[10px] text-slate-500 dark:text-slate-300 sm:text-[11px]'>
+                <p className='truncate text-xs text-slate-500 dark:text-slate-300 sm:text-xs'>
                   {label}
                 </p>
               </div>
@@ -123,9 +123,9 @@ const StatsAndFilters = ({ tasks = [], onFilterChange, activeFilter = 'all', cus
         ))}
       </div>
 
-      <div className='relative grid w-full rounded-full bg-slate-100 p-1 dark:bg-slate-800' style={{ gridTemplateColumns: `repeat(${filters.length}, minmax(0, 1fr))` }}>
+      <div className='relative grid w-full rounded-full border border-slate-200/70 bg-slate-100/90 p-1.5 shadow-inner dark:border-slate-700/70 dark:bg-slate-950/70' style={{ gridTemplateColumns: `repeat(${filters.length}, minmax(0, 1fr))` }}>
         <div
-          className='pointer-events-none absolute inset-y-1 rounded-full bg-violet-600 shadow-[0_12px_30px_rgba(124,58,237,0.35)] transition-all duration-300 ease-out'
+          className='pointer-events-none absolute inset-y-1.5 rounded-full bg-violet-600 shadow-accent-indicator transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]'
           style={activeTrackStyle}
         />
 
@@ -134,7 +134,8 @@ const StatsAndFilters = ({ tasks = [], onFilterChange, activeFilter = 'all', cus
             key={key}
             type='button'
             onClick={() => onFilterChange?.(key)}
-            className={`relative z-10 rounded-full py-1.5 text-center text-xs font-medium transition-colors sm:text-sm ${
+            aria-pressed={activeFilter === key}
+            className={`relative z-10 rounded-full px-1 py-2 text-center text-xs font-semibold transition-all duration-200 sm:text-sm ${
               activeFilter === key
                 ? 'text-white'
                 : 'text-slate-600 hover:text-slate-900 dark:text-slate-200 dark:hover:text-white'

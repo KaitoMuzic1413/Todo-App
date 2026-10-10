@@ -38,21 +38,61 @@ api.interceptors.response.use(
 
 export const loginWithEmail = (email, password) => api.post('/auth/login', { email, password });
 
-export const registerWithEmail = (email, password) => api.post('/auth/register', { email, password });
+export const registerWithEmail = (email, password, name) => api.post('/auth/register', { email, password, ...(name ? { name } : {}) });
 
 export const forgotPassword = (email) => api.post('/auth/forgot-password', { email });
 
 export const verifyResetOtp = (email, otp) => api.post('/auth/verify-reset-otp', { email, otp });
 
-export const resetPassword = (email, otp, newPassword) => api.post('/auth/reset-password', { email, otp, newPassword });
+export const resetPassword = (email, otp, newPassword, name) => api.post('/auth/reset-password', { email, otp, newPassword, ...(name ? { name } : {}) });
+
+export const fetchUserPreferences = () => api.get('/users/preferences');
+
+export const saveUserPreferences = (preferences) => api.patch('/users/preferences', preferences);
+export const updateUserProfile = (name) => api.patch('/users/profile', { name });
+
+export const fetchActiveFocusSession = () => api.get('/focus/active');
+export const fetchFocusSummary = () => api.get('/focus/summary');
+export const startFocusSession = (payload) => api.post('/focus', payload);
+export const updateFocusSession = (sessionId, action) => api.patch(`/focus/${sessionId}/${action}`);
+
+export const fetchProductivityAnalytics = (range, timeZone) =>
+  api.get('/analytics', { params: { range, timeZone } });
+
+export const fetchGamificationSummary = (timeZone) =>
+  api.get('/gamification', { params: { timeZone } });
 
 export const fetchTasks = (userId, contentType) => api.get('/tasks', { params: { userId, ...(contentType ? { contentType } : {}) } });
 
-export const createTask = ({ userId, title, contentType, content, items }) => api.post('/tasks', { userId, title, contentType, content, items });
+export const fetchCalendarTasks = ({ start, endExclusive }) =>
+  api.get('/tasks/calendar', { params: { start, endExclusive } });
+
+export const fetchCalendarNotes = (dates) =>
+  api.get('/calendar-notes', { params: { dates: dates.join(',') } });
+
+export const saveCalendarNote = (dateKey, content) =>
+  api.put(`/calendar-notes/${encodeURIComponent(dateKey)}`, { content });
+
+export const createTask = ({ userId, title, contentType, content, items, important, parentTaskId, startAt, dueAt, estimatedMinutes, timeZone }) => api.post('/tasks', {
+  userId,
+  title,
+  contentType,
+  content,
+  items,
+  important,
+  parentTaskId,
+  startAt,
+  dueAt,
+  estimatedMinutes,
+  timeZone,
+});
 
 export const updateTask = (taskId, userId, payload) => api.put(`/tasks/${taskId}`, { userId, ...payload });
 
-export const toggleTaskStatus = (taskId, userId) => api.patch(`/tasks/${taskId}/toggle`, { userId });
+export const toggleTaskStatus = (taskId, userId) => api.patch(`/tasks/${taskId}/toggle`, {
+  userId,
+  timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+});
 
 export const deleteTask = (taskId, userId) => api.delete(`/tasks/${taskId}`, { data: { userId } });
 

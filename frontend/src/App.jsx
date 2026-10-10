@@ -13,6 +13,11 @@ import ResetPasswordPage from './pages/Login/ResetPasswordPage';
 import NotFound from './pages/NotFound';
 import TrashPage from './pages/TrashPage';
 import ArchivePage from './pages/ArchivePage';
+import CalendarPage from './pages/CalendarPage';
+import FocusPage from './pages/FocusPage';
+import DashboardPage from './pages/DashboardPage';
+import SettingsPage from './pages/SettingsPage';
+import DueTaskReminderWatcher from './components/DueTaskReminderWatcher';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -46,7 +51,7 @@ const ProtectedRoute = () => {
 const RootRedirect = () => {
   const user = localStorage.getItem('todo-user');
   const token = localStorage.getItem('token');
-  return <Navigate to={user && token ? '/home' : '/signin'} replace />;
+  return <Navigate to={user && token ? '/dashboard' : '/signin'} replace />;
 };
 
 function App() {
@@ -77,6 +82,7 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <DueTaskReminderWatcher />
       <AnimatePresence mode='wait'>
       <PageTransition key={location.pathname}>
       <Routes location={location}>
@@ -90,10 +96,14 @@ function App() {
 
         <Route element={<ProtectedRoute />}>
           <Route path='/home' element={<HomePages />} />
+          <Route path='/calendar' element={<CalendarPage />} />
+          <Route path='/focus' element={<FocusPage />} />
+          <Route path='/dashboard' element={<DashboardPage />} />
           <Route path='/lists' element={<HomePages contentType='list' />} />
           <Route path='/notes' element={<HomePages contentType='note' />} />
           <Route path='/archive' element={<ArchivePage />} />
           <Route path='/trash' element={<TrashPage />} />
+          <Route path='/settings' element={<SettingsPage />} />
         </Route>
 
         <Route path='/404' element={<NotFound />} />

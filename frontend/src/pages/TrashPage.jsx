@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LayoutShell } from '@/components/LayoutShell';
+import Header from '@/components/Header';
 import {
   clearTrash,
   clearTrashAttachments,
@@ -233,6 +234,7 @@ const TrashPage = () => {
   return (
     <LayoutShell>
       <div className='space-y-6'>
+        <Header />
         <header className='flex flex-col gap-4 rounded-[28px] border border-slate-200/80 bg-white/80 p-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/70'>
           <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
             <div className='flex w-full items-center justify-center gap-3 sm:w-auto sm:justify-start'>
@@ -255,9 +257,9 @@ const TrashPage = () => {
               <p className='mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400'>
                 {t.status || 'Status'}
               </p>
-              <div className='relative inline-grid w-full grid-cols-3 gap-2 rounded-full bg-slate-100 p-1 dark:bg-slate-800 sm:w-auto'>
+              <div className='relative inline-grid w-full grid-cols-3 gap-2 rounded-full border border-slate-200/70 bg-slate-100/90 p-1 dark:border-slate-700/70 dark:bg-slate-950/70 sm:w-auto'>
                 <div
-                  className='pointer-events-none absolute inset-y-1 rounded-full bg-violet-600 shadow-[0_12px_30px_rgba(124,58,237,0.35)] transition-all duration-300 ease-out'
+                  className='pointer-events-none absolute inset-y-1 rounded-full bg-violet-600 shadow-accent-strong transition-all duration-300 ease-out'
                   style={{
                     width: `calc(${100 / 3}% - 0.5rem)`,
                     left: `calc(${Math.max(0, ['all', 'complete', 'active'].indexOf(statusFilter)) * (100 / 3)}% + 0.25rem)`,

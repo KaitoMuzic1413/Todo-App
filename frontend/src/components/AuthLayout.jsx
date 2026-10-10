@@ -8,7 +8,7 @@ const AuthLayout = ({ children }) => {
   const { language, setLanguage, t } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
-  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('todo-theme') === 'dark');
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('todo-theme') !== 'light');
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
