@@ -67,8 +67,9 @@ const TaskListPagination = ({ currentPage = 1, totalPages = 1, onPageChange }) =
           <ChevronLeft className='h-4 w-4' />
         </button>
 
-        <div className='rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'>
-          {t.page || 'Page'} {safePage} {t.of || 'of'} {safeTotalPages}
+        <div aria-label={`${t.page || 'Page'} ${safePage} ${t.of || 'of'} ${safeTotalPages}`} className='whitespace-nowrap rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 sm:px-4'>
+          <span className='hidden sm:inline'>{t.page || 'Page'} </span>
+          {safePage} {t.of || 'of'} {safeTotalPages}
         </div>
 
         <button
