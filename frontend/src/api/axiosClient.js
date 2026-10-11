@@ -1,7 +1,8 @@
 import axios from 'axios';
+import { API_BASE_URL } from '../lib/apiConfig';
 
 const axiosClient = axios.create({
-  baseURL: 'https://todo-app-seven-mocha-91.vercel.app',
+  baseURL: API_BASE_URL,
 });
 
 axiosClient.interceptors.request.use((config) => {
@@ -13,7 +14,11 @@ axiosClient.interceptors.request.use((config) => {
 });
 
 axiosClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    const refreshedToken = response.headers?.['x-auth-token'];
+    if (refreshedToken) localStorage.setItem('token', refreshedToken);
+    return response;
+  },
   (error) => {
     if (error.response?.status === 401) {
       const errorCode = error.response?.data?.code;

@@ -9,7 +9,14 @@ import { fetchActiveFocusSession, fetchFocusSummary, fetchTasks, startFocusSessi
 import { useLanguage } from '@/lib/i18n';
 
 const FOCUS_SETTINGS_KEY = 'todo-focus-settings';
-const DEFAULT_DURATIONS = { focus: 25, shortBreak: 5, longBreak: 15 };
+const DEFAULT_DURATIONS = { focus: 25, shortBreak: 5, longBreak: 13 };
+const MAX_FOCUS_MINUTES = 240;
+
+const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+const getBreakLimits = (focusMinutes) => ({
+  shortBreak: Math.max(1, Math.round(focusMinutes * 0.3)),
+  longBreak: Math.max(1, Math.round(focusMinutes * 0.5)),
+});
 
 const getStoredUser = () => {
   try {
@@ -23,10 +30,16 @@ const getStoredUser = () => {
 const getStoredDurations = () => {
   try {
     const stored = JSON.parse(localStorage.getItem(FOCUS_SETTINGS_KEY) || '{}');
-    return Object.fromEntries(Object.entries(DEFAULT_DURATIONS).map(([key, fallback]) => {
+    const durations = Object.fromEntries(Object.entries(DEFAULT_DURATIONS).map(([key, fallback]) => {
       const value = Number(stored[key]);
-      return [key, Number.isInteger(value) && value >= 1 && value <= 240 ? value : fallback];
+      return [key, Number.isInteger(value) && value >= 1 && value <= MAX_FOCUS_MINUTES ? value : fallback];
     }));
+    const breakLimits = getBreakLimits(durations.focus);
+    return {
+      ...durations,
+      shortBreak: clamp(durations.shortBreak, 1, breakLimits.shortBreak),
+      longBreak: clamp(durations.longBreak, 1, breakLimits.longBreak),
+    };
   } catch {
     return DEFAULT_DURATIONS;
   }
@@ -46,6 +59,9 @@ const FocusPage = () => {
   const [currentUser] = useState(getStoredUser);
   const [mode, setMode] = useState('focus');
   const [durations, setDurations] = useState(getStoredDurations);
+  const [durationInputs, setDurationInputs] = useState(() => Object.fromEntries(
+    Object.entries(durations).map(([key, value]) => [key, String(value)])
+  ));
   const [taskId, setTaskId] = useState('');
   const [now, setNow] = useState(null);
   const completedNotificationId = useRef(null);
@@ -139,11 +155,45 @@ const FocusPage = () => {
     toast.success(t.sessionCompleted);
   }, [activeQuery.data, currentUser?._id, queryClient, t]);
 
-  const changeDuration = (durationKey, value) => {
-    const nextValue = Number(value);
-    if (!Number.isInteger(nextValue) || nextValue < 1 || nextValue > 240) return;
-    setDurations((current) => ({ ...current, [durationKey]: nextValue }));
+  const changeDuration = (durationKey, rawValue) => {
+    setDurationInputs((current) => ({ ...current, [durationKey]: rawValue }));
+    if (rawValue === '') return;
+
+    const parsedValue = Number(rawValue);
+    if (!Number.isInteger(parsedValue)) return;
+
+    const nextFocus = durationKey === 'focus'
+      ? clamp(parsedValue, 1, MAX_FOCUS_MINUTES)
+      : durations.focus;
+    const breakLimits = getBreakLimits(nextFocus);
+    const nextDurations = {
+      ...durations,
+      focus: nextFocus,
+      shortBreak: durationKey === 'shortBreak'
+        ? clamp(parsedValue, 1, breakLimits.shortBreak)
+        : clamp(durations.shortBreak, 1, breakLimits.shortBreak),
+      longBreak: durationKey === 'longBreak'
+        ? clamp(parsedValue, 1, breakLimits.longBreak)
+        : clamp(durations.longBreak, 1, breakLimits.longBreak),
+    };
+
+    setDurations(nextDurations);
+    setDurationInputs((current) => ({
+      ...current,
+      [durationKey]: String(nextDurations[durationKey]),
+      ...(durationKey === 'focus' && current.shortBreak !== ''
+        ? { shortBreak: String(nextDurations.shortBreak) }
+        : {}),
+      ...(durationKey === 'focus' && current.longBreak !== ''
+        ? { longBreak: String(nextDurations.longBreak) }
+        : {}),
+    }));
   };
+
+  const durationLimits = { focus: MAX_FOCUS_MINUTES, ...getBreakLimits(durations.focus) };
+  const hasValidDurations = Object.keys(DEFAULT_DURATIONS).every((key) => (
+    durationInputs[key] !== '' && Number(durationInputs[key]) === durations[key]
+  ));
 
   const startSession = async () => {
     if ('Notification' in window && Notification.permission === 'default') {
@@ -219,7 +269,7 @@ const FocusPage = () => {
                 {modeOptions.map(([key, label]) => (
                   <label key={key} className='grid gap-1 text-xs text-slate-500 dark:text-slate-400'>
                     {label} ({t.minutes})
-                    <input type='number' min='1' max='240' step='1' value={durations[key]} onChange={(event) => changeDuration(key, event.target.value)} className='h-11 min-w-0 rounded-2xl border border-slate-200 bg-white px-3 text-sm text-slate-700 shadow-sm outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:ring-violet-900/40' />
+                    <input type='number' min='1' max={durationLimits[key]} step='1' value={durationInputs[key]} onChange={(event) => changeDuration(key, event.target.value)} className='h-11 min-w-0 rounded-2xl border border-slate-200 bg-white px-3 text-sm text-slate-700 shadow-sm outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:ring-violet-900/40' />
                   </label>
                 ))}
               </div>
@@ -230,7 +280,7 @@ const FocusPage = () => {
 
           <div className='flex flex-wrap justify-center gap-2'>
             {!activeSession ? (
-              <button type='button' disabled={isWorking || activeQuery.isLoading} onClick={startSession} className='inline-flex h-12 items-center gap-2 rounded-full bg-violet-600 px-7 text-sm font-semibold text-white shadow-lg shadow-accent transition-all hover:-translate-y-0.5 hover:bg-violet-700 hover:shadow-xl disabled:opacity-50'>
+              <button type='button' disabled={isWorking || activeQuery.isLoading || !hasValidDurations} onClick={startSession} className='inline-flex h-12 items-center gap-2 rounded-full bg-violet-600 px-7 text-sm font-semibold text-white shadow-lg shadow-accent transition-all hover:-translate-y-0.5 hover:bg-violet-700 hover:shadow-xl disabled:opacity-50'>
                 <Play className='h-4 w-4' />{t.startSession}
               </button>
             ) : (

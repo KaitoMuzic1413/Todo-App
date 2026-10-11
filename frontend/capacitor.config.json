@@ -1,0 +1,6 @@
+{
+  "appId": "com.kaito.todox",
+  "appName": "Kaito Todo",
+  "webDir": "dist",
+  "android": { "allowMixedContent": false }
+}

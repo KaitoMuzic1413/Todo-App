@@ -288,8 +288,8 @@ const HomePage = ({ contentType = 'task' }) => {
           </section>
         ) : null}
 
-        <div className='flex flex-col items-center justify-between gap-3 rounded-2xl border border-slate-200/80 bg-white/70 p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900/60 sm:flex-row'>
-          <div className='relative grid grid-cols-3 gap-1 rounded-full border border-slate-200/80 bg-slate-100/90 p-1 shadow-inner dark:border-slate-700 dark:bg-slate-950/70' role='group' aria-label={t.viewMode}>
+        <div className='flex flex-row items-center justify-between gap-2 rounded-2xl border border-slate-200/80 bg-white/70 p-2 shadow-sm dark:border-slate-800 dark:bg-slate-900/60 sm:gap-3 sm:p-3'>
+          <div className='relative grid shrink-0 grid-cols-3 gap-1 rounded-full border border-slate-200/80 bg-slate-100/90 p-1 shadow-inner dark:border-slate-700 dark:bg-slate-950/70' role='group' aria-label={t.viewMode}>
             <span className='pointer-events-none absolute inset-y-1 left-1 w-[calc((100%-1rem)/3)] rounded-full bg-violet-600 shadow-accent-indicator transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]' style={{ transform: `translateX(calc(${['list', 'grid', 'kanban'].indexOf(preferences.taskView) * 100}% + ${['list', 'grid', 'kanban'].indexOf(preferences.taskView) * 4}px))` }} />
             {[
               { key: 'list', label: t.listView, Icon: List },
@@ -306,7 +306,7 @@ const HomePage = ({ contentType = 'task' }) => {
                   setCurrentPage(1);
                   void updatePreferences({ taskView: key });
                 }}
-                className={`relative z-10 flex h-9 items-center justify-center gap-1.5 rounded-full px-3 text-xs font-semibold transition-colors ${preferences.taskView === key ? 'text-white' : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'}`}
+                className={`relative z-10 flex h-9 items-center justify-center gap-1.5 rounded-full px-2 text-xs font-semibold transition-colors sm:px-3 ${preferences.taskView === key ? 'text-white' : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'}`}
               >
                 <Icon className='h-4 w-4' />
                 <span className='hidden sm:inline'>{label}</span>
@@ -314,13 +314,13 @@ const HomePage = ({ contentType = 'task' }) => {
             ))}
           </div>
 
-          <div className='flex items-center gap-2'>
-            <label htmlFor='task-sort' className='text-xs font-medium text-slate-500 dark:text-slate-400'>{t.sortBy}</label>
+          <div className='flex min-w-0 items-center gap-1.5 sm:gap-2'>
+            <label htmlFor='task-sort' className='shrink-0 text-xs font-medium text-slate-500 dark:text-slate-400'>{t.sortBy}</label>
             <select
               id='task-sort'
               value={preferences.sortBy}
               onChange={(event) => void updatePreferences({ sortBy: event.target.value })}
-              className='h-9 max-w-44 rounded-xl border border-slate-200 bg-white px-2 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200'
+              className='h-9 w-24 min-w-0 rounded-xl border border-slate-200 bg-white px-1.5 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 sm:w-auto sm:max-w-44 sm:px-2'
             >
               <option value='title'>{t.titleSort}</option>
               <option value='createdAt'>{t.createdRecently}</option>

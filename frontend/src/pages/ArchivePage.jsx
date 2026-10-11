@@ -8,6 +8,7 @@ import TaskListPagination from '@/components/TaskListPagination';
 import DateTimeFilter from '@/components/DateTimeFilter';
 import { deleteAttachment, downloadAttachment, fetchAttachments, updateAttachment, uploadAttachment } from '@/lib/api';
 import { useLanguage } from '@/lib/i18n';
+import { keepTextareaContentVisible } from '@/lib/textareaSizing';
 import { getCreatedAtRange, isDateInRange } from '@/lib/dateFilters';
 
 const PAGE_SIZE = 5;
@@ -427,10 +428,13 @@ const ArchivePage = () => {
                   </label>
                   <textarea 
                     value={draft.caption} 
-                    onChange={(event) => setDraft({ ...draft, caption: event.target.value })} 
+                    onChange={(event) => {
+                      keepTextareaContentVisible(event.currentTarget);
+                      setDraft({ ...draft, caption: event.target.value });
+                    }} 
                     placeholder={t.captionPlaceholder}
                     rows={3}
-                    className='mt-1 w-full rounded-xl border border-slate-200 bg-transparent p-2.5 text-sm text-slate-800 dark:border-slate-700 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500' 
+                    className='mt-1 w-full resize-y rounded-xl border border-slate-200 bg-transparent p-2.5 text-sm text-slate-800 dark:border-slate-700 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500' 
                   />
                 </div>
               </div>

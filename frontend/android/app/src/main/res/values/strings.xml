@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Kaito Todo</string>
+    <string name="title_activity_main">Kaito Todo</string>
+    <string name="package_name">com.kaito.todox</string>
+    <string name="custom_url_scheme">com.kaito.todox</string>
+</resources>

@@ -1,12 +1,8 @@
 import axios from 'axios';
-
-const apiBaseUrl =
-  import.meta.env.VITE_API_URL ||
-  import.meta.env.VITE_API_BASE_URL ||
-  'https://todo-app-1112.onrender.com/api';
+import { API_BASE_URL } from './apiConfig';
 
 const api = axios.create({
-  baseURL: apiBaseUrl,
+  baseURL: API_BASE_URL,
   timeout: 20000,
   withCredentials: false,
 });

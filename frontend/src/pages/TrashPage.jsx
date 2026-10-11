@@ -138,6 +138,7 @@ const TrashPage = () => {
 
   const handleClearTrash = async () => {
     if (!currentUser?._id) return;
+    if (!window.confirm(t.clearAllTrashConfirm)) return;
 
     try {
       await Promise.all([clearTrash(currentUser._id), clearTrashAttachments()]);

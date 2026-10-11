@@ -8,6 +8,7 @@ import Header from '@/components/Header';
 import { fetchCalendarNotes, fetchCalendarTasks, saveCalendarNote, updateTask } from '@/lib/api';
 import { useLanguage } from '@/lib/i18n';
 import { dateKey, getCalendarDays, getCalendarRange, getDayWarnings, groupTasksByCalendarDay } from '@/lib/calendarUtils';
+import { keepTextareaContentVisible } from '@/lib/textareaSizing';
 
 const EMPTY_TASKS = [];
 
@@ -286,17 +287,23 @@ const CalendarPage = () => {
                       ))}
                       {viewMode === 'month' && dayTasks.length > 2 ? <p className='px-1 text-xs text-slate-500'>+{dayTasks.length - 2}</p> : null}
                     </div>
-                    <label className='mt-1 flex min-h-8 flex-1'>
+                    <label className={`mt-1 min-h-8 ${viewMode === 'day' ? 'block' : 'flex flex-1'}`}>
                       <span className='sr-only'>{t.dayNote} — {date.toLocaleDateString(locale)}</span>
                       <textarea
-                        rows={viewMode === 'month' ? 1 : 2}
+                        ref={(element) => {
+                          if (viewMode === 'day' && element) keepTextareaContentVisible(element);
+                        }}
+                        rows={viewMode === 'month' ? 1 : viewMode === 'day' ? Math.max(2, noteValue.split('\n').length) : 2}
                         maxLength={4000}
                         value={noteValue}
                         enterKeyHint='enter'
-                        onChange={(event) => setNoteDrafts((current) => ({ ...current, [dayKey]: event.target.value }))}
+                        onChange={(event) => {
+                          if (viewMode === 'day') keepTextareaContentVisible(event.currentTarget);
+                          setNoteDrafts((current) => ({ ...current, [dayKey]: event.target.value }));
+                        }}
                         onKeyDown={(event) => {
                           const mobileKeyboard = window.matchMedia('(pointer: coarse)').matches;
-                          if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing && !mobileKeyboard) {
+                          if (viewMode !== 'day' && event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing && !mobileKeyboard) {
                             event.preventDefault();
                             saveDayNote(dayKey, event.currentTarget.value, true);
                           }
@@ -304,7 +311,7 @@ const CalendarPage = () => {
                         onBlur={(event) => {
                           saveDayNote(dayKey, event.currentTarget.value);
                         }}
-                        className='h-full min-h-8 w-full flex-1 resize-none rounded-md border-0 bg-slate-950/10 px-2 py-1.5 text-xs leading-4 text-slate-700 outline-none ring-0 placeholder:text-transparent focus:bg-slate-950/10 focus:outline-none focus:ring-0 dark:bg-slate-950/40 dark:text-slate-200 dark:focus:bg-slate-950/40 sm:text-xs'
+                        className={`min-h-8 w-full rounded-md border-0 bg-slate-950/10 px-2 py-1.5 text-xs leading-4 text-slate-700 outline-none ring-0 placeholder:text-transparent focus:bg-slate-950/10 focus:outline-none focus:ring-0 dark:bg-slate-950/40 dark:text-slate-200 dark:focus:bg-slate-950/40 sm:text-xs ${viewMode === 'day' ? 'resize-y' : 'h-full flex-1 resize-none'}`}
                       />
                     </label>
                   </div>

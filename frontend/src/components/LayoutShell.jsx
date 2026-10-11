@@ -320,7 +320,7 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
                 </button>
               </div>
 
-              <div className='min-h-0 flex-1 overflow-y-auto px-4 py-5 [overscroll-behavior:contain]' style={{ touchAction: 'pan-y' }}>
+              <div className='sidebar-scrollbar min-h-0 flex-1 overflow-y-auto px-4 py-5 [overscroll-behavior:contain]' style={{ touchAction: 'pan-y' }}>
                 <nav className='space-y-2'>
                   {navItems.map((item) => {
                     const isActive = location.pathname === item.to;

@@ -6,7 +6,7 @@ import { sendEmail } from '../utils/email.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'SECRET_KEY';
 const JWT_EXPIRES_IN = '30d';
-const PASSWORD_RESET_MESSAGE = 'If an account exists for that email, a password reset code has been sent.';
+const PASSWORD_RESET_MESSAGE = 'If an account exists for that email, a reset code will be sent shortly.';
 
 export const register = async (req, res) => {
   try {
@@ -181,31 +181,38 @@ export const forgotPassword = async (req, res) => {
     user.resetPasswordOtpHash = crypto.createHmac('sha256', JWT_SECRET)
       .update(`${user._id}:${otp}`)
       .digest('hex');
-    user.resetPasswordOtpExpires = new Date(Date.now() + 2 * 60 * 1000);
+    user.resetPasswordOtpExpires = new Date(Date.now() + 10 * 60 * 1000);
     user.resetPasswordOtpAttempts = 0;
     user.resetPasswordOtpRequestedAt = new Date();
     await user.save();
 
-    await sendEmail({
+    const delivery = await sendEmail({
       to: user.email,
       subject: 'Your password reset code',
+      text: `Your Kaito Todo password reset code is ${otp}. It expires in 10 minutes. If you did not request this, ignore this email.`,
+      categories: ['password-reset'],
       html: `
         <div style="font-family: sans-serif; padding: 20px;">
-          <h2>Password Reset</h2>
-          <p>Use this verification code to reset your password. It expires in 2 minutes.</p>
+          <h2>Kaito Todo password reset</h2>
+          <p>Use this verification code to reset your password. It expires in 10 minutes.</p>
           <p style="font-size: 28px; font-weight: bold; letter-spacing: 4px;">${otp}</p>
           <p>If you did not request a password reset, you can ignore this email.</p>
         </div>
       `,
     });
+    console.info('Password reset email accepted by provider:', delivery);
     return res.status(200).json({ message: PASSWORD_RESET_MESSAGE });
   } catch (error) {
     console.error('Password reset email delivery failed:', error);
     if (typeof req.body?.email === 'string') {
-      await User.updateOne(
-        { email: req.body.email.trim().toLowerCase() },
-        { $unset: { resetPasswordOtpHash: 1, resetPasswordOtpExpires: 1, resetPasswordOtpRequestedAt: 1 }, $set: { resetPasswordOtpAttempts: 0 } }
-      );
+      try {
+        await User.updateOne(
+          { email: req.body.email.trim().toLowerCase() },
+          { $unset: { resetPasswordOtpHash: 1, resetPasswordOtpExpires: 1, resetPasswordOtpRequestedAt: 1 }, $set: { resetPasswordOtpAttempts: 0 } }
+        );
+      } catch (cleanupError) {
+        console.error('Could not clear the unsent password reset code:', cleanupError);
+      }
     }
     const isProviderError = error.message?.includes('request failed') || error.name === 'AbortError';
     return res.status(isProviderError ? 502 : 500).json({

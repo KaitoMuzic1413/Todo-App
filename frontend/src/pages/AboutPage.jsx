@@ -43,17 +43,17 @@ const AboutPage = () => {
         <section className='space-y-6 rounded-[32px] border border-slate-200/80 bg-white/80 p-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/70 sm:space-y-7'>
           <div className='relative isolate overflow-hidden'>
             <div aria-hidden='true' className='pointer-events-none absolute -right-16 -top-24 -z-10 h-64 w-64 rounded-full bg-violet-200/40 blur-3xl dark:bg-violet-800/20' />
-            <div className='grid items-center gap-6 md:grid-cols-[minmax(0,1fr)_auto]'>
-              <div>
+            <div className='grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 sm:gap-6'>
+              <div className='min-w-0'>
                 <p className='text-xs font-semibold uppercase tracking-[0.2em] text-violet-600 dark:text-violet-300'>{t.aboutEyebrow}</p>
-                <h1 className='mt-3 text-3xl font-bold tracking-tight text-slate-950 dark:text-white sm:text-4xl'>{t.aboutName}</h1>
-                <p className='mt-2 text-base font-medium text-violet-700 dark:text-violet-300'>{t.aboutRole}</p>
-                <p className='mt-5 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300 sm:text-base'>{t.aboutIntro}</p>
+                <h1 className='mt-1 text-2xl font-bold tracking-tight text-slate-950 dark:text-white sm:mt-2 sm:text-4xl'>{t.aboutName}</h1>
+                <p className='mt-1 text-sm font-medium text-violet-700 dark:text-violet-300 sm:mt-2 sm:text-base'>{t.aboutRole}</p>
               </div>
-              <div className='mx-auto h-28 w-28 overflow-hidden rounded-[1.75rem] border-4 border-white shadow-md dark:border-slate-800 sm:h-36 sm:w-36'>
+              <div className='h-20 w-20 shrink-0 overflow-hidden rounded-[1.5rem] border-4 border-white shadow-md dark:border-slate-800 sm:h-36 sm:w-36 sm:rounded-[1.75rem]'>
                 <img src='/Logo.jpg' alt='Kaito Dev logo' draggable={false} onDragStart={(event) => event.preventDefault()} className='h-full w-full select-none object-cover [-webkit-touch-callout:none]' />
               </div>
             </div>
+            <p className='mt-5 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300 sm:text-base'>{t.aboutIntro}</p>
           </div>
 
           <div className='grid gap-5 lg:grid-cols-[0.9fr_1.1fr]'>

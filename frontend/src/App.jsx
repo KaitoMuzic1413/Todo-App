@@ -18,6 +18,7 @@ import FocusPage from './pages/FocusPage';
 import DashboardPage from './pages/DashboardPage';
 import SettingsPage from './pages/SettingsPage';
 import DueTaskReminderWatcher from './components/DueTaskReminderWatcher';
+import InstallAppNotice from './components/InstallAppNotice';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -82,6 +83,7 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <InstallAppNotice />
       <DueTaskReminderWatcher />
       <AnimatePresence mode='wait'>
       <PageTransition key={location.pathname}>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Mail } from 'lucide-react';
 import { forgotPassword, resetPassword, verifyResetOtp } from '@/lib/api';
@@ -18,6 +18,16 @@ const ForgotPasswordPage = () => {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resendAvailableAt, setResendAvailableAt] = useState(0);
+  const [resendSeconds, setResendSeconds] = useState(0);
+
+  useEffect(() => {
+    if (!resendAvailableAt) return undefined;
+    const updateCountdown = () => setResendSeconds(Math.max(0, Math.ceil((resendAvailableAt - Date.now()) / 1000)));
+    updateCountdown();
+    const timer = window.setInterval(updateCountdown, 250);
+    return () => window.clearInterval(timer);
+  }, [resendAvailableAt]);
 
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
@@ -32,8 +42,9 @@ const ForgotPasswordPage = () => {
 
       if (!codeSent) {
         const res = await forgotPassword(email.trim());
-        setMessage(res?.data?.message || 'If an account exists for that email, a password reset code has been sent.');
+        setMessage(res?.data?.message || 'If an account exists for that email, a reset code will be sent shortly.');
         setCodeSent(true);
+        setResendAvailableAt(Date.now() + 62 * 1000);
       } else if (!codeVerified) {
         const res = await verifyResetOtp(email.trim(), otp);
         setCodeVerified(true);
@@ -61,6 +72,7 @@ const ForgotPasswordPage = () => {
   };
 
   const handleResendCode = async () => {
+    if (loading || resendSeconds > 0 || Date.now() < resendAvailableAt) return;
     setError('');
     setMessage('');
     try {
@@ -69,7 +81,8 @@ const ForgotPasswordPage = () => {
       setOtp('');
       setCodeVerified(false);
       setNewPassword('');
-      setMessage(res?.data?.message || 'If an account exists for that email, a password reset code has been sent.');
+      setMessage(res?.data?.message || 'If an account exists for that email, a reset code will be sent shortly.');
+      setResendAvailableAt(Date.now() + 62 * 1000);
     } catch (err) {
       setError(err?.response?.data?.message || 'Something went wrong. Please try again.');
     } finally {
@@ -85,7 +98,7 @@ const ForgotPasswordPage = () => {
             Forgot Password
           </h1>
           <p className='mt-2 text-sm text-slate-500 dark:text-slate-300'>
-            {passwordReset ? 'Your password has been updated.' : codeVerified ? 'Create a new password for your account.' : codeSent ? 'Enter the 6-digit verification code sent to your email.' : 'Enter your email address to receive a verification code.'}
+            {passwordReset ? 'Your password has been updated.' : codeVerified ? 'Create a new password for your account.' : codeSent ? t.resetCodeSentPrompt : 'Enter your email address to receive a verification code.'}
           </p>
         </div>
 
@@ -108,21 +121,24 @@ const ForgotPasswordPage = () => {
           </label>
 
           {codeSent && !codeVerified ? (
-            <label className='block text-sm font-medium text-slate-700 dark:text-slate-200'>
-              Verification code
-              <input
-                type='text'
-                required
-                disabled={loading}
-                value={otp}
-                onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                inputMode='numeric'
-                autoComplete='one-time-code'
-                maxLength={6}
-                placeholder='6-digit code'
-                className='mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:ring-violet-900/40'
-              />
-            </label>
+            <div>
+              <label className='block text-sm font-medium text-slate-700 dark:text-slate-200'>
+                Verification code
+                <input
+                  type='text'
+                  required
+                  disabled={loading}
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  inputMode='numeric'
+                  autoComplete='one-time-code'
+                  maxLength={6}
+                  placeholder='6-digit code'
+                  className='mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:ring-violet-900/40'
+                />
+              </label>
+              <p className='mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400'>{t.resetCodeDeliveryHelp}</p>
+            </div>
           ) : null}
 
           {codeVerified && !passwordReset ? (
@@ -163,9 +179,12 @@ const ForgotPasswordPage = () => {
           ) : null}
 
           {codeSent && !codeVerified ? (
-            <button type='button' disabled={loading} onClick={handleResendCode} className='text-sm font-medium text-violet-600 hover:underline disabled:opacity-50 dark:text-violet-400'>
-              Resend verification code
-            </button>
+            <div>
+              <button type='button' disabled={loading || resendSeconds > 0 || Date.now() < resendAvailableAt} onClick={handleResendCode} className='text-sm font-medium text-violet-600 hover:underline disabled:opacity-50 dark:text-violet-400'>
+                Resend verification code
+              </button>
+              {resendSeconds > 0 ? <p className='mt-1 text-xs text-slate-500 dark:text-slate-400'>{t.resendCodeIn.replace('{seconds}', String(resendSeconds))}</p> : null}
+            </div>
           ) : null}
 
           {error ? <p className='text-sm text-rose-500'>{error}</p> : null}
