@@ -36,7 +36,7 @@ npm run tauri:build:linux    # On Linux: AppImage
 npm run tauri:build:windows  # On Windows: NSIS installer .exe
 ```
 
-No filesystem, shell or process plugin permissions are configured. Tauri's CSP allows secure HTTPS/WSS API connections. Configure `VITE_API_BASE_URL` to the same backend before building if it differs from the current default.
+The desktop build checks GitHub Releases for a signed update on startup, downloads it, installs it, and relaunches the app. New builds must have a higher SemVer version and be published as a `v*` tag. This updater applies to Tauri desktop builds; Android updates are distributed through Google Play, and installed PWAs use the service worker update prompt described above. Tauri's CSP allows secure HTTPS/WSS API connections. Configure `VITE_API_BASE_URL` to the same backend before building if it differs from the current default.
 
 ## Configuration and security notes
 
@@ -47,15 +47,17 @@ No filesystem, shell or process plugin permissions are configured. Tauri's CSP a
 
 ## Phát hành cho người dùng tải desktop
 
-Repo đã có workflow `.github/workflows/desktop-release.yml`. Sau khi commit và push code lên GitHub, tạo tag phiên bản ở commit muốn phát hành. Tauri version trong `src-tauri/tauri.conf.json` cần khớp tag; ví dụ `1.0.0` với `v1.0.0`.
+Repo đã có workflow `.github/workflows/desktop-release.yml`. Updater cần khóa ký để xác thực bản phát hành. Khóa riêng đã được tạo và giữ ngoài repo tại `~/.tauri/kaito-todo-updater.key`; không commit hoặc chia sẻ khóa này. Trong GitHub repo, thêm Actions secret `TAURI_SIGNING_PRIVATE_KEY` với nội dung file khóa riêng đó. Khóa không đặt password nên không cần secret password.
+
+Phiên bản hiện tại là `3.1.0`. Các bản desktop cũ hơn cần có bản updater đầu tiên được cài thủ công; sau đó app sẽ tự tải, cài và khởi động lại khi có release mới. Mỗi lần phát hành, tăng version trong `frontend/package.json`, `frontend/src-tauri/Cargo.toml` và `frontend/src-tauri/tauri.conf.json`, commit và push code, rồi tạo tag `v` khớp với version.
 
 ```sh
 git push origin HEAD
-git tag v1.0.0
-git push origin v1.0.0
+git tag v3.1.0
+git push origin v3.1.0
 ```
 
-GitHub Actions sẽ build Linux AppImage và Windows NSIS installer `.exe`, sau đó gắn cả hai vào **GitHub → Releases** khi build xanh. Nếu chạy workflow thủ công từ tab Actions, tải hai file trong phần Artifacts của lần chạy (lưu 14 ngày). Đặt GitHub Actions variable `VITE_API_BASE_URL` nếu release dùng API khác; nếu bỏ trống, app dùng backend Render đã cấu hình mặc định.
+GitHub Actions sẽ build Linux AppImage và Windows NSIS installer `.exe`, tạo gói updater có chữ ký cùng `latest.json`, rồi gắn các file vào **GitHub → Releases**. Đặt GitHub Actions variable `VITE_API_BASE_URL` nếu release dùng API khác; nếu bỏ trống, app dùng backend Render đã cấu hình mặc định. Nếu chạy workflow thủ công từ tab Actions trên branch, nó chỉ tạo artifacts thử nghiệm và không phát hành update.
 
 Người dùng tải bản mới nhất từ trang Releases của repo. Linux: tải file `.AppImage`, cấp quyền chạy (`chmod +x <file>.AppImage`) rồi mở. Windows: tải file setup `.exe` và chạy để cài. Bản `.exe` hiện chưa ký bằng chứng thư nhà phát hành, nên Windows có thể hiện SmartScreen. AppImage/installer cũng chưa được ký; chỉ tải từ Releases chính thức của repo.
 

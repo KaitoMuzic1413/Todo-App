@@ -5,7 +5,14 @@ import Attachment from '../models/Attachment.js';
 import { deleteAttachmentRecords } from './attachmentsControllers.js';
 import { hasScheduleInput, validateTaskSchedule } from '../utils/taskSchedule.js';
 import GamificationEvent from '../models/GamificationEvent.js';
-import { getActivityKeys, getGoalBonusEvents, getTaskCompletionIdempotencyKey, TASK_COMPLETION_XP } from '../utils/gamification.js';
+import {
+  DAILY_TASK_GOAL,
+  getActivityKeys,
+  getGoalBonusEvents,
+  getTaskCompletionIdempotencyKey,
+  TASK_COMPLETION_XP,
+  WEEKLY_TASK_GOAL,
+} from '../utils/gamification.js';
 
 const getUserFilter = (req) => {
   const userId = req.user?.userId;
@@ -64,6 +71,26 @@ const awardTaskCompletionXp = async ({ userId, taskId, timeZone = 'UTC' }) => {
       { $setOnInsert: { userId, ...bonus } },
       { upsert: true }
     );
+  }
+};
+
+const revokeTaskCompletionXp = async ({ userId, taskId }) => {
+  const event = await GamificationEvent.findOneAndDelete({
+    userId,
+    idempotencyKey: getTaskCompletionIdempotencyKey(taskId),
+  });
+  if (!event) return;
+
+  const [dailyCompletionCount, weeklyCompletionCount] = await Promise.all([
+    GamificationEvent.countDocuments({ userId, eventType: 'taskComplete', activityDate: event.activityDate }),
+    GamificationEvent.countDocuments({ userId, eventType: 'taskComplete', weekStart: event.weekStart }),
+  ]);
+
+  if (dailyCompletionCount < DAILY_TASK_GOAL) {
+    await GamificationEvent.deleteOne({ userId, idempotencyKey: `dailyGoal:${event.activityDate}` });
+  }
+  if (weeklyCompletionCount < WEEKLY_TASK_GOAL) {
+    await GamificationEvent.deleteOne({ userId, idempotencyKey: `weeklyGoal:${event.weekStart}` });
   }
 };
 
@@ -338,8 +365,14 @@ export const updateTask = async (req, res) => {
     }
 
     const updatedTask = await Task.findByIdAndUpdate(req.params.id, nextData, { returnDocument: 'after' });
+    if (nextStatus === 'complete' && task.status === 'active' && task.contentType !== 'note' && task.contentType !== 'list') {
+      await revokeTaskCompletionXp({ userId, taskId: task._id });
+    }
     if (nextStatus === 'complete' && task.contentType !== 'note' && task.contentType !== 'list') {
       await awardTaskCompletionXp({ userId, taskId: task._id, timeZone: req.body.timeZone || task.timeZone || 'UTC' });
+    }
+    if (task.status === 'complete' && nextStatus === 'active' && task.contentType !== 'note' && task.contentType !== 'list') {
+      await revokeTaskCompletionXp({ userId, taskId: task._id });
     }
     await touchUserActivity(userId);
     return res.status(200).json(updatedTask);
@@ -395,7 +428,12 @@ export const toggleTaskStatus = async (req, res) => {
     );
 
     if (nextStatus === 'complete' && task.contentType !== 'note' && task.contentType !== 'list') {
+      if (task.status === 'active') {
+        await revokeTaskCompletionXp({ userId, taskId: task._id });
+      }
       await awardTaskCompletionXp({ userId, taskId: task._id, timeZone: req.body.timeZone || task.timeZone || 'UTC' });
+    } else if (nextStatus === 'active' && task.contentType !== 'note' && task.contentType !== 'list') {
+      await revokeTaskCompletionXp({ userId, taskId: task._id });
     }
 
     await touchUserActivity(userId);

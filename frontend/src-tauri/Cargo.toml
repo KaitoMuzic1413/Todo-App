@@ -1,6 +1,6 @@
 [package]
 name = "kaito-todo"
-version = "1.0.0"
+version = "3.1.0"
 description = "Kaito Todo desktop application"
 authors = ["Kaito"]
 edition = "2021"
@@ -14,4 +14,8 @@ tauri-build = { version = "2", features = [] }
 
 [dependencies]
 tauri = { version = "2", features = [] }
+
+[target.'cfg(any(target_os = "macos", windows, target_os = "linux"))'.dependencies]
+tauri-plugin-process = "2.4.0"
+tauri-plugin-updater = "2.13.3"
 

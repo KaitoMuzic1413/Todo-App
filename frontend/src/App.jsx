@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Route, Routes, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { Toaster } from 'sonner';
+import { isTauri } from '@tauri-apps/api/core';
 import { PageTransition } from './components/PageTransition';
 import AboutPage from './pages/AboutPage';
 import HomePages from './pages/HomePage';
@@ -57,6 +58,27 @@ const RootRedirect = () => {
 
 function App() {
   const location = useLocation();
+
+  useEffect(() => {
+    if (!isTauri()) return undefined;
+
+    const checkForDesktopUpdate = async () => {
+      try {
+        const { check } = await import('@tauri-apps/plugin-updater');
+        const update = await check();
+        if (!update) return;
+
+        await update.downloadAndInstall();
+        const { relaunch } = await import('@tauri-apps/plugin-process');
+        await relaunch();
+      } catch (error) {
+        console.warn('Could not check for or install a desktop update:', error);
+      }
+    };
+
+    const timer = window.setTimeout(checkForDesktopUpdate, 5000);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     const blockDevToolsShortcuts = (event) => {

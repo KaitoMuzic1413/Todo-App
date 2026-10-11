@@ -2,6 +2,7 @@ import { ArrowUpRight, Code2, GraduationCap, Heart, Laptop2, Mail, MessageSquare
 import Header from '@/components/Header';
 import { LayoutShell } from '@/components/LayoutShell';
 import { useLanguage } from '@/lib/i18n';
+import { APP_VERSION } from '@/lib/appVersion';
 
 const contactMethods = [
   { icon: Phone, label: 'Phone', value: '+84 793 903 870', href: 'tel:+84793903870' },
@@ -107,7 +108,7 @@ const AboutPage = () => {
             <div><h2 className='font-semibold text-slate-900 dark:text-white'>{t.aboutInterests}</h2><p className='mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300'>{t.aboutInterestsDescription}</p></div>
           </section>
 
-          <footer className='border-t border-slate-200/80 pt-4 text-center text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400'>© 2026 Redhat Todo App</footer>
+          <footer className='border-t border-slate-200/80 pt-4 text-center text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400'>© 2026 Redhat Todo App · v{APP_VERSION}</footer>
         </section>
       </div>
     </LayoutShell>
