@@ -1,5 +1,5 @@
-const CACHE_NAME = 'kaito-todo-shell-v1';
-const APP_SHELL = ['/', '/index.html', '/manifest.webmanifest', '/icons/todo-icon.svg', '/icons/todo-192.png', '/icons/todo-512.png'];
+const CACHE_NAME = 'kaito-todo-shell-v2';
+const APP_SHELL = ['/', '/index.html', '/manifest.webmanifest', '/favicon.png', '/icons/todo-192.png', '/icons/todo-512.png'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
