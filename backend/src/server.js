@@ -8,6 +8,7 @@ import authRoute from "./routes/authRoutes.js";
 import taskRoute from "./routes/tasksRouters.js";
 import userRoute from "./routes/usersRoutes.js";
 import attachmentRoute from "./routes/attachmentsRoutes.js";
+import { cleanupExpiredTrashAttachments } from "./controllers/attachmentsControllers.js";
 import focusRoute from "./routes/focusRoutes.js";
 import analyticsRoute from './routes/analyticsRoutes.js';
 import gamificationRoute from './routes/gamificationRoutes.js';
@@ -70,10 +71,11 @@ const runMaintenanceJobs = async () => {
   try {
     const { deletedUsers, deletedTasks } = await cleanupInactiveUsers();
     const expiredTrashTasks = await cleanupExpiredTrashTasks();
+    const expiredTrashAttachments = await cleanupExpiredTrashAttachments();
 
-    if (deletedUsers > 0 || deletedTasks > 0 || expiredTrashTasks > 0) {
+    if (deletedUsers > 0 || deletedTasks > 0 || expiredTrashTasks > 0 || expiredTrashAttachments > 0) {
       console.log(
-        `[Maintenance] Cleaned: ${deletedUsers} inactive users, ${deletedTasks} tasks, ${expiredTrashTasks} expired trash tasks.`
+        `[Maintenance] Cleaned: ${deletedUsers} inactive users, ${deletedTasks} tasks, ${expiredTrashTasks} expired trash tasks, ${expiredTrashAttachments} expired trash attachments.`
       );
     }
   } catch (error) {

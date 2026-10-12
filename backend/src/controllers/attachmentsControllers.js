@@ -4,8 +4,36 @@ import Task from '../models/Task.js';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ALLOWED_TYPES = /^(image\/(jpeg|png|gif|webp)|video\/(mp4|webm|quicktime)|audio\/(mpeg|wav|ogg|webm)|application\/pdf|text\/plain|text\/markdown)$/;
+let legacyAttachmentTtlIndexRemoved = false;
 
 const getOwnerId = (req) => req.user?.userId;
+
+export const cleanupExpiredTrashAttachments = async () => {
+  try {
+    if (!legacyAttachmentTtlIndexRemoved) {
+      try {
+        await Attachment.collection.dropIndex('deletedAt_1');
+      } catch (error) {
+        if (error.code !== 27 && error.codeName !== 'IndexNotFound') throw error;
+      }
+      legacyAttachmentTtlIndexRemoved = true;
+    }
+    const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const expired = await Attachment.find({ isDeleted: true, deletedAt: { $lte: cutoff } }).select('_id fileId');
+    if (!expired.length) return 0;
+
+    const bucket = getBucket();
+    const results = await Promise.allSettled(expired.map(({ fileId }) => bucket.delete(fileId)));
+    const successfullyDeletedIds = expired
+      .filter((_, index) => results[index].status === 'fulfilled')
+      .map(({ _id }) => _id);
+    if (successfullyDeletedIds.length) await Attachment.deleteMany({ _id: { $in: successfullyDeletedIds } });
+    return successfullyDeletedIds.length;
+  } catch (error) {
+    console.error('Expired attachment cleanup error:', error);
+    return 0;
+  }
+};
 
 const getBucket = () => {
   if (mongoose.connection.readyState !== 1) throw new Error('Database is not connected.');

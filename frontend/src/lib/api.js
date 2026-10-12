@@ -111,13 +111,18 @@ export const clearTrash = (userId) => api.delete('/tasks/trash/clear', { data: {
 
 export const getUserQuota = (userId) => api.get(`/tasks/quota/${userId}`);
 
-export const uploadAttachment = (file, { taskId = null, title, description = '' } = {}) => {
+export const uploadAttachment = (file, { taskId = null, title, description = '', onUploadProgress } = {}) => {
   const formData = new FormData();
   formData.append('file', file);
   formData.append('title', title);
   formData.append('description', description);
   if (taskId) formData.append('taskId', taskId);
-  return api.post('/attachments/upload', formData);
+  return api.post('/attachments/upload', formData, {
+    timeout: 120000,
+    onUploadProgress: (event) => {
+      if (event.total) onUploadProgress?.(Math.round((event.loaded / event.total) * 100));
+    },
+  });
 };
 export const fetchAttachments = () => api.get('/attachments');
 export const updateAttachment = (attachmentId, payload) => api.patch(`/attachments/${attachmentId}`, payload);

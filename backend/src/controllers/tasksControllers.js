@@ -134,8 +134,6 @@ export const cleanupExpiredTrashTasks = async () => {
       deletedAt: { $lte: cutoff },
     });
 
-    await Attachment.deleteMany({ isDeleted: true, deletedAt: { $lte: cutoff } });
-
     return result.deletedCount || 0;
   } catch (error) {
     console.error('Error cleanupExpiredTrashTasks:', error);

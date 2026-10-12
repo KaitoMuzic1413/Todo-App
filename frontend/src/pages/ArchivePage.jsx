@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { AudioLines, Download, Check, FileArchive, FileText, Image, Minus, Pencil, Pin, Plus, Star, Trash2, Upload, Video, X } from 'lucide-react';
 import { LayoutShell } from '@/components/LayoutShell';
 import Header from '@/components/Header';
@@ -10,8 +10,10 @@ import { deleteAttachment, downloadAttachment, fetchAttachments, updateAttachmen
 import { useLanguage } from '@/lib/i18n';
 import { keepTextareaContentVisible } from '@/lib/textareaSizing';
 import { getCreatedAtRange, isDateInRange } from '@/lib/dateFilters';
+import { getAttachmentType, groupAttachmentsByType } from '@/lib/attachmentTypes';
 
 const PAGE_SIZE = 5;
+const MAX_UPLOAD_SIZE = 10 * 1024 * 1024;
 
 const formatSize = (size = 0) => `${(size / 1024 / 1024).toFixed(2)} MB`;
 const formatUploadedAt = (value, language) => {
@@ -22,17 +24,25 @@ const formatUploadedAt = (value, language) => {
     timeStyle: 'short',
   }).format(date);
 };
-const kindOf = (mime = '') => mime.startsWith('image/') ? 'image' : mime.startsWith('video/') ? 'video' : mime.startsWith('audio/') ? 'audio' : 'file';
+const kindOf = (attachment) => getAttachmentType(attachment);
 const titleOf = (attachment) => attachment.title || attachment.originalName;
-const IconOf = ({ kind }) => kind === 'image' ? <Image className='h-5 w-5' /> : kind === 'video' ? <Video className='h-5 w-5' /> : kind === 'audio' ? <AudioLines className='h-5 w-5' /> : kind === 'file' ? <FileText className='h-5 w-5' /> : <FileArchive className='h-5 w-5' />;
+const IconOf = ({ kind }) => kind === 'image' ? <Image className='h-5 w-5' /> : kind === 'video' ? <Video className='h-5 w-5' /> : kind === 'audio' ? <AudioLines className='h-5 w-5' /> : kind === 'document' ? <FileText className='h-5 w-5' /> : <FileArchive className='h-5 w-5' />;
+const typeLabel = (type, t) => ({
+  image: t.fileTypeImages,
+  video: t.fileTypeVideos,
+  audio: t.fileTypeAudio,
+  document: t.fileTypeDocuments,
+  other: t.fileTypeOther,
+})[type] || t.fileTypeOther;
 
 const ArchivePage = () => {
   const { language, t, formatText } = useLanguage();
   const [attachments, setAttachments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [message, setMessage] = useState('');
-  
+
   const [filterKey, setFilterKey] = useState('all');
   const [timeFilter, setTimeFilter] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
@@ -42,13 +52,73 @@ const ArchivePage = () => {
   const [editing, setEditing] = useState(null);
   const [preview, setPreview] = useState(null);
   const [zoomScale, setZoomScale] = useState(1);
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const [isPanning, setIsPanning] = useState(false);
+  const panStartRef = useRef(null);
   const [downloadedIds, setDownloadedIds] = useState(new Set());
-  
+
   const [confirmDownloadItem, setConfirmDownloadItem] = useState(null);
 
   const imageContainerRef = useRef(null);
 
-  const loadAttachments = async () => {
+  // Gắn sự kiện wheel non-passive để chặn cuộn trang hoàn toàn khi zoom ảnh
+  useEffect(() => {
+    const container = imageContainerRef.current;
+    if (!container) return;
+
+    const handleWheelNative = (e) => {
+      if (preview && kindOf(preview.attachment) === 'image') {
+        e.preventDefault();
+        const delta = e.deltaY < 0 ? 0.15 : -0.15;
+        setZoomScale((s) => {
+          const next = Math.min(Math.max(s + delta, 0.5), 3);
+          if (next <= 1) setPanOffset({ x: 0, y: 0 });
+          return next;
+        });
+      }
+    };
+
+    container.addEventListener('wheel', handleWheelNative, { passive: false });
+    return () => {
+      container.removeEventListener('wheel', handleWheelNative);
+    };
+  }, [preview]);
+
+  // Lắng nghe sự kiện mouseup và mousemove trên window để dù kéo ra ngoài màn hình thả ra cũng không bị mất kiểm soát hay thoát modal
+  useEffect(() => {
+    const handleWindowMouseMove = (event) => {
+      if (!panStartRef.current || !imageContainerRef.current) return;
+      const rawX = panStartRef.current.offsetX + event.clientX - panStartRef.current.clientX;
+      const rawY = panStartRef.current.offsetY + event.clientY - panStartRef.current.clientY;
+
+      const container = imageContainerRef.current;
+      const maxLimitX = (container.clientWidth * (zoomScale - 1)) / 2;
+      const maxLimitY = (container.clientHeight * (zoomScale - 1)) / 2;
+
+      setPanOffset({
+        x: Math.max(Math.min(rawX, maxLimitX), -maxLimitX),
+        y: Math.max(Math.min(rawY, maxLimitY), -maxLimitY),
+      });
+    };
+
+    const handleWindowMouseUp = () => {
+      if (panStartRef.current) {
+        panStartRef.current = null;
+        setIsPanning(false);
+      }
+    };
+
+    if (preview) {
+      window.addEventListener('mousemove', handleWindowMouseMove);
+      window.addEventListener('mouseup', handleWindowMouseUp);
+    }
+    return () => {
+      window.removeEventListener('mousemove', handleWindowMouseMove);
+      window.removeEventListener('mouseup', handleWindowMouseUp);
+    };
+  }, [preview, zoomScale]);
+
+  const loadAttachments = useCallback(async () => {
     try {
       const response = await fetchAttachments();
       const normalizedData = (response?.data || []).map(item => ({
@@ -62,38 +132,45 @@ const ArchivePage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => loadAttachments(), 0);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [loadAttachments]);
 
   const chooseFile = (event) => {
     const file = event.target.files?.[0];
     event.target.value = '';
     if (!file) return;
     setSelectedFile(file);
-    setDraft({ 
-      content: file.name.replace(/\.[^/.]+$/, ''), 
-      caption: '' 
+    setDraft({
+      content: file.name.replace(/\.[^/.]+\$/, ''),
+      caption: ''
     });
   };
 
   const handleUpload = async (event) => {
     event.preventDefault();
     if (!selectedFile || !draft.content.trim()) return;
+    if (selectedFile.size > MAX_UPLOAD_SIZE) {
+      setMessage(t.fileTooLarge);
+      return;
+    }
 
     try {
       setUploading(true);
+      setUploadProgress(0);
       const uploadPayload = {
         title: draft.content,
         description: draft.caption,
+        onUploadProgress: setUploadProgress,
       };
       await uploadAttachment(selectedFile, uploadPayload);
       setSelectedFile(null);
       setDraft({ content: '', caption: '' });
       setMessage(t.uploadSuccess);
+      setUploadProgress(0);
       setCurrentPage(1);
       await loadAttachments();
     } catch (error) {
@@ -159,11 +236,12 @@ const ArchivePage = () => {
   };
 
   const handlePreview = async (attachment) => {
-    if (kindOf(attachment.mimeType) === 'file') return;
+    if (!['image', 'video', 'audio'].includes(kindOf(attachment))) return;
     try {
       const response = await downloadAttachment(attachment._id, true);
       setPreview({ attachment, url: URL.createObjectURL(response.data) });
       setZoomScale(1);
+      setPanOffset({ x: 0, y: 0 });
     } catch {
       setMessage(t.previewFailed);
     }
@@ -173,6 +251,7 @@ const ArchivePage = () => {
     if (preview?.url) URL.revokeObjectURL(preview.url);
     setPreview(null);
     setZoomScale(1);
+    setPanOffset({ x: 0, y: 0 });
   };
 
   const saveAttachment = async (event) => {
@@ -233,6 +312,8 @@ const ArchivePage = () => {
     () => filteredAttachments.slice((safeCurrentPage - 1) * PAGE_SIZE, safeCurrentPage * PAGE_SIZE),
     [safeCurrentPage, filteredAttachments]
   );
+  const visibleGroups = useMemo(() => groupAttachmentsByType(visibleAttachments), [visibleAttachments]);
+  const showTypeHeadings = visibleGroups.length > 1;
 
   return (
     <LayoutShell>
@@ -247,12 +328,12 @@ const ArchivePage = () => {
             </div>
             <label className={`inline-flex items-center gap-2 rounded-2xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white transition-all ${uploading ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-violet-500'}`}>
               <Upload className='h-4 w-4' /> {t.chooseFile}
-              <input 
-                type='file' 
-                disabled={uploading} 
-                className='hidden' 
-                onChange={chooseFile} 
-                accept='image/*,video/*,audio/*,application/pdf,text/plain,text/markdown' 
+              <input
+                type='file'
+                disabled={uploading}
+                className='hidden'
+                onChange={chooseFile}
+                accept='image/*,video/*,audio/*,application/pdf,text/plain,text/markdown'
               />
             </label>
           </div>
@@ -292,14 +373,17 @@ const ArchivePage = () => {
                   {t.noFilesInCategory}
                 </div>
               )}
-              
-              {visibleAttachments.map((attachment) => {
-                const kind = kindOf(attachment.mimeType);
-                const isDownloaded = downloadedIds.has(attachment._id);
-                return (
-                  <article 
-                    key={attachment._id} 
-                    onClick={() => handlePreview(attachment)} 
+
+              {visibleGroups.map(([groupType, groupItems]) => (
+                <section key={groupType} className='space-y-3'>
+                  {showTypeHeadings && <h2 className='flex items-center gap-2 px-1 text-sm font-semibold text-slate-600 dark:text-slate-300'><IconOf kind={groupType} />{typeLabel(groupType, t)} <span className='text-xs font-normal text-slate-400'>({groupItems.length})</span></h2>}
+                  {groupItems.map((attachment) => {
+                    const kind = kindOf(attachment);
+                    const isDownloaded = downloadedIds.has(attachment._id);
+                    return (
+                  <article
+                    key={attachment._id}
+                    onClick={() => handlePreview(attachment)}
                     className={`cursor-pointer rounded-2xl border p-4 shadow-md transition-shadow duration-300 hover:border-violet-300 hover:shadow-lg dark:hover:border-violet-700 ${attachment.pinned ? 'border-violet-300 bg-violet-50/50 dark:border-violet-900 dark:bg-violet-950/20' : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-950/50'}`}
                   >
                     <div className='flex items-start gap-3'>
@@ -309,7 +393,7 @@ const ArchivePage = () => {
                       <div className='min-w-0 flex-1'>
                         <p className='truncate text-sm font-semibold text-slate-800 dark:text-slate-100'>{titleOf(attachment)}</p>
                         <p className='mt-1 truncate text-xs text-slate-400'>{attachment.description || attachment.originalName}</p>
-                        <p className='mt-2 text-xs text-slate-400'>{t.uploadedLabel} {formatUploadedAt(attachment.createdAt, language)} · {formatSize(attachment.size)} · {kind === 'file' ? t.document : t.tapToView}{attachment.taskId ? ` · ${t.linkedTask}` : ''}</p>
+                        <p className='mt-2 text-xs text-slate-400'>{t.uploadedLabel} {formatUploadedAt(attachment.createdAt, language)} · {formatSize(attachment.size)} · {kind === 'document' || kind === 'other' ? t.document : t.tapToView}{attachment.taskId ? ` · ${t.linkedTask}` : ''}</p>
                       </div>
                       <div className='flex gap-1'>
                         <button type='button' onClick={(event) => { event.stopPropagation(); toggleAttachment(attachment, 'pinned'); }} className={attachment.pinned ? 'text-violet-600' : 'text-slate-400 hover:text-slate-600'} aria-label={t.pinFile} title={t.pinFile}>
@@ -324,13 +408,13 @@ const ArchivePage = () => {
                       <button type='button' onClick={(event) => { event.stopPropagation(); setEditing(attachment); setDraft({ content: titleOf(attachment), caption: attachment.description || '' }); }} aria-label={t.editFile} title={t.editFile} className='rounded-full border border-slate-200 p-2 text-slate-500 hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800'>
                         <Pencil className='h-4 w-4' />
                       </button>
-                      <button 
-                        type='button' 
-                        onClick={(event) => { event.stopPropagation(); handleDownloadClick(attachment); }} 
-                        aria-label={isDownloaded ? t.downloaded : t.download} 
+                      <button
+                        type='button'
+                        onClick={(event) => { event.stopPropagation(); handleDownloadClick(attachment); }}
+                        aria-label={isDownloaded ? t.downloaded : t.download}
                         className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-2 text-xs font-medium transition ${
-                          isDownloaded 
-                            ? 'border-emerald-200 bg-emerald-50 text-emerald-600 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-400 shadow-sm' 
+                          isDownloaded
+                            ? 'border-emerald-200 bg-emerald-50 text-emerald-600 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-400 shadow-sm'
                             : 'border-slate-200 text-slate-500 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800'
                         }`}
                       >
@@ -342,8 +426,10 @@ const ArchivePage = () => {
                       </button>
                     </div>
                   </article>
-                );
-              })}
+                    );
+                  })}
+                </section>
+              ))}
             </div>
           </div>
         )}
@@ -373,15 +459,15 @@ const ArchivePage = () => {
                 {formatText('downloadAgainMessage', { filename: titleOf(confirmDownloadItem) })}
               </p>
               <div className='mt-6 flex justify-end gap-2'>
-                <button 
-                  type='button' 
+                <button
+                  type='button'
                   onClick={() => setConfirmDownloadItem(null)}
                   className='rounded-xl px-4 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition'
                 >
                   {t.cancel}
                 </button>
-                <button 
-                  type='button' 
+                <button
+                  type='button'
                   onClick={() => {
                     const item = confirmDownloadItem;
                     setConfirmDownloadItem(null);
@@ -397,13 +483,13 @@ const ArchivePage = () => {
         )}
 
         {(selectedFile || editing) && (
-          <div className='fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm' onClick={() => selectedFile ? setSelectedFile(null) : setEditing(null)}>
+          <div className='fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm' onClick={() => { if (!uploading) selectedFile ? setSelectedFile(null) : setEditing(null); }}>
             <form onSubmit={selectedFile ? handleUpload : saveAttachment} className='w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl dark:bg-slate-900' onClick={(e) => e.stopPropagation()}>
               <div className='flex items-center justify-between'>
                 <h3 className='text-lg font-semibold text-slate-900 dark:text-white'>
                   {selectedFile ? t.fileInfoTitle : t.editFileTitle}
                 </h3>
-                <button type='button' onClick={() => selectedFile ? setSelectedFile(null) : setEditing(null)} aria-label={t.close} className='rounded-full p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'>
+                <button type='button' disabled={uploading} onClick={() => selectedFile ? setSelectedFile(null) : setEditing(null)} aria-label={t.close} className='rounded-full p-1 text-slate-400 hover:bg-slate-100 disabled:opacity-40 dark:hover:bg-slate-800'>
                   <X className='h-5 w-5' />
                 </button>
               </div>
@@ -413,12 +499,13 @@ const ArchivePage = () => {
                   <label className='block text-xs font-semibold uppercase tracking-wider text-slate-500'>
                     {t.contentOrTitle} <span className='text-rose-500'>*</span>
                   </label>
-                  <input 
-                    required 
-                    value={draft.content} 
-                    onChange={(event) => setDraft({ ...draft, content: event.target.value })} 
+                  <input
+                    required
+                    disabled={uploading}
+                    value={draft.content}
+                    onChange={(event) => setDraft({ ...draft, content: event.target.value })}
                     placeholder={t.contentPlaceholder}
-                    className='mt-1 w-full rounded-xl border border-slate-200 bg-transparent p-2.5 text-sm text-slate-800 dark:border-slate-700 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500' 
+                    className='mt-1 w-full rounded-xl border border-slate-200 bg-transparent p-2.5 text-sm text-slate-800 dark:border-slate-700 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500'
                   />
                 </div>
 
@@ -426,36 +513,54 @@ const ArchivePage = () => {
                   <label className='block text-xs font-semibold uppercase tracking-wider text-slate-500'>
                     {t.captionOptional}
                   </label>
-                  <textarea 
-                    value={draft.caption} 
+                  <textarea
+                    disabled={uploading}
+                    value={draft.caption}
                     onChange={(event) => {
                       keepTextareaContentVisible(event.currentTarget);
                       setDraft({ ...draft, caption: event.target.value });
-                    }} 
+                    }}
                     placeholder={t.captionPlaceholder}
                     rows={3}
-                    className='mt-1 w-full resize-y rounded-xl border border-slate-200 bg-transparent p-2.5 text-sm text-slate-800 dark:border-slate-700 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500' 
+                    className='mt-1 w-full resize-y rounded-xl border border-slate-200 bg-transparent p-2.5 text-sm text-slate-800 dark:border-slate-700 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500'
                   />
                 </div>
+                {selectedFile && (
+                  <p className={`text-xs ${selectedFile.size > MAX_UPLOAD_SIZE ? 'text-rose-500' : 'text-slate-500 dark:text-slate-400'}`}>{selectedFile.size > MAX_UPLOAD_SIZE ? t.fileTooLarge : t.maxUploadSize}</p>
+                )}
+                {uploading && (
+                  <div className='space-y-2' role='status' aria-live='polite'>
+                    <div className='flex justify-between text-xs font-medium text-slate-600 dark:text-slate-300'>
+                      <span>{kindOf({ mimeType: selectedFile?.type, originalName: selectedFile?.name }) === 'video' ? t.uploadingVideo : t.uploadingFile}</span>
+                      <span>{uploadProgress}%</span>
+                    </div>
+                    <div className='h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700'>
+                      <div className='h-full rounded-full bg-violet-600 transition-[width] duration-200' style={{ width: `${uploadProgress}%` }} />
+                    </div>
+                  </div>
+                )}
               </div>
 
-              <button type='submit' className='mt-6 w-full rounded-xl bg-violet-600 p-3 text-sm font-semibold text-white shadow-md hover:bg-violet-500 transition'>
-                {selectedFile ? t.confirmUpload : t.saveChanges}
+              <button type='submit' disabled={uploading || (selectedFile && selectedFile.size > MAX_UPLOAD_SIZE)} className='mt-6 w-full rounded-xl bg-violet-600 p-3 text-sm font-semibold text-white shadow-md hover:bg-violet-500 transition disabled:cursor-not-allowed disabled:opacity-60'>
+                {uploading ? t.uploading : selectedFile ? t.confirmUpload : t.saveChanges}
               </button>
             </form>
           </div>
         )}
 
         {preview && (
-          <div className='fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm' onClick={closePreview}>
+          <div 
+            className='fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm select-none' 
+            onClick={closePreview}
+          >
             <div className='relative max-h-[90vh] max-w-4xl flex flex-col items-center rounded-3xl bg-slate-900 p-6 shadow-2xl overflow-hidden border border-slate-800' onClick={(event) => event.stopPropagation()}>
-              
+
               <div className='absolute top-4 right-4 z-20 flex items-center gap-2 bg-slate-800/80 backdrop-blur-md p-1.5 rounded-xl border border-slate-700'>
-                {kindOf(preview.attachment.mimeType) === 'image' && (
+                {kindOf(preview.attachment) === 'image' && (
                   <>
-                    <button 
-                      type='button' 
-                      onClick={() => setZoomScale((s) => Math.max(s - 0.25, 0.5))} 
+                    <button
+                      type='button'
+                      onClick={() => setZoomScale((s) => Math.max(s - 0.25, 0.5))}
                       className='p-1.5 text-white hover:bg-slate-700 rounded-lg transition'
                       title={t.zoomOut}
                     >
@@ -464,9 +569,9 @@ const ArchivePage = () => {
                     <span className='text-xs font-medium text-slate-300 min-w-[3rem] text-center'>
                       {Math.round(zoomScale * 100)}%
                     </span>
-                    <button 
-                      type='button' 
-                      onClick={() => setZoomScale((s) => Math.min(s + 0.25, 3))} 
+                    <button
+                      type='button'
+                      onClick={() => setZoomScale((s) => Math.min(s + 0.25, 3))}
                       className='p-1.5 text-white hover:bg-slate-700 rounded-lg transition'
                       title={t.zoomIn}
                     >
@@ -475,9 +580,9 @@ const ArchivePage = () => {
                     <div className='h-4 w-[1px] bg-slate-700 mx-1' />
                   </>
                 )}
-                <button 
-                  type='button' 
-                  onClick={closePreview} 
+                <button
+                  type='button'
+                  onClick={closePreview}
                   className='p-1.5 text-white hover:bg-rose-600 rounded-lg transition'
                   title={t.close}
                 >
@@ -485,17 +590,22 @@ const ArchivePage = () => {
                 </button>
               </div>
 
-              <div 
+              <div
                 ref={imageContainerRef}
-                onWheel={(e) => {
-                  if (kindOf(preview.attachment.mimeType) === 'image') {
-                    e.preventDefault();
-                    const delta = e.deltaY < 0 ? 0.15 : -0.15;
-                    setZoomScale((s) => Math.min(Math.max(s + delta, 0.5), 3));
-                  }
+                onMouseDown={(event) => {
+                  if (kindOf(preview.attachment) !== 'image' || zoomScale <= 1) return;
+                  panStartRef.current = { clientX: event.clientX, clientY: event.clientY, offsetX: panOffset.x, offsetY: panOffset.y };
+                  setIsPanning(true);
                 }}
                 onTouchStart={(e) => {
-                  if (e.touches.length === 2 && kindOf(preview.attachment.mimeType) === 'image') {
+                  if (kindOf(preview.attachment) !== 'image') return;
+                  if (e.touches.length === 1 && zoomScale > 1) {
+                    imageContainerRef.current.dataset.panX = panOffset.x;
+                    imageContainerRef.current.dataset.panY = panOffset.y;
+                    imageContainerRef.current.dataset.touchX = e.touches[0].clientX;
+                    imageContainerRef.current.dataset.touchY = e.touches[0].clientY;
+                  }
+                  if (e.touches.length === 2) {
                     const dist = Math.hypot(
                       e.touches[0].clientX - e.touches[1].clientX,
                       e.touches[0].clientY - e.touches[1].clientY
@@ -507,7 +617,7 @@ const ArchivePage = () => {
                   }
                 }}
                 onTouchMove={(e) => {
-                  if (e.touches.length === 2 && kindOf(preview.attachment.mimeType) === 'image' && imageContainerRef.current) {
+                  if (kindOf(preview.attachment) === 'image' && imageContainerRef.current && e.touches.length === 2) {
                     e.preventDefault();
                     const dist = Math.hypot(
                       e.touches[0].clientX - e.touches[1].clientX,
@@ -517,22 +627,37 @@ const ArchivePage = () => {
                     const initialScale = parseFloat(imageContainerRef.current.dataset.initialScale || zoomScale);
                     const newScale = Math.min(Math.max((dist / initialDist) * initialScale, 0.5), 3);
                     setZoomScale(newScale);
+                    if (newScale <= 1) setPanOffset({ x: 0, y: 0 });
+                  } else if (kindOf(preview.attachment) === 'image' && imageContainerRef.current && e.touches.length === 1 && zoomScale > 1) {
+                    e.preventDefault();
+                    const container = imageContainerRef.current;
+                    const rawX = Number(container.dataset.panX || 0) + e.touches[0].clientX - Number(container.dataset.touchX || e.touches[0].clientX);
+                    const rawY = Number(container.dataset.panY || 0) + e.touches[0].clientY - Number(container.dataset.touchY || e.touches[0].clientY);
+
+                    const maxLimitX = (container.clientWidth * (zoomScale - 1)) / 2;
+                    const maxLimitY = (container.clientHeight * (zoomScale - 1)) / 2;
+
+                    setPanOffset({
+                      x: Math.max(Math.min(rawX, maxLimitX), -maxLimitX),
+                      y: Math.max(Math.min(rawY, maxLimitY), -maxLimitY),
+                    });
                   }
                 }}
-                className='flex flex-1 items-center justify-center overflow-auto max-h-[70vh] w-full py-8 touch-none'
+                className='flex flex-1 items-center justify-center overflow-hidden max-h-[70vh] w-full py-8 touch-none cursor-grab active:cursor-grabbing'
               >
-                {kindOf(preview.attachment.mimeType) === 'image' && (
-                  <img 
-                    src={preview.url} 
-                    alt={titleOf(preview.attachment)} 
-                    style={{ transform: `scale(${zoomScale})`, transition: 'transform 0.1s ease-out' }}
-                    className='max-h-[60vh] max-w-full object-contain cursor-grab rounded-lg select-none' 
+                {kindOf(preview.attachment) === 'image' && (
+                  <img
+                    src={preview.url}
+                    alt={titleOf(preview.attachment)}
+                    onDragStart={(e) => e.preventDefault()}
+                    style={{ transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomScale})`, transition: isPanning ? 'none' : 'transform 0.1s ease-out' }}
+                    className='max-h-[60vh] max-w-full object-contain rounded-lg select-none'
                   />
                 )}
-                {kindOf(preview.attachment.mimeType) === 'video' && (
-                  <video src={preview.url} controls autoPlay className='max-h-[65vh] max-w-full rounded-lg shadow-lg' />
+                {kindOf(preview.attachment) === 'video' && (
+                  <video src={preview.url} controls onClick={(event) => { const video = event.currentTarget; if (video.paused) void video.play(); else video.pause(); }} className='max-h-[65vh] max-w-full rounded-lg shadow-lg' />
                 )}
-                {kindOf(preview.attachment.mimeType) === 'audio' && (
+                {kindOf(preview.attachment) === 'audio' && (
                   <div className='flex flex-col items-center gap-5 p-12 text-white'>
                     <AudioLines className='h-16 w-16 text-violet-400 animate-pulse' />
                     <audio src={preview.url} controls autoPlay className='w-80' />

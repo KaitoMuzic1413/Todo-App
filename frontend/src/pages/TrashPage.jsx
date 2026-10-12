@@ -13,12 +13,15 @@ import {
   restoreTask,
 } from '@/lib/api';
 import { useLanguage } from '@/lib/i18n';
-import { Check, FileArchive, RotateCcw, Trash2, X } from 'lucide-react';
+import { Check, FileArchive, FileText, Image, Video, AudioLines, RotateCcw, Trash2, X } from 'lucide-react';
 import TaskListPagination from '@/components/TaskListPagination';
 import DateTimeFilter from '@/components/DateTimeFilter';
 import { getCreatedAtRange, isDateInRange } from '@/lib/dateFilters';
+import { getAttachmentType, groupAttachmentsByType } from '@/lib/attachmentTypes';
 
 const PAGE_SIZE = 5;
+const typeLabel = (type, t) => ({ image: t.fileTypeImages, video: t.fileTypeVideos, audio: t.fileTypeAudio, document: t.fileTypeDocuments, other: t.fileTypeOther })[type];
+const TypeIcon = ({ type }) => type === 'image' ? <Image className='h-4 w-4' /> : type === 'video' ? <Video className='h-4 w-4' /> : type === 'audio' ? <AudioLines className='h-4 w-4' /> : type === 'document' ? <FileText className='h-4 w-4' /> : <FileArchive className='h-4 w-4' />;
 
 const getStoredUser = () => {
   if (typeof window === 'undefined') return null;
@@ -231,6 +234,7 @@ const TrashPage = () => {
 
   const isAllPageSelected =
     pagedTasks.length > 0 && pagedTasks.every((task) => selectedTaskIds.includes(task._id));
+  const attachmentGroups = groupAttachmentsByType(attachments);
 
   return (
     <LayoutShell>
@@ -459,10 +463,12 @@ const TrashPage = () => {
           <section className='rounded-[28px] border border-slate-200/80 bg-white/80 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/70'>
             <div className='mb-4 flex items-center gap-2'>
               <FileArchive className='h-5 w-5 text-violet-600' />
-              <h2 className='text-lg font-semibold text-slate-900 dark:text-white'>Deleted files</h2>
+              <h2 className='text-lg font-semibold text-slate-900 dark:text-white'>{t.deletedFiles}</h2>
             </div>
-            <div className='space-y-3'>
-              {attachments.map((attachment) => (
+            <div className='space-y-5'>
+              {attachmentGroups.map(([type, group]) => <div key={type} className='space-y-3'>
+                {attachmentGroups.length > 1 && <h3 className='flex items-center gap-2 text-sm font-semibold text-slate-600 dark:text-slate-300'><TypeIcon type={type} />{typeLabel(type, t)} <span className='text-xs font-normal text-slate-400'>({group.length})</span></h3>}
+                {group.map((attachment) => (
                 <div key={attachment._id} className='flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700 dark:bg-slate-950/50'>
                   <div className='min-w-0'>
                     <p className='truncate font-medium text-slate-800 dark:text-slate-100'>{attachment.originalName}</p>
@@ -479,7 +485,8 @@ const TrashPage = () => {
                     </button>
                   </div>
                 </div>
-              ))}
+                ))}
+              </div>)}
             </div>
           </section>
         ) : null}

@@ -29,7 +29,6 @@ const attachmentSchema = new mongoose.Schema(
 );
 
 attachmentSchema.index({ ownerId: 1, createdAt: -1 });
-attachmentSchema.index({ deletedAt: 1 }, { expireAfterSeconds: 2592000 });
 
 const Attachment = mongoose.model('Attachment', attachmentSchema);
 export default Attachment;
