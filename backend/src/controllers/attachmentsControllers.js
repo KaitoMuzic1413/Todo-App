@@ -3,7 +3,8 @@ import Attachment from '../models/Attachment.js';
 import Task from '../models/Task.js';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
-const ALLOWED_TYPES = /^(image\/(jpeg|png|gif|webp)|video\/(mp4|webm|quicktime)|audio\/(mpeg|wav|ogg|webm)|application\/pdf|text\/plain|text\/markdown)$/;
+const ALLOWED_TYPES = /^(image\/(jpeg|png|gif|webp)|audio\/(mpeg|wav|ogg|webm)|application\/pdf|text\/plain|text\/markdown)$/;
+const VIDEO_FILE_EXTENSION = /\.(mp4|m4v|mov|webm|mkv|avi|wmv|mpg|mpeg|3gp)$/i;
 let legacyAttachmentTtlIndexRemoved = false;
 
 const getOwnerId = (req) => req.user?.userId;
@@ -76,6 +77,9 @@ export const uploadAttachment = async (req, res) => {
 
     if (file.size < 1 || file.size > MAX_FILE_SIZE) {
       return res.status(400).json({ message: 'Files must be smaller than 10 MB.' });
+    }
+    if (file.mimetype.toLowerCase().startsWith('video/') || VIDEO_FILE_EXTENSION.test(file.originalname)) {
+      return res.status(400).json({ message: 'Video files cannot be uploaded to the archive.' });
     }
     if (!ALLOWED_TYPES.test(file.mimetype)) {
       return res.status(400).json({ message: 'This file type is not supported.' });

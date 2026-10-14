@@ -143,6 +143,11 @@ const ArchivePage = () => {
     const file = event.target.files?.[0];
     event.target.value = '';
     if (!file) return;
+    if (file.type.toLowerCase().startsWith('video/') || kindOf({ originalName: file.name }) === 'video') {
+      setSelectedFile(null);
+      setMessage(t.videoUploadNotSupported);
+      return;
+    }
     setSelectedFile(file);
     setDraft({
       content: file.name.replace(/\.[^/.]+\$/, ''),
@@ -333,7 +338,7 @@ const ArchivePage = () => {
                 disabled={uploading}
                 className='hidden'
                 onChange={chooseFile}
-                accept='image/*,video/*,audio/*,application/pdf,text/plain,text/markdown'
+                accept='image/*,audio/*,application/pdf,text/plain,text/markdown'
               />
             </label>
           </div>

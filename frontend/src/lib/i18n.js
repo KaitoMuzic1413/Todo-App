@@ -248,7 +248,8 @@ export const translations = {
     period: 'Time period',
 
     uploadArchiveTitle: 'Upload Archive Files',
-    uploadArchiveSubtitle: 'Support images, videos, audio and personal documents.',
+    uploadArchiveSubtitle: 'Support images, audio and personal documents. Videos cannot be uploaded.',
+    videoUploadNotSupported: 'Video files cannot be uploaded to the archive.',
     chooseFile: 'Choose file',
     loadingArchive: 'Loading archive data...',
     noFilesInCategory: 'No files in this category.',
@@ -548,7 +549,8 @@ export const translations = {
     period: 'Khoảng thời gian',
 
     uploadArchiveTitle: 'Tải lên tệp lưu trữ',
-    uploadArchiveSubtitle: 'Hỗ trợ ảnh, video, âm thanh và tài liệu cá nhân.',
+    uploadArchiveSubtitle: 'Hỗ trợ ảnh, âm thanh và tài liệu cá nhân. Không thể tải video lên kho tệp.',
+    videoUploadNotSupported: 'Không thể tải video lên kho tệp.',
     chooseFile: 'Chọn tệp tải lên',
     loadingArchive: 'Đang tải dữ liệu lưu trữ...',
     noFilesInCategory: 'Chưa có tệp nào trong mục này.',
