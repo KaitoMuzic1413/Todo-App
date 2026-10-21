@@ -22,7 +22,7 @@ const getStoredUser = () => {
   }
 };
 
-export function LayoutShell({ children, hideAccountPanel = false }) {
+export function LayoutShell({ children, hideAccountPanel = false, showShellMenuButton = true }) {
   const { setLanguage, t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
@@ -49,6 +49,9 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
   const [currentUser, setCurrentUser] = useState(getStoredUser);
   const { preferences, hasLoadedPreferences } = useUserPreferences(currentUser?._id);
   const effectiveDarkMode = hasLoadedPreferences ? preferences.theme === 'dark' : darkMode;
+  const renderedChildren = typeof children === 'function'
+    ? children({ openSidebar: () => setIsSidebarOpen(true) })
+    : children;
 
   useEffect(() => {
     const syncUser = () => setCurrentUser(getStoredUser());
@@ -261,7 +264,7 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
 
   return (
     <div ref={shellRef} className='min-h-screen overflow-x-hidden bg-[#f5f7fb] text-slate-900 transition-colors duration-500 dark:bg-[#0f172a] dark:text-slate-50'>
-      <div className={`fixed left-0 top-0 z-40 flex items-center transition-opacity duration-[450ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${isSidebarOpen ? 'pointer-events-none opacity-0' : 'opacity-100'}`}>
+      {showShellMenuButton ? <div className={`fixed left-0 top-0 z-40 flex items-center transition-opacity duration-[450ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${isSidebarOpen ? 'pointer-events-none opacity-0' : 'opacity-100'}`}>
         <button
           type='button'
           onClick={() => setIsSidebarOpen(true)}
@@ -270,7 +273,7 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
         >
           <img src='/Logo.jpg' alt='Redhat logo' draggable={false} onDragStart={(event) => event.preventDefault()} className='h-9 w-9 select-none rounded-xl object-cover [-webkit-touch-callout:none]' />
         </button>
-      </div>
+      </div> : null}
 
       <AnimatePresence>
         {isSidebarOpen && (
@@ -424,7 +427,7 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
 
       <main className={`min-h-screen transition-all duration-[450ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${isSidebarOpen ? 'lg:ml-[320px]' : 'lg:ml-0'}`}>
         <div className='mx-auto max-w-6xl px-4 py-8 sm:px-6'>
-          {children}
+          {renderedChildren}
         </div>
       </main>
     </div>

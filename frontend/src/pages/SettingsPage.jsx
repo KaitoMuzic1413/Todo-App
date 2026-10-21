@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Settings2, UserRound, Palette, Check, Globe, Moon, Sun, Download } from 'lucide-react';
+import { Settings2, UserRound, Palette, Check, Globe, Moon, Sun, Download, Menu, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { LayoutShell } from '@/components/LayoutShell';
-import Header from '@/components/Header';
-import { updateUserProfile } from '@/lib/api';
+import { Link } from 'react-router-dom';
+import NotificationCenter from '@/components/NotificationCenter';
+import { fetchCurrentUser, updateUserProfile } from '@/lib/api';
 import { useLanguage } from '@/lib/i18n';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
 import { getInstallPromptAvailable, promptInstall, subscribeToInstallState } from '@/lib/pwaInstall';
@@ -19,7 +20,7 @@ const getStoredUser = () => {
 
 const SettingsPage = () => {
   const { t, language, setLanguage } = useLanguage();
-  const currentUser = getStoredUser();
+  const [currentUser, setCurrentUser] = useState(getStoredUser);
   const [savedName, setSavedName] = useState(() => currentUser?.name || '');
   const [name, setName] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -28,6 +29,23 @@ const SettingsPage = () => {
   const [hasUpdate, setHasUpdate] = useState(hasPwaUpdate);
   const { preferences, hasLoadedPreferences, savePreferences } = useUserPreferences(currentUser?._id);
   const selectedAccent = hasLoadedPreferences ? preferences.accent : (localStorage.getItem('todo-accent') || 'violet');
+
+  useEffect(() => {
+    document.documentElement.dataset.accent = selectedAccent;
+  }, [selectedAccent]);
+
+  useEffect(() => {
+    let active = true;
+    fetchCurrentUser().then(({ data }) => {
+      if (!active) return;
+      const updatedUser = { ...getStoredUser(), ...data.user };
+      localStorage.setItem('todo-user', JSON.stringify(updatedUser));
+      setCurrentUser(updatedUser);
+      setSavedName(updatedUser.name || '');
+      window.dispatchEvent(new Event('todo-auth-changed'));
+    }).catch(() => {});
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     const unsubscribe = subscribeToInstallState(() => setCanInstall(getInstallPromptAvailable()));
@@ -54,6 +72,7 @@ const SettingsPage = () => {
       const response = await updateUserProfile(trimmedName);
       const updatedUser = { ...getStoredUser(), ...response.data.user };
       localStorage.setItem('todo-user', JSON.stringify(updatedUser));
+      setCurrentUser(updatedUser);
       setSavedName(updatedUser.name);
       setName('');
       window.dispatchEvent(new Event('todo-auth-changed'));
@@ -67,7 +86,6 @@ const SettingsPage = () => {
 
   const selectAccent = async (accent) => {
     if (!hasLoadedPreferences) localStorage.setItem('todo-accent', accent);
-    document.documentElement.dataset.accent = accent;
     try {
       await savePreferences({ accent });
     } catch {
@@ -96,9 +114,39 @@ const SettingsPage = () => {
   };
 
   return (
-    <LayoutShell>
+    <LayoutShell showShellMenuButton={false}>
+      {({ openSidebar }) => (
       <div className='space-y-6'>
-        <Header />
+        <header className='overflow-hidden rounded-[30px] bg-gradient-to-br from-[#101a3a] via-[#172750] to-[#293c7b] p-5 text-white shadow-[0_24px_56px_rgba(15,23,42,0.24)] sm:rounded-[34px] sm:p-7'>
+          <div className='flex items-start gap-3 sm:gap-4'>
+            <button type='button' onClick={openSidebar} aria-label={t.openNavigation || 'Open navigation'} className='flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/25 sm:h-12 sm:w-12'>
+              <Menu className='h-5 w-5' />
+            </button>
+            <div className='flex min-w-0 flex-1 items-center gap-3 sm:gap-4'>
+              <div className='flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-sky-300 to-violet-300 text-base font-bold text-[#111b3a] ring-4 ring-white/10 sm:h-14 sm:w-14 sm:text-lg' aria-hidden='true'>
+                {(savedName || currentUser?.name || currentUser?.email || '?').trim().slice(0, 2).toUpperCase()}
+              </div>
+              <div className='min-w-0'>
+                <p className='text-xs font-semibold uppercase tracking-[0.16em] text-blue-200'>{t.profile}</p>
+                <h1 className='mt-1 truncate text-lg font-bold sm:text-2xl'>{savedName || currentUser?.name || currentUser?.email?.split('@')[0] || t.appName}</h1>
+                <p className='mt-1 truncate text-xs text-slate-300 sm:text-sm'>{currentUser?.email || ''}</p>
+                <span className='mt-2 inline-flex items-center gap-1.5 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-200'>
+                  <span className='h-1.5 w-1.5 rounded-full bg-emerald-300' />{t.accountStatus}
+                </span>
+              </div>
+            </div>
+            <div className='flex shrink-0 items-center gap-2'>
+              {currentUser?.isAdmin ? (
+                <Link to='/admin/notifications' aria-label={t.adminNotifications} title={t.adminNotifications} className='flex h-12 w-12 items-center justify-center rounded-2xl border border-white/20 bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/30'>
+                  <ShieldCheck className='h-5 w-5' />
+                </Link>
+              ) : null}
+              <NotificationCenter userId={currentUser?._id} />
+            </div>
+          </div>
+          <p className='ml-14 mt-4 max-w-2xl text-sm leading-6 text-blue-100/80 sm:ml-16'>{t.profileSettings}</p>
+        </header>
+
         <div className='flex items-center gap-3'>
           <span className='flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-100 text-violet-600 shadow-sm dark:bg-violet-500/15 dark:text-violet-200'>
             <Settings2 className='h-5 w-5' />
@@ -232,6 +280,7 @@ const SettingsPage = () => {
           </section>
         </div>
       </div>
+      )}
     </LayoutShell>
   );
 };

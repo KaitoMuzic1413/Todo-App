@@ -13,6 +13,7 @@ import focusRoute from "./routes/focusRoutes.js";
 import analyticsRoute from './routes/analyticsRoutes.js';
 import gamificationRoute from './routes/gamificationRoutes.js';
 import calendarNotesRoute from './routes/calendarNotesRoutes.js';
+import notificationsRoute from './routes/notificationsRoutes.js';
 import { runDueTaskEmailReminders } from './utils/dueTaskReminders.js';
 
 const PORT = process.env.PORT || 5001;
@@ -54,6 +55,7 @@ app.use('/api/focus', focusRoute);
 app.use('/api/analytics', analyticsRoute);
 app.use('/api/gamification', gamificationRoute);
 app.use('/api/calendar-notes', calendarNotesRoute);
+app.use('/api/notifications', notificationsRoute);
 
 app.use((req, res) => {
   res.status(404).json({

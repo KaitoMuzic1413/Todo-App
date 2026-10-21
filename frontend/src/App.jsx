@@ -18,6 +18,7 @@ import CalendarPage from './pages/CalendarPage';
 import FocusPage from './pages/FocusPage';
 import DashboardPage from './pages/DashboardPage';
 import SettingsPage from './pages/SettingsPage';
+import AdminNotificationsPage from './pages/AdminNotificationsPage';
 import DueTaskReminderWatcher from './components/DueTaskReminderWatcher';
 import InstallAppNotice from './components/InstallAppNotice';
 
@@ -48,6 +49,14 @@ const ProtectedRoute = () => {
   }
 
   return <Outlet />;
+};
+
+const AdminRoute = () => {
+  const storedUser = localStorage.getItem('todo-user');
+  const user = (() => {
+    try { return storedUser ? JSON.parse(storedUser) : null; } catch { return null; }
+  })();
+  return user?.isAdmin ? <AdminNotificationsPage /> : <Navigate to='/settings' replace />;
 };
 
 const RootRedirect = () => {
@@ -128,6 +137,7 @@ function App() {
           <Route path='/archive' element={<ArchivePage />} />
           <Route path='/trash' element={<TrashPage />} />
           <Route path='/settings' element={<SettingsPage />} />
+          <Route path='/admin/notifications' element={<AdminRoute />} />
         </Route>
 
         <Route path='/404' element={<NotFound />} />

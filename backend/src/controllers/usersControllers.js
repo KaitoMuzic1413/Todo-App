@@ -3,6 +3,7 @@ import User from '../models/User.js';
 import Task from '../models/Task.js';
 import Attachment from '../models/Attachment.js';
 import CalendarNote from '../models/CalendarNote.js';
+import NotificationRecipient from '../models/NotificationRecipient.js';
 import { sendEmail } from '../utils/email.js';
 import { validatePreferenceUpdates } from '../utils/userPreferences.js';
 
@@ -145,6 +146,7 @@ export const cleanupInactiveUsers = async () => {
         });
       }
       await Attachment.deleteMany({ ownerId: user._id });
+      await NotificationRecipient.deleteMany({ userId: user._id });
       await User.findByIdAndDelete(user._id);
     }
 
@@ -215,10 +217,20 @@ export const getCurrentUser = async (req, res) => {
     }
 
     await markUserActive(user._id);
-
     return res.status(200).json({ user });
   } catch (error) {
     console.error('Error getCurrentUser:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const getAuthenticatedCurrentUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId).select('_id email name lastActiveAt isAdmin').lean();
+    if (!user) return res.status(404).json({ message: 'User not found.' });
+    return res.status(200).json({ user: { ...user, isAdmin: Boolean(user.isAdmin) } });
+  } catch (error) {
+    console.error('Get authenticated user error:', error);
     return res.status(500).json({ message: 'Server error' });
   }
 };

@@ -7,6 +7,10 @@ import { sendEmail } from '../utils/email.js';
 const JWT_SECRET = process.env.JWT_SECRET || 'SECRET_KEY';
 const JWT_EXPIRES_IN = '30d';
 const PASSWORD_RESET_MESSAGE = 'If an account exists for that email, a reset code will be sent shortly.';
+const isConfiguredAdmin = (email) => {
+  const adminEmail = process.env.ADMIN_EMAIL ? String(process.env.ADMIN_EMAIL).toLowerCase().trim() : '';
+  return Boolean(adminEmail && adminEmail === email);
+};
 
 export const register = async (req, res) => {
   try {
@@ -51,8 +55,14 @@ export const register = async (req, res) => {
       user = await User.create({
         email: trimmedEmail,
         password: hashedPassword,
+        isAdmin: isConfiguredAdmin(trimmedEmail),
         ...(trimmedName ? { name: trimmedName } : {}),
       });
+    }
+
+    if (isConfiguredAdmin(trimmedEmail) && !user.isAdmin) {
+      user.isAdmin = true;
+      await user.save();
     }
 
     return res.status(201).json({
@@ -90,6 +100,7 @@ export const login = async (req, res) => {
 
     user.lastActiveAt = new Date();
     user.inactiveDeletionNoticeSentAt = null;
+    if (isConfiguredAdmin(trimmedEmail)) user.isAdmin = true;
     await user.save();
 
     const token = jwt.sign(
@@ -105,6 +116,7 @@ export const login = async (req, res) => {
         _id: user._id,
         email: user.email,
         name: user.name || '',
+        isAdmin: Boolean(user.isAdmin),
       },
     });
   } catch (error) {

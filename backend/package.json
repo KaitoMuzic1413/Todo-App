@@ -4,8 +4,9 @@
   "description": "",
   "main": "src/server.js",
   "scripts": {
-    "dev": "nodemon src/server.js",
+    "dev": "node node_modules/nodemon/bin/nodemon.js src/server.js",
     "start": "node src/server.js",
+    "seed:notifications": "node scripts/seedNotifications.js",
     "test": "node --test"
   },
   "keywords": [],

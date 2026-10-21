@@ -8,8 +8,8 @@
     "esbuild": true
   },
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
+    "dev": "node node_modules/vite/bin/vite.js",
+    "build": "node node_modules/vite/bin/vite.js build",
     "build:android": "npm run build && cap sync android",
     "android:open": "cap open android",
     "android:run": "cap run android",
@@ -20,9 +20,9 @@
     "tauri:build": "npm run build && tauri build",
     "tauri:build:linux": "tauri build --bundles appimage",
     "tauri:build:windows": "tauri build --bundles nsis",
-    "lint": "eslint .",
+    "lint": "node node_modules/eslint/bin/eslint.js .",
     "test": "node --test",
-    "preview": "vite preview"
+    "preview": "node node_modules/vite/bin/vite.js preview"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

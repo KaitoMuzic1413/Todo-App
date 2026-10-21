@@ -46,6 +46,17 @@ export const fetchUserPreferences = () => api.get('/users/preferences');
 
 export const saveUserPreferences = (preferences) => api.patch('/users/preferences', preferences);
 export const updateUserProfile = (name) => api.patch('/users/profile', { name });
+export const fetchCurrentUser = () => api.get('/users/current');
+
+export const fetchNotifications = (filter = 'all') => api.get('/notifications', { params: { filter } });
+export const fetchUnreadNotificationCount = () => api.get('/notifications/unread-count');
+export const fetchNotification = (notificationId) => api.get(`/notifications/${notificationId}`);
+export const markNotificationRead = (notificationId) => api.patch(`/notifications/${notificationId}/read`);
+export const markAllNotificationsRead = () => api.patch('/notifications/read-all');
+export const fetchAdminNotifications = () => api.get('/notifications/admin');
+export const sendAdminNotification = (payload, requestId) => api.post('/notifications/admin', payload, {
+  headers: { 'Idempotency-Key': requestId },
+});
 
 export const fetchActiveFocusSession = () => api.get('/focus/active');
 export const fetchFocusSummary = () => api.get('/focus/summary');
