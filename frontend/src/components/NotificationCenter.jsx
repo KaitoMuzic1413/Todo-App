@@ -198,12 +198,13 @@ const NotificationCenter = ({ userId }) => {
                 </button>
               </header>
               <div className='shrink-0 border-b border-slate-100 px-5 py-3 dark:border-slate-800 sm:px-6'>
-                <div className='grid grid-cols-2 gap-2 rounded-3xl bg-slate-100 p-1 dark:bg-slate-900' role='tablist' aria-label={t.notifications}>
+                <div className='grid grid-cols-3 gap-1 rounded-3xl bg-slate-100 p-1 dark:bg-slate-900' role='tablist' aria-label={t.notifications}>
                   {[
                     { key: 'all', label: t.allNotifications },
                     { key: 'unread', label: t.unreadNotifications },
+                    { key: 'task', label: t.taskNotifications },
                   ].map(({ key, label }) => (
-                    <button key={key} type='button' role='tab' aria-selected={filter === key} onClick={() => setFilter(key)} className={`min-h-10 rounded-3xl px-3 text-sm font-semibold transition ${filter === key ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100'}`}>
+                    <button key={key} type='button' role='tab' aria-selected={filter === key} onClick={() => setFilter(key)} className={`min-h-10 rounded-3xl px-1 text-xs font-semibold transition sm:px-2 sm:text-sm ${filter === key ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100'}`}>
                       {label}
                     </button>
                   ))}
@@ -220,7 +221,7 @@ const NotificationCenter = ({ userId }) => {
                 ) : notifications.length === 0 ? (
                   <div className='flex min-h-56 flex-col items-center justify-center px-6 text-center'>
                     <span className='mb-4 flex h-14 w-14 items-center justify-center rounded-3xl bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-300'><Check className='h-6 w-6' /></span>
-                    <p className='text-sm font-medium text-slate-600 dark:text-slate-300'>{t.noNotifications}</p>
+                    <p className='text-sm font-medium text-slate-600 dark:text-slate-300'>{filter === 'task' ? t.noTaskNotifications : t.noNotifications}</p>
                   </div>
                 ) : (
                   <ul className='space-y-2'>

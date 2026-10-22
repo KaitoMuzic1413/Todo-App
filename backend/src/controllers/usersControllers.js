@@ -6,6 +6,7 @@ import CalendarNote from '../models/CalendarNote.js';
 import NotificationRecipient from '../models/NotificationRecipient.js';
 import { sendEmail } from '../utils/email.js';
 import { validatePreferenceUpdates } from '../utils/userPreferences.js';
+import { deliverNewAccountNotifications } from '../utils/onboardingNotifications.js';
 
 const INACTIVE_ACCOUNT_DAYS = 90;
 const DELETION_NOTICE_DAYS = 3;
@@ -169,6 +170,7 @@ export const loginUserWithEmail = async (req, res) => {
     const safeName = normalizedEmail.split('@')[0].replace(/[._-]+/g, ' ').trim();
 
     let user = await User.findOne({ email: normalizedEmail });
+    let isNewAccount = false;
     const adminEmail = process.env.ADMIN_EMAIL ? String(process.env.ADMIN_EMAIL).toLowerCase().trim() : null;
 
     if (!user) {
@@ -178,6 +180,7 @@ export const loginUserWithEmail = async (req, res) => {
         lastActiveAt: new Date(),
         isAdmin: adminEmail && adminEmail === normalizedEmail,
       });
+      isNewAccount = true;
     } else {
       user.lastActiveAt = new Date();
       user.inactiveDeletionNoticeSentAt = null;
@@ -186,6 +189,8 @@ export const loginUserWithEmail = async (req, res) => {
       }
       await user.save();
     }
+
+    if (isNewAccount) await deliverNewAccountNotifications(user);
 
     return res.status(200).json({
       user: {

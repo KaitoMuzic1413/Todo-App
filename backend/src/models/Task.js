@@ -60,6 +60,10 @@ const taskSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    dueNotificationSentFor: {
+      type: Date,
+      default: null,
+    },
     estimatedMinutes: {
       type: Number,
       min: 1,

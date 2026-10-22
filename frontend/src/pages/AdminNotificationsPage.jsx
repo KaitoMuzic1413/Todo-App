@@ -64,9 +64,11 @@ const AdminNotificationsPage = () => {
         title,
         content,
         type,
-        audience: audienceType === 'all' ? { type: 'all' } : { type: 'user', email },
+        audience: type === 'welcome'
+          ? { type: 'new-users' }
+          : (audienceType === 'all' ? { type: 'all' } : { type: 'user', email }),
       }, requestId.current);
-      toast.success(t.notificationSent);
+      toast.success(type === 'welcome' ? t.welcomeQueued : t.notificationSent);
       setTitle('');
       setContent('');
       requestId.current = createRequestId();
@@ -98,7 +100,6 @@ const AdminNotificationsPage = () => {
 
   const typeLabels = {
     system: t.systemType,
-    reminder: t.reminderType,
     welcome: t.welcomeType,
     update: t.updateType,
     task: t.taskType,
@@ -135,25 +136,31 @@ const AdminNotificationsPage = () => {
               <div>
                 <label htmlFor='notification-type' className='mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-200'>{t.notificationType}</label>
                 <select id='notification-type' value={type} onChange={(event) => setType(event.target.value)} className='min-h-12 w-full rounded-3xl border border-slate-200 bg-slate-50 px-3 text-base text-slate-900 outline-none focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:focus:ring-violet-900/30'>
-                  {Object.entries(typeLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+                  {Object.entries(typeLabels).filter(([key]) => key !== 'task').map(([key, label]) => <option key={key} value={key}>{label}</option>)}
                 </select>
               </div>
-              <fieldset>
-                <legend className='mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200'>{t.recipientAudience}</legend>
-                <div className='grid grid-cols-2 gap-2'>
-                  {[
-                    { value: 'all', label: t.allUsers },
-                    { value: 'user', label: t.oneUser },
-                  ].map(({ value, label }) => (
-                    <label key={value} className={`flex min-h-12 cursor-pointer items-center gap-2 rounded-3xl border px-3 text-sm font-medium transition ${audienceType === value ? 'border-violet-400 bg-violet-50 text-violet-700 dark:border-violet-500 dark:bg-violet-500/10 dark:text-violet-200' : 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300'}`}>
-                      <input type='radio' name='audience' value={value} checked={audienceType === value} onChange={() => setAudienceType(value)} className='accent-violet-600' />
-                      {label}
-                    </label>
-                  ))}
-                </div>
-              </fieldset>
+              {type === 'welcome' ? (
+                <p className='self-end rounded-3xl border border-violet-100 bg-violet-50 p-4 text-sm leading-6 text-violet-800 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-200'>
+                  {t.welcomeTypeDescription}
+                </p>
+              ) : (
+                <fieldset>
+                  <legend className='mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200'>{t.recipientAudience}</legend>
+                  <div className='grid grid-cols-2 gap-2'>
+                    {[
+                      { value: 'all', label: t.allUsers },
+                      { value: 'user', label: t.oneUser },
+                    ].map(({ value, label }) => (
+                      <label key={value} className={`flex min-h-12 cursor-pointer items-center gap-2 rounded-3xl border px-3 text-sm font-medium transition ${audienceType === value ? 'border-violet-400 bg-violet-50 text-violet-700 dark:border-violet-500 dark:bg-violet-500/10 dark:text-violet-200' : 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300'}`}>
+                        <input type='radio' name='audience' value={value} checked={audienceType === value} onChange={() => setAudienceType(value)} className='accent-violet-600' />
+                        {label}
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+              )}
             </div>
-            {audienceType === 'user' ? (
+            {type !== 'welcome' && audienceType === 'user' ? (
               <div>
                 <label htmlFor='recipient-email' className='mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-200'>{t.recipientEmail}</label>
                 <input id='recipient-email' type='email' required maxLength={254} value={email} onChange={(event) => setEmail(event.target.value)} className='min-h-12 w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 text-base text-slate-900 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:focus:ring-violet-900/30' />
@@ -161,7 +168,7 @@ const AdminNotificationsPage = () => {
             ) : null}
             <div className='flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end dark:border-slate-800'>
               <button type='button' disabled={!title.trim() || !content.trim()} onClick={() => setIsPreviewOpen(true)} className='min-h-12 rounded-3xl border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800'>{t.preview}</button>
-              <button type='submit' disabled={isSending || !title.trim() || !content.trim() || (audienceType === 'user' && !email.trim())} className='inline-flex min-h-12 items-center justify-center gap-2 rounded-3xl bg-gradient-to-r from-violet-600 to-indigo-600 px-6 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:from-violet-500 hover:to-indigo-500 disabled:cursor-not-allowed disabled:opacity-45'>
+              <button type='submit' disabled={isSending || !title.trim() || !content.trim() || (type !== 'welcome' && audienceType === 'user' && !email.trim())} className='inline-flex min-h-12 items-center justify-center gap-2 rounded-3xl bg-gradient-to-r from-violet-600 to-indigo-600 px-6 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:from-violet-500 hover:to-indigo-500 disabled:cursor-not-allowed disabled:opacity-45'>
                 {isSending ? <LoaderCircle className='h-4 w-4 animate-spin' /> : <Send className='h-4 w-4' />}
                 {isSending ? t.sending : t.send}
               </button>
@@ -190,7 +197,7 @@ const AdminNotificationsPage = () => {
                       <span className='rounded-3xl bg-violet-50 px-2.5 py-1 text-[11px] font-semibold text-violet-700 dark:bg-violet-500/10 dark:text-violet-200'>{typeLabels[notification.type] || notification.type}</span>
                     </div>
                     <p className='mt-1 line-clamp-2 whitespace-pre-wrap text-xs leading-5 text-slate-500 dark:text-slate-400'>{notification.content}</p>
-                    <p className='mt-2 text-[11px] text-slate-400 dark:text-slate-500'>{formatDate(notification.createdAt)} · {notification.targetType === 'all' ? t.allUsers : t.oneUser}</p>
+                    <p className='mt-2 text-[11px] text-slate-400 dark:text-slate-500'>{formatDate(notification.createdAt)} · {notification.targetType === 'all' ? t.allUsers : (notification.targetType === 'new-users' ? t.newAccounts : t.oneUser)}</p>
                   </div>
                   <div className='flex shrink-0 items-center gap-3 text-xs text-slate-500 dark:text-slate-400'>
                     <span>{notification.recipients} {t.recipients.toLowerCase()}</span>
@@ -214,7 +221,7 @@ const AdminNotificationsPage = () => {
               <button type='button' autoFocus onClick={() => setIsPreviewOpen(false)} aria-label={t.close} className='flex h-10 w-10 shrink-0 items-center justify-center rounded-3xl text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'><X className='h-5 w-5' /></button>
             </header>
             <div className='min-h-0 flex-1 overflow-y-auto px-5 py-5 [overscroll-behavior:contain]'>
-              <p className='text-xs text-slate-500 dark:text-slate-400'>{typeLabels[type]} · {audienceType === 'all' ? t.allUsers : email}</p>
+              <p className='text-xs text-slate-500 dark:text-slate-400'>{typeLabels[type]} · {type === 'welcome' ? t.newAccounts : (audienceType === 'all' ? t.allUsers : email)}</p>
               <p className='mt-4 whitespace-pre-wrap break-words text-sm leading-7 text-slate-700 dark:text-slate-200'>{content || t.notificationContent}</p>
             </div>
           </section>

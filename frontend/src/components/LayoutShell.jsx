@@ -265,7 +265,7 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
 
   return (
     <div ref={shellRef} className='min-h-screen overflow-x-hidden bg-[#f5f7fb] text-slate-900 transition-colors duration-500 dark:bg-[#0f172a] dark:text-slate-50'>
-      <div className={`fixed left-0 top-0 z-40 m-3 flex items-center gap-2 transition-opacity duration-[450ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${isSidebarOpen ? 'pointer-events-none opacity-0' : 'opacity-100'}`}>
+      <div className={`fixed left-0 top-0 z-40 m-3 flex items-center gap-2 transition-opacity duration-[450ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${isSidebarOpen ? 'pointer-events-none opacity-0' : 'opacity-100'}`} style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <button
           type='button'
           onClick={() => setIsSidebarOpen(true)}
@@ -276,7 +276,7 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
         </button>
       </div>
       {currentUser?._id ? (
-        <div className={`fixed right-0 top-0 z-40 m-3 transition-opacity duration-[450ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${isSidebarOpen ? 'pointer-events-none opacity-0' : 'opacity-100'}`}>
+        <div className={`fixed right-0 top-0 z-40 m-3 transition-opacity duration-[450ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${isSidebarOpen ? 'pointer-events-none opacity-0' : 'opacity-100'}`} style={{ paddingTop: 'env(safe-area-inset-top)' }}>
           <NotificationCenter userId={currentUser._id} />
         </div>
       ) : null}
@@ -432,7 +432,7 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
       </AnimatePresence>
 
       <main className={`min-h-screen transition-all duration-[450ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${isSidebarOpen ? 'lg:ml-[320px]' : 'lg:ml-0'}`}>
-        <div className='mx-auto max-w-6xl px-4 pb-8 pt-20 sm:px-6'>
+        <div className='mx-auto max-w-6xl px-4 pb-8 sm:px-6' style={{ paddingTop: 'calc(5rem + env(safe-area-inset-top))' }}>
           {renderedChildren}
         </div>
       </main>

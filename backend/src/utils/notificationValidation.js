@@ -1,4 +1,4 @@
-export const NOTIFICATION_TYPES = ['welcome', 'system', 'reminder', 'update', 'task'];
+export const NOTIFICATION_TYPES = ['welcome', 'system', 'update'];
 
 export const validateNotificationInput = (input) => {
   if (!input || typeof input !== 'object' || Array.isArray(input)) {
@@ -13,6 +13,17 @@ export const validateNotificationInput = (input) => {
 
   if (!input.audience || typeof input.audience !== 'object' || Array.isArray(input.audience)) {
     return { error: 'Choose who should receive this notification.' };
+  }
+
+  if (input.type === 'welcome') {
+    if (input.audience.type !== 'new-users') {
+      return { error: 'Welcome notifications are delivered to new accounts.' };
+    }
+    return { value: { title, content, type: input.type, targetType: 'new-users', targetEmail: null } };
+  }
+
+  if (input.audience.type === 'new-users') {
+    return { error: 'Only welcome notifications can target new accounts.' };
   }
 
   if (input.audience.type === 'all') {

@@ -15,6 +15,7 @@ import gamificationRoute from './routes/gamificationRoutes.js';
 import calendarNotesRoute from './routes/calendarNotesRoutes.js';
 import notificationsRoute from './routes/notificationsRoutes.js';
 import { runDueTaskEmailReminders } from './utils/dueTaskReminders.js';
+import { runDueTaskNotifications } from './utils/dueTaskNotifications.js';
 
 const PORT = process.env.PORT || 5001;
 const INACTIVE_ACCOUNT_CHECK_INTERVAL = 60 * 60 * 1000;
@@ -91,6 +92,8 @@ if (!process.env.VERCEL) {
     setInterval(runMaintenanceJobs, INACTIVE_ACCOUNT_CHECK_INTERVAL);
     runDueTaskEmailReminders();
     setInterval(runDueTaskEmailReminders, 60 * 1000);
+    runDueTaskNotifications();
+    setInterval(runDueTaskNotifications, 60 * 1000);
   };
 
   app.listen(PORT, async () => {

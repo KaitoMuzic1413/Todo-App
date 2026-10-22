@@ -348,6 +348,7 @@ export const updateTask = async (req, res) => {
 
     if (Object.hasOwn(schedule.updates, 'dueAt')) {
       nextData.dueEmailReminderSentFor = null;
+      nextData.dueNotificationSentFor = null;
     }
 
     if (Object.prototype.hasOwnProperty.call(req.body, 'important')) {

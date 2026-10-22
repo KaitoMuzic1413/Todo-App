@@ -3,9 +3,9 @@ import mongoose from 'mongoose';
 const notificationSchema = new mongoose.Schema({
   title: { type: String, required: true, trim: true, maxlength: 120 },
   content: { type: String, required: true, maxlength: 5000 },
-  type: { type: String, required: true, enum: ['welcome', 'system', 'reminder', 'update', 'task'] },
+  type: { type: String, required: true, enum: ['welcome', 'system', 'update', 'task'] },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  targetType: { type: String, required: true, enum: ['all', 'user'] },
+  targetType: { type: String, required: true, enum: ['all', 'user', 'new-users'] },
   targetId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import { sendEmail } from '../utils/email.js';
+import { deliverNewAccountNotifications } from '../utils/onboardingNotifications.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'SECRET_KEY';
 const JWT_EXPIRES_IN = '30d';
@@ -34,6 +35,7 @@ export const register = async (req, res) => {
     }
 
     let user = await User.findOne({ email: trimmedEmail });
+    const isFirstAccountSetup = !user || !user.password;
 
     if (user && user.password) {
       return res.status(409).json({
@@ -64,6 +66,8 @@ export const register = async (req, res) => {
       user.isAdmin = true;
       await user.save();
     }
+
+    if (isFirstAccountSetup) await deliverNewAccountNotifications(user);
 
     return res.status(201).json({
       message: 'Account created successfully.',

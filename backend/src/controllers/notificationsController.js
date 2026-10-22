@@ -18,8 +18,29 @@ const notificationView = (notification, recipient) => ({
 
 export const listNotifications = async (req, res) => {
   try {
-    const filter = req.query.filter === 'unread' ? { isRead: false } : {};
-    const recipients = await NotificationRecipient.find({ userId: req.user.userId, ...filter })
+    if (req.query.filter === 'task') {
+      const recipients = await NotificationRecipient.aggregate([
+        { $match: { userId: new mongoose.Types.ObjectId(req.user.userId) } },
+        {
+          $lookup: {
+            from: Notification.collection.name,
+            localField: 'notificationId',
+            foreignField: '_id',
+            as: 'notification',
+          },
+        },
+        { $unwind: '$notification' },
+        { $match: { 'notification.type': 'task' } },
+        { $sort: { deliveredAt: -1, _id: -1 } },
+        { $limit: 100 },
+      ]);
+      const items = recipients.map(({ notification, ...recipient }) => notificationView(notification, recipient));
+      return res.status(200).json({ notifications: items });
+    }
+
+    const recipientFilter = { userId: req.user.userId };
+    if (req.query.filter === 'unread') recipientFilter.isRead = false;
+    const recipients = await NotificationRecipient.find(recipientFilter)
       .sort({ deliveredAt: -1, _id: -1 })
       .limit(100)
       .lean();
@@ -163,17 +184,19 @@ export const createNotification = async (req, res) => {
       return res.status(200).json({ notification: { id: String(duplicate._id) }, duplicate: true });
     }
 
-    let users;
+    let users = [];
     let targetId = null;
     if (value.targetType === 'all') {
       users = await User.find().select('_id').lean();
-    } else {
+    } else if (value.targetType === 'user') {
       const user = await User.findOne({ email: value.targetEmail }).select('_id').lean();
       if (!user) return res.status(404).json({ message: 'Recipient account was not found.' });
       targetId = user._id;
       users = [user];
     }
-    if (!users.length) return res.status(400).json({ message: 'There are no valid recipients.' });
+    if (value.targetType !== 'new-users' && !users.length) {
+      return res.status(400).json({ message: 'There are no valid recipients.' });
+    }
 
     const notification = await Notification.create({
       title: value.title,
@@ -186,19 +209,21 @@ export const createNotification = async (req, res) => {
       requestFingerprint,
     });
 
-    try {
-      await NotificationRecipient.insertMany(users.map(({ _id: userId }) => ({
-        notificationId: notification._id,
-        userId,
-        deliveredAt: notification.createdAt,
-      })), { ordered: true });
-    } catch (deliveryError) {
-      await NotificationRecipient.deleteMany({ notificationId: notification._id });
-      await Notification.deleteOne({ _id: notification._id });
-      throw deliveryError;
+    if (users.length) {
+      try {
+        await NotificationRecipient.insertMany(users.map(({ _id: userId }) => ({
+          notificationId: notification._id,
+          userId,
+          deliveredAt: notification.createdAt,
+        })), { ordered: true });
+      } catch (deliveryError) {
+        await NotificationRecipient.deleteMany({ notificationId: notification._id });
+        await Notification.deleteOne({ _id: notification._id });
+        throw deliveryError;
+      }
     }
 
-    return res.status(201).json({ notification: { id: String(notification._id), recipients: users.length } });
+    return res.status(201).json({ notification: { id: String(notification._id), recipients: users.length, queuedForNewUsers: value.targetType === 'new-users' } });
   } catch (error) {
     if (error?.code === 11000) {
       const duplicate = await Notification.findOne({ requestId }).lean();
