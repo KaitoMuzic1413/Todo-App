@@ -79,6 +79,9 @@ export const getActiveFocusSession = async (req, res) => {
         },
         { new: true }
       );
+      if (!completedSession) {
+        completedSession = await FocusSession.findOne({ _id: session._id, userId, status: 'completed' });
+      }
       session = null;
     }
 
@@ -103,7 +106,13 @@ export const updateFocusSession = async (req, res) => {
       activeUserId: userId,
       status: { $in: ACTIVE_STATUSES },
     });
-    if (!session) return res.status(404).json({ message: 'Active focus session not found.' });
+    if (!session) {
+      if (action === 'complete') {
+        const completedSession = await FocusSession.findOne({ _id: req.params.id, userId, status: 'completed' });
+        if (completedSession) return res.status(200).json({ session: completedSession, alreadyCompleted: true });
+      }
+      return res.status(404).json({ message: 'Active focus session not found.' });
+    }
 
     const now = new Date();
     if (action === 'pause') {

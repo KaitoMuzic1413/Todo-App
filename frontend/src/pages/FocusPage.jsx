@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bell, Check, Pause, Play, RotateCcw, Timer } from 'lucide-react';
@@ -7,6 +7,13 @@ import { LayoutShell } from '@/components/LayoutShell';
 import Header from '@/components/Header';
 import { fetchActiveFocusSession, fetchFocusSummary, fetchTasks, startFocusSession, updateFocusSession } from '@/lib/api';
 import { useLanguage } from '@/lib/i18n';
+import {
+  cancelFocusAlarm,
+  checkFocusNotificationPermission,
+  notifyFocusSessionCompleted,
+  requestFocusNotificationPermission,
+  scheduleFocusAlarm,
+} from '@/lib/focusNotifications';
 
 const FOCUS_SETTINGS_KEY = 'todo-focus-settings';
 const DEFAULT_DURATIONS = { focus: 25, shortBreak: 5, longBreak: 13 };
@@ -64,11 +71,22 @@ const FocusPage = () => {
   ));
   const [taskId, setTaskId] = useState('');
   const [now, setNow] = useState(null);
+  const [focusNotificationsGranted, setFocusNotificationsGranted] = useState(false);
   const completedNotificationId = useRef(null);
+  const completionCheckId = useRef(null);
+  const scheduledAlarmKey = useRef(null);
 
   useEffect(() => {
     if (!currentUser?._id) navigate('/signin', { replace: true });
   }, [currentUser, navigate]);
+
+  useEffect(() => {
+    let active = true;
+    checkFocusNotificationPermission().then((granted) => {
+      if (active) setFocusNotificationsGranted(granted);
+    });
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     localStorage.setItem(FOCUS_SETTINGS_KEY, JSON.stringify(durations));
@@ -94,6 +112,32 @@ const FocusPage = () => {
   });
 
   const activeSession = activeQuery.data?.session || null;
+  const refreshActiveSession = activeQuery.refetch;
+
+  const scheduleAlarm = useCallback((session) => {
+    if (!session?._id || !session.endsAt) return;
+    const key = `${session._id}:${session.endsAt}`;
+    scheduledAlarmKey.current = key;
+    void scheduleFocusAlarm(
+      session,
+      t.sessionCompleted,
+      t[session.mode],
+      t.focusAlarmChannelName,
+      t.focusAlarmChannelDescription
+    )
+      .then((result) => {
+        if (result?.warning) toast.warning(t.focusAlarmMayBeDelayed);
+      })
+      .catch((error) => {
+        console.error('Could not schedule focus alarm:', error);
+        toast.error(t.focusAlarmSetupError);
+      });
+  }, [t]);
+
+  const cancelAlarm = useCallback((sessionId) => {
+    scheduledAlarmKey.current = null;
+    if (sessionId) void cancelFocusAlarm(sessionId).catch((error) => console.error('Could not cancel focus alarm:', error));
+  }, []);
 
   useEffect(() => {
     if (activeSession?.status !== 'running') return undefined;
@@ -120,7 +164,9 @@ const FocusPage = () => {
 
   const actionMutation = useMutation({
     mutationFn: ({ sessionId, action }) => updateFocusSession(sessionId, action),
-    onSuccess: () => {
+    onSuccess: (response, variables) => {
+      if (variables.action === 'resume') scheduleAlarm(response.data.session);
+      else cancelAlarm(variables.sessionId);
       queryClient.invalidateQueries({ queryKey: ['activeFocusSession', currentUser?._id] });
       queryClient.invalidateQueries({ queryKey: ['focusSummary', currentUser?._id] });
     },
@@ -129,29 +175,43 @@ const FocusPage = () => {
 
   const startMutation = useMutation({
     mutationFn: (payload) => startFocusSession(payload),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['activeFocusSession', currentUser?._id] }),
+    onSuccess: (response) => {
+      scheduleAlarm(response.data.session);
+      queryClient.invalidateQueries({ queryKey: ['activeFocusSession', currentUser?._id] });
+    },
     onError: (error) => toast.error(error.response?.data?.message || t.focusSaveError),
   });
 
   useEffect(() => {
-    if (!activeSession || activeSession.status !== 'running' || remainingSeconds > 0 || actionMutation.isPending) return;
-    if (completedNotificationId.current === activeSession._id) return;
-    completedNotificationId.current = activeSession._id;
-    actionMutation.mutate({ sessionId: activeSession._id, action: 'complete' });
-    if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification(t.sessionCompleted, { body: activeSession.mode === 'focus' ? t.focusTime : t.focusMode });
+    if (!activeSession || activeSession.status !== 'running' || remainingSeconds > 0) return;
+    if (completionCheckId.current === activeSession._id) return;
+
+    const sessionId = activeSession._id;
+    completionCheckId.current = sessionId;
+    void refreshActiveSession().then((result) => {
+      if (result.isError || result.data?.session?._id === sessionId) {
+        completionCheckId.current = null;
+      }
+    });
+  }, [activeSession?._id, activeSession?.status, activeQuery.dataUpdatedAt, remainingSeconds, refreshActiveSession]);
+
+  useEffect(() => {
+    if (!activeSession) return;
+    if (activeSession.status !== 'running' || !activeSession.endsAt) {
+      cancelAlarm(activeSession._id);
+      return;
     }
-    toast.success(t.sessionCompleted);
-  }, [activeSession, remainingSeconds, actionMutation, t]);
+
+    const key = `${activeSession._id}:${activeSession.endsAt}`;
+    if (scheduledAlarmKey.current !== key) scheduleAlarm(activeSession);
+  }, [activeSession?._id, activeSession?.status, activeSession?.endsAt, activeSession?.mode, scheduleAlarm, cancelAlarm]);
 
   useEffect(() => {
     const completedSession = activeQuery.data?.completedSession;
     if (!completedSession || completedNotificationId.current === completedSession._id) return;
     completedNotificationId.current = completedSession._id;
     queryClient.invalidateQueries({ queryKey: ['focusSummary', currentUser?._id] });
-    if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification(t.sessionCompleted, { body: t.focusTime });
-    }
+    notifyFocusSessionCompleted(t.sessionCompleted, t[completedSession.mode] || t.focusTime);
     toast.success(t.sessionCompleted);
   }, [activeQuery.data, currentUser?._id, queryClient, t]);
 
@@ -196,14 +256,27 @@ const FocusPage = () => {
   ));
 
   const startSession = async () => {
-    if ('Notification' in window && Notification.permission === 'default') {
-      await Notification.requestPermission();
-    }
+    const permissionGranted = await requestFocusNotificationPermission();
+    setFocusNotificationsGranted(permissionGranted);
+    if (!permissionGranted) toast.error(t.focusAlarmPermissionDenied);
     startMutation.mutate({
       taskId: taskId || null,
       mode,
       durationSeconds: durations[mode] * 60,
     });
+  };
+
+  const enableFocusNotifications = async () => {
+    const permissionGranted = await requestFocusNotificationPermission();
+    setFocusNotificationsGranted(permissionGranted);
+    if (!permissionGranted) {
+      toast.error(t.focusAlarmPermissionDenied);
+      return;
+    }
+    if (activeSession?.status === 'running') {
+      scheduledAlarmKey.current = null;
+      scheduleAlarm(activeSession);
+    }
   };
 
   if (!currentUser?._id) return null;
@@ -298,8 +371,8 @@ const FocusPage = () => {
               </>
             )}
           </div>
-          {sessionStatus === 'running' && 'Notification' in window && Notification.permission !== 'granted' ? (
-            <button type='button' onClick={() => Notification.requestPermission()} className='mx-auto inline-flex items-center gap-1.5 text-xs text-slate-500 underline dark:text-slate-400'><Bell className='h-3.5 w-3.5' />{t.notificationPermission}</button>
+          {sessionStatus === 'running' && !focusNotificationsGranted ? (
+            <button type='button' onClick={() => void enableFocusNotifications()} className='mx-auto inline-flex items-center gap-1.5 text-xs text-slate-500 underline dark:text-slate-400'><Bell className='h-3.5 w-3.5' />{t.notificationPermission}</button>
           ) : null}
         </section>
 
