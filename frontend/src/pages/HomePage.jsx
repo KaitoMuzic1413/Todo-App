@@ -226,36 +226,36 @@ const HomePage = ({ contentType = 'task' }) => {
         />
 
         {contentType === 'task' ? (
-          <section className='rounded-2xl border border-slate-200/80 bg-white/80 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/70'>
+          <section className='rounded-3xl border border-slate-200/80 bg-white/80 p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/70'>
             <div className='mb-4 flex items-center gap-2'>
               <Sparkles className='h-4 w-4 text-amber-500' />
               <h2 className='text-sm font-semibold text-slate-900 dark:text-white'>{t.gamification}</h2>
             </div>
             {gamificationQuery.isLoading ? (
               <div className='grid gap-3 sm:grid-cols-3'>
-                {Array.from({ length: 3 }, (_, index) => <div key={index} className='h-16 animate-pulse rounded-xl bg-slate-200/70 dark:bg-slate-800' />)}
+                {Array.from({ length: 3 }, (_, index) => <div key={index} className='h-16 animate-pulse rounded-3xl bg-slate-200/70 dark:bg-slate-800' />)}
               </div>
             ) : gamificationQuery.isError ? (
               <p role='alert' className='text-sm text-rose-600 dark:text-rose-300'>{t.progressLoadError}</p>
             ) : gamificationQuery.data ? (
               <div className='grid gap-4 lg:grid-cols-[1fr_1fr_1.3fr]'>
-                <div className='rounded-xl bg-violet-50 p-3 dark:bg-violet-950/30'>
+                <div className='rounded-3xl bg-violet-50 p-3 dark:bg-violet-950/30'>
                   <div className='flex items-baseline justify-between gap-2'>
                     <span className='text-xs font-medium text-violet-700 dark:text-violet-200'>{t.level} {gamificationQuery.data.level}</span>
                     <span className='text-sm font-bold text-slate-900 dark:text-white'>{gamificationQuery.data.xp} {t.xp}</span>
                   </div>
-                  <div className='mt-2 h-2 overflow-hidden rounded-full bg-white/80 dark:bg-slate-900'>
-                    <div className='h-full rounded-full bg-violet-600 transition-[width]' style={{ width: `${gamificationQuery.data.progressPercent}%` }} />
+                  <div className='mt-2 h-2 overflow-hidden rounded-3xl bg-white/80 dark:bg-slate-900'>
+                    <div className='h-full rounded-3xl bg-violet-600 transition-[width]' style={{ width: `${gamificationQuery.data.progressPercent}%` }} />
                   </div>
                   <p className='mt-1 text-xs text-slate-500 dark:text-slate-400'>{gamificationQuery.data.currentLevelXp}/100 {t.xpToNextLevel}</p>
                 </div>
 
                 <div className='grid grid-cols-2 gap-2'>
-                  <div className='flex items-center gap-2 rounded-xl border border-slate-200 p-3 dark:border-slate-700'>
+                  <div className='flex items-center gap-2 rounded-3xl border border-slate-200 p-3 dark:border-slate-700'>
                     <Flame className='h-4 w-4 text-orange-500' />
                     <div><p className='text-sm font-bold text-slate-900 dark:text-white'>{gamificationQuery.data.currentStreak}</p><p className='text-xs text-slate-500'>{t.currentStreak}</p></div>
                   </div>
-                  <div className='flex items-center gap-2 rounded-xl border border-slate-200 p-3 dark:border-slate-700'>
+                  <div className='flex items-center gap-2 rounded-3xl border border-slate-200 p-3 dark:border-slate-700'>
                     <Flame className='h-4 w-4 text-amber-500' />
                     <div><p className='text-sm font-bold text-slate-900 dark:text-white'>{gamificationQuery.data.bestStreak}</p><p className='text-xs text-slate-500'>{t.bestStreak}</p></div>
                   </div>
@@ -266,9 +266,9 @@ const HomePage = ({ contentType = 'task' }) => {
                     [t.dailyGoal, gamificationQuery.data.dailyGoal],
                     [t.weeklyGoal, gamificationQuery.data.weeklyGoal],
                   ].map(([label, goal]) => (
-                    <div key={label} className='rounded-xl border border-slate-200 p-3 dark:border-slate-700'>
+                    <div key={label} className='rounded-3xl border border-slate-200 p-3 dark:border-slate-700'>
                       <div className='flex items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400'><span>{label}</span><span>{goal.progress}/{goal.target}</span></div>
-                      <div className='mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800'><div className='h-full rounded-full bg-emerald-500' style={{ width: `${goal.progress / goal.target * 100}%` }} /></div>
+                      <div className='mt-2 h-1.5 overflow-hidden rounded-3xl bg-slate-100 dark:bg-slate-800'><div className='h-full rounded-3xl bg-emerald-500' style={{ width: `${goal.progress / goal.target * 100}%` }} /></div>
                     </div>
                   ))}
                 </div>
@@ -277,7 +277,7 @@ const HomePage = ({ contentType = 'task' }) => {
                   <p className='mb-2 flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-300'><Award className='h-3.5 w-3.5 text-amber-500' />{t.achievements}</p>
                   <div className='flex flex-wrap gap-2'>
                     {gamificationQuery.data.achievements.map((achievement) => (
-                      <span key={achievement.id} className={`rounded-full border px-2.5 py-1 text-xs ${achievement.unlocked ? 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-200' : 'border-slate-200 text-slate-400 dark:border-slate-700 dark:text-slate-500'}`}>
+                      <span key={achievement.id} className={`rounded-3xl border px-2.5 py-1 text-xs ${achievement.unlocked ? 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-200' : 'border-slate-200 text-slate-400 dark:border-slate-700 dark:text-slate-500'}`}>
                         {t[`${achievement.id.replace(/-([a-z])/g, (_match, letter) => letter.toUpperCase())}Badge`] || achievement.id}
                       </span>
                     ))}
@@ -288,9 +288,9 @@ const HomePage = ({ contentType = 'task' }) => {
           </section>
         ) : null}
 
-        <div className='flex flex-row items-center justify-between gap-2 rounded-2xl border border-slate-200/80 bg-white/70 p-2 shadow-sm dark:border-slate-800 dark:bg-slate-900/60 sm:gap-3 sm:p-3'>
-          <div className='relative grid shrink-0 grid-cols-3 gap-1 rounded-full border border-slate-200/80 bg-slate-100/90 p-1 shadow-inner dark:border-slate-700 dark:bg-slate-950/70' role='group' aria-label={t.viewMode}>
-            <span className='pointer-events-none absolute inset-y-1 left-1 w-[calc((100%-1rem)/3)] rounded-full bg-violet-600 shadow-accent-indicator transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]' style={{ transform: `translateX(calc(${['list', 'grid', 'kanban'].indexOf(preferences.taskView) * 100}% + ${['list', 'grid', 'kanban'].indexOf(preferences.taskView) * 4}px))` }} />
+        <div className='flex flex-row items-center justify-between gap-2 rounded-3xl border border-slate-200/80 bg-white/70 p-2 shadow-sm dark:border-slate-800 dark:bg-slate-900/60 sm:gap-3 sm:p-3'>
+          <div className='relative grid shrink-0 grid-cols-3 gap-1 rounded-3xl border border-slate-200/80 bg-slate-100/90 p-1 shadow-inner dark:border-slate-700 dark:bg-slate-950/70' role='group' aria-label={t.viewMode}>
+            <span className='pointer-events-none absolute inset-y-1 left-1 w-[calc((100%-1rem)/3)] rounded-3xl bg-violet-600 shadow-accent-indicator transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]' style={{ transform: `translateX(calc(${['list', 'grid', 'kanban'].indexOf(preferences.taskView) * 100}% + ${['list', 'grid', 'kanban'].indexOf(preferences.taskView) * 4}px))` }} />
             {[
               { key: 'list', label: t.listView, Icon: List },
               { key: 'grid', label: t.gridView, Icon: LayoutGrid },
@@ -306,7 +306,7 @@ const HomePage = ({ contentType = 'task' }) => {
                   setCurrentPage(1);
                   void updatePreferences({ taskView: key });
                 }}
-                className={`relative z-10 flex h-9 items-center justify-center gap-1.5 rounded-full px-2 text-xs font-semibold transition-colors sm:px-3 ${preferences.taskView === key ? 'text-white' : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'}`}
+                className={`relative z-10 flex h-9 items-center justify-center gap-1.5 rounded-3xl px-2 text-xs font-semibold transition-colors sm:px-3 ${preferences.taskView === key ? 'text-white' : 'text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white'}`}
               >
                 <Icon className='h-4 w-4' />
                 <span className='hidden sm:inline'>{label}</span>
@@ -320,7 +320,7 @@ const HomePage = ({ contentType = 'task' }) => {
               id='task-sort'
               value={preferences.sortBy}
               onChange={(event) => void updatePreferences({ sortBy: event.target.value })}
-              className='h-9 w-24 min-w-0 rounded-xl border border-slate-200 bg-white px-1.5 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 sm:w-auto sm:max-w-44 sm:px-2'
+              className='h-9 w-24 min-w-0 rounded-3xl border border-slate-200 bg-white px-1.5 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 sm:w-auto sm:max-w-44 sm:px-2'
             >
               <option value='title'>{t.titleSort}</option>
               <option value='createdAt'>{t.createdRecently}</option>
@@ -329,7 +329,7 @@ const HomePage = ({ contentType = 'task' }) => {
         </div>
 
         {isLoading ? (
-          <div className='rounded-[28px] border border-slate-200 bg-white/80 p-5 text-slate-500 shadow-sm dark:border-slate-800 dark:bg-slate-900/70'>
+          <div className='rounded-3xl border border-slate-200 bg-white/80 p-5 text-slate-500 shadow-sm dark:border-slate-800 dark:bg-slate-900/70'>
             Loading tasks...
           </div>
         ) : (

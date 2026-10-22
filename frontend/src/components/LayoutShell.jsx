@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, animate, motion, useMotionValue, useTransform } from 'framer-motion';
-import { ChevronLeft, Archive, BarChart3, CalendarDays, ClipboardList, FileText, LogOut, Mail, Timer, X, Home, Trash2, Settings2 } from 'lucide-react';
+import { ChevronLeft, Archive, BarChart3, CalendarDays, ClipboardList, FileText, LogOut, Mail, Timer, X, Home, Trash2, Settings2, Menu } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
+import NotificationCenter from '@/components/NotificationCenter';
 
 const SIDEBAR_WIDTH = 320;
 const EDGE_WIDTH = 35;
@@ -22,7 +23,7 @@ const getStoredUser = () => {
   }
 };
 
-export function LayoutShell({ children, hideAccountPanel = false, showShellMenuButton = true }) {
+export function LayoutShell({ children, hideAccountPanel = false }) {
   const { setLanguage, t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
@@ -264,16 +265,21 @@ export function LayoutShell({ children, hideAccountPanel = false, showShellMenuB
 
   return (
     <div ref={shellRef} className='min-h-screen overflow-x-hidden bg-[#f5f7fb] text-slate-900 transition-colors duration-500 dark:bg-[#0f172a] dark:text-slate-50'>
-      {showShellMenuButton ? <div className={`fixed left-0 top-0 z-40 flex items-center transition-opacity duration-[450ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${isSidebarOpen ? 'pointer-events-none opacity-0' : 'opacity-100'}`}>
+      <div className={`fixed left-0 top-0 z-40 m-3 flex items-center gap-2 transition-opacity duration-[450ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${isSidebarOpen ? 'pointer-events-none opacity-0' : 'opacity-100'}`}>
         <button
           type='button'
           onClick={() => setIsSidebarOpen(true)}
-          className='m-3 flex h-12 w-12 cursor-pointer items-center justify-center rounded-2xl border border-slate-200 bg-white/80 shadow-md backdrop-blur-md dark:border-slate-700 dark:bg-slate-900/80'
-          aria-label='Open sidebar'
+          className='flex h-12 w-12 cursor-pointer items-center justify-center rounded-3xl border border-slate-200 bg-white/80 text-slate-700 shadow-md backdrop-blur-md transition hover:bg-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-500/25 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-200 dark:hover:bg-slate-900'
+          aria-label={t.openNavigation || 'Open navigation'}
         >
-          <img src='/Logo.jpg' alt='Redhat logo' draggable={false} onDragStart={(event) => event.preventDefault()} className='h-9 w-9 select-none rounded-xl object-cover [-webkit-touch-callout:none]' />
+          <Menu className='h-5 w-5 text-slate-700 dark:text-slate-200' />
         </button>
-      </div> : null}
+      </div>
+      {currentUser?._id ? (
+        <div className={`fixed right-0 top-0 z-40 m-3 transition-opacity duration-[450ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${isSidebarOpen ? 'pointer-events-none opacity-0' : 'opacity-100'}`}>
+          <NotificationCenter userId={currentUser._id} />
+        </div>
+      ) : null}
 
       <AnimatePresence>
         {isSidebarOpen && (
@@ -296,8 +302,8 @@ export function LayoutShell({ children, hideAccountPanel = false, showShellMenuB
               style={{ x: sidebarX, touchAction: 'none' }}
             >
               <div className='flex shrink-0 items-center justify-between border-b border-slate-200/80 bg-white/60 p-4 dark:border-slate-800 dark:bg-slate-950/60'>
-                <div className='flex items-center gap-3 rounded-2xl bg-slate-100/80 px-3 py-3 shadow-sm dark:bg-slate-900'>
-                  <img src='/Logo.jpg' alt='Redhat logo' draggable={false} onDragStart={(event) => event.preventDefault()} className='h-12 w-12 select-none rounded-xl object-cover shadow-sm [-webkit-touch-callout:none]' />
+                <div className='flex items-center gap-3 rounded-3xl bg-slate-100/80 px-3 py-3 shadow-sm dark:bg-slate-900'>
+                  <img src='/Logo.jpg' alt='Redhat logo' draggable={false} onDragStart={(event) => event.preventDefault()} className='h-12 w-12 select-none rounded-3xl object-cover shadow-sm [-webkit-touch-callout:none]' />
                   <div className='min-w-0'>
                     <p className='truncate text-xl font-bold tracking-tight text-slate-900 dark:text-white'>Redhat</p>
                     <p className='text-xs text-slate-500 dark:text-slate-400'>{t.productivityHub}</p>
@@ -307,7 +313,7 @@ export function LayoutShell({ children, hideAccountPanel = false, showShellMenuB
                 <button
                   type='button'
                   onClick={() => setIsSidebarOpen(false)}
-                  className='flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 lg:hidden'
+                  className='flex h-9 w-9 cursor-pointer items-center justify-center rounded-3xl border border-slate-200 bg-white text-slate-600 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 lg:hidden'
                   aria-label='Close sidebar'
                 >
                   <X className='h-4 w-4' />
@@ -316,7 +322,7 @@ export function LayoutShell({ children, hideAccountPanel = false, showShellMenuB
                 <button
                   type='button'
                   onClick={() => setIsSidebarOpen(false)}
-                  className='hidden h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 lg:flex'
+                  className='hidden h-9 w-9 cursor-pointer items-center justify-center rounded-3xl border border-slate-200 bg-white text-slate-600 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 lg:flex'
                   aria-label='Collapse sidebar'
                 >
                   <ChevronLeft className='h-4 w-4' />
@@ -332,7 +338,7 @@ export function LayoutShell({ children, hideAccountPanel = false, showShellMenuB
                         key={item.to}
                         type='button'
                         onClick={() => handleNavClick(item.to)}
-                        className={`flex w-full cursor-pointer items-center justify-between rounded-2xl px-3 py-2.5 text-sm font-medium transition-colors ${
+                        className={`flex w-full cursor-pointer items-center justify-between rounded-3xl px-3 py-2.5 text-sm font-medium transition-colors ${
                           isActive
                             ? 'bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-200'
                             : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-900'
@@ -359,7 +365,7 @@ export function LayoutShell({ children, hideAccountPanel = false, showShellMenuB
                     <button
                       type='button'
                       onClick={() => handleNavClick('/settings')}
-                      className={`flex w-full cursor-pointer items-center justify-between rounded-2xl px-3 py-2.5 text-sm font-medium transition-colors ${location.pathname === '/settings' ? 'bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-200' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-900'}`}
+                      className={`flex w-full cursor-pointer items-center justify-between rounded-3xl px-3 py-2.5 text-sm font-medium transition-colors ${location.pathname === '/settings' ? 'bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-200' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-900'}`}
                     >
                       <span className='flex items-center gap-2'><Settings2 className='h-4 w-4' />{t.settings}</span>
                       <span className='text-xs text-slate-400'>→</span>
@@ -377,11 +383,11 @@ export function LayoutShell({ children, hideAccountPanel = false, showShellMenuB
                       animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
                       exit={{ opacity: 0, y: -12, filter: 'blur(4px)' }}
                       transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                      className='rounded-2xl border border-emerald-200 bg-emerald-50/80 p-3 dark:border-emerald-900/70 dark:bg-emerald-500/10'
+                      className='rounded-3xl border border-emerald-200 bg-emerald-50/80 p-3 dark:border-emerald-900/70 dark:bg-emerald-500/10'
                     >
                       <div className='flex items-center justify-between gap-3'>
                         <div className='flex min-w-0 items-center gap-3'>
-                          <div className='flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500 text-sm font-semibold text-white'>
+                          <div className='flex h-9 w-9 items-center justify-center rounded-3xl bg-emerald-500 text-sm font-semibold text-white'>
                             {userInitial}
                           </div>
                           <div className='min-w-0 flex-1'>
@@ -393,7 +399,7 @@ export function LayoutShell({ children, hideAccountPanel = false, showShellMenuB
                         <button
                           type='button'
                           onClick={handleLogout}
-                          className='inline-flex cursor-pointer items-center gap-1 rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800'
+                          className='inline-flex cursor-pointer items-center gap-1 rounded-3xl border border-slate-200 bg-white px-2 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800'
                         >
                           <LogOut className='h-3.5 w-3.5' />
                           {t.signOut}
@@ -412,7 +418,7 @@ export function LayoutShell({ children, hideAccountPanel = false, showShellMenuB
                       <button
                         type='button'
                         onClick={() => handleNavClick('/signin')}
-                        className='inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-500 to-indigo-500 px-3 py-2.5 text-sm font-semibold text-white shadow-md shadow-accent transition-transform disabled:opacity-60 '
+                        className='inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-3xl bg-gradient-to-r from-violet-500 to-indigo-500 px-3 py-2.5 text-sm font-semibold text-white shadow-md shadow-accent transition-transform disabled:opacity-60 '
                       >
                         {t.signIn}
                       </button>
@@ -426,7 +432,7 @@ export function LayoutShell({ children, hideAccountPanel = false, showShellMenuB
       </AnimatePresence>
 
       <main className={`min-h-screen transition-all duration-[450ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${isSidebarOpen ? 'lg:ml-[320px]' : 'lg:ml-0'}`}>
-        <div className='mx-auto max-w-6xl px-4 py-8 sm:px-6'>
+        <div className='mx-auto max-w-6xl px-4 pb-8 pt-20 sm:px-6'>
           {renderedChildren}
         </div>
       </main>

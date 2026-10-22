@@ -82,16 +82,16 @@ const StatsAndFilters = ({ tasks = [], onFilterChange, activeFilter = 'all', cus
   };
 
   return (
-    <div className='space-y-4 rounded-[28px] border border-slate-200/80 bg-white/80 p-4 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/70'>
+    <div className='space-y-4 rounded-3xl border border-slate-200/80 bg-white/80 p-4 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/70'>
       <div className={`grid grid-cols-2 gap-2 sm:gap-3 ${stats.length === 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-4'}`}>
         {stats.map(({ label, value, tone }) => (
           <div
             key={label}
-            className='rounded-2xl border border-slate-200 bg-slate-50 p-2 dark:border-slate-700 dark:bg-slate-950/50 sm:p-2.5'
+            className='rounded-3xl border border-slate-200 bg-slate-50 p-2 dark:border-slate-700 dark:bg-slate-950/50 sm:p-2.5'
           >
             <div className='flex items-center gap-2.5 sm:gap-3'>
               <div
-                className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg sm:h-9 sm:w-9 ${
+                className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-3xl sm:h-9 sm:w-9 ${
                   tone === 'violet'
                     ? 'bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-200'
                     : tone === 'amber'
@@ -123,9 +123,9 @@ const StatsAndFilters = ({ tasks = [], onFilterChange, activeFilter = 'all', cus
         ))}
       </div>
 
-      <div className='relative grid w-full rounded-full border border-slate-200/70 bg-slate-100/90 p-1.5 shadow-inner dark:border-slate-700/70 dark:bg-slate-950/70' style={{ gridTemplateColumns: `repeat(${filters.length}, minmax(0, 1fr))` }}>
+      <div className='relative grid w-full rounded-3xl border border-slate-200/70 bg-slate-100/90 p-1.5 shadow-inner dark:border-slate-700/70 dark:bg-slate-950/70' style={{ gridTemplateColumns: `repeat(${filters.length}, minmax(0, 1fr))` }}>
         <div
-          className='pointer-events-none absolute inset-y-1.5 rounded-full bg-violet-600 shadow-accent-indicator transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]'
+          className='pointer-events-none absolute inset-y-1.5 rounded-3xl bg-violet-600 shadow-accent-indicator transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]'
           style={activeTrackStyle}
         />
 
@@ -135,7 +135,7 @@ const StatsAndFilters = ({ tasks = [], onFilterChange, activeFilter = 'all', cus
             type='button'
             onClick={() => onFilterChange?.(key)}
             aria-pressed={activeFilter === key}
-            className={`relative z-10 rounded-full px-1 py-2 text-center text-xs font-semibold transition-all duration-200 sm:text-sm ${
+            className={`relative z-10 rounded-3xl px-1 py-2 text-center text-xs font-semibold transition-all duration-200 sm:text-sm ${
               activeFilter === key
                 ? 'text-white'
                 : 'text-slate-600 hover:text-slate-900 dark:text-slate-200 dark:hover:text-white'

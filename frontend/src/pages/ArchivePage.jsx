@@ -150,7 +150,7 @@ const ArchivePage = () => {
     }
     setSelectedFile(file);
     setDraft({
-      content: file.name.replace(/\.[^/.]+\$/, ''),
+      content: file.name.replace(/\.[^/.]+$/, ''),
       caption: ''
     });
   };
@@ -325,20 +325,20 @@ const ArchivePage = () => {
       <div className='space-y-6'>
         <Header />
 
-        <section className='rounded-[28px] border border-slate-200/80 bg-white/80 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/70'>
+        <section className='rounded-3xl border border-slate-200/80 bg-white/80 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/70'>
           <div className='flex flex-wrap items-center justify-between gap-3'>
             <div>
               <h3 className='text-lg font-semibold text-slate-900 dark:text-white'>{t.uploadArchiveTitle}</h3>
               <p className='mt-1 text-sm text-slate-500 dark:text-slate-400'>{t.uploadArchiveSubtitle}</p>
             </div>
-            <label className={`inline-flex items-center gap-2 rounded-2xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white transition-all ${uploading ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-violet-500'}`}>
+            <label className={`inline-flex items-center gap-2 rounded-3xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white transition-all ${uploading ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-violet-500'}`}>
               <Upload className='h-4 w-4' /> {t.chooseFile}
               <input
                 type='file'
                 disabled={uploading}
                 className='hidden'
                 onChange={chooseFile}
-                accept='image/*,audio/*,application/pdf,text/plain,text/markdown'
+                accept='image/*,audio/*,application/pdf,text/plain,text/markdown,.rtf,.doc,.docx,.odt,.xls,.xlsx,.ods,.ppt,.pptx,.odp,.csv,.json,.xml'
               />
             </label>
           </div>
@@ -367,14 +367,14 @@ const ArchivePage = () => {
         />
 
         {loading ? (
-          <div className='rounded-[28px] border border-slate-200 bg-white/80 p-5 text-slate-500 shadow-md dark:border-slate-800 dark:bg-slate-900/70'>
+          <div className='rounded-3xl border border-slate-200 bg-white/80 p-5 text-slate-500 shadow-md dark:border-slate-800 dark:bg-slate-900/70'>
             {t.loadingArchive}
           </div>
         ) : (
           <div className='space-y-4'>
             <div className='grid gap-3 sm:grid-cols-1'>
               {visibleAttachments.length === 0 && (
-                <div className='rounded-[28px] border border-slate-200 bg-white/80 p-6 text-center text-sm text-slate-500 shadow-md dark:border-slate-800 dark:bg-slate-900/70'>
+                <div className='rounded-3xl border border-slate-200 bg-white/80 p-6 text-center text-sm text-slate-500 shadow-md dark:border-slate-800 dark:bg-slate-900/70'>
                   {t.noFilesInCategory}
                 </div>
               )}
@@ -389,10 +389,10 @@ const ArchivePage = () => {
                   <article
                     key={attachment._id}
                     onClick={() => handlePreview(attachment)}
-                    className={`cursor-pointer rounded-2xl border p-4 shadow-md transition-shadow duration-300 hover:border-violet-300 hover:shadow-lg dark:hover:border-violet-700 ${attachment.pinned ? 'border-violet-300 bg-violet-50/50 dark:border-violet-900 dark:bg-violet-950/20' : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-950/50'}`}
+                    className={`cursor-pointer rounded-3xl border p-4 shadow-md transition-shadow duration-300 hover:border-violet-300 hover:shadow-lg dark:hover:border-violet-700 ${attachment.pinned ? 'border-violet-300 bg-violet-50/50 dark:border-violet-900 dark:bg-violet-950/20' : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-950/50'}`}
                   >
                     <div className='flex items-start gap-3'>
-                      <div className='rounded-xl bg-white p-2.5 text-violet-500 shadow-sm dark:bg-slate-900'>
+                      <div className='rounded-3xl bg-white p-2.5 text-violet-500 shadow-sm dark:bg-slate-900'>
                         <IconOf kind={kind} />
                       </div>
                       <div className='min-w-0 flex-1'>
@@ -410,14 +410,14 @@ const ArchivePage = () => {
                       </div>
                     </div>
                     <div className='mt-3 flex justify-end gap-2'>
-                      <button type='button' onClick={(event) => { event.stopPropagation(); setEditing(attachment); setDraft({ content: titleOf(attachment), caption: attachment.description || '' }); }} aria-label={t.editFile} title={t.editFile} className='rounded-full border border-slate-200 p-2 text-slate-500 hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800'>
+                      <button type='button' onClick={(event) => { event.stopPropagation(); setEditing(attachment); setDraft({ content: titleOf(attachment), caption: attachment.description || '' }); }} aria-label={t.editFile} title={t.editFile} className='rounded-3xl border border-slate-200 p-2 text-slate-500 hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800'>
                         <Pencil className='h-4 w-4' />
                       </button>
                       <button
                         type='button'
                         onClick={(event) => { event.stopPropagation(); handleDownloadClick(attachment); }}
                         aria-label={isDownloaded ? t.downloaded : t.download}
-                        className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-2 text-xs font-medium transition ${
+                        className={`inline-flex items-center gap-1.5 rounded-3xl border px-3 py-2 text-xs font-medium transition ${
                           isDownloaded
                             ? 'border-emerald-200 bg-emerald-50 text-emerald-600 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-400 shadow-sm'
                             : 'border-slate-200 text-slate-500 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800'
@@ -426,7 +426,7 @@ const ArchivePage = () => {
                         {isDownloaded ? <Check className='h-4 w-4' /> : <Download className='h-4 w-4' />}
                         <span>{isDownloaded ? t.downloaded : t.download}</span>
                       </button>
-                      <button type='button' onClick={(event) => { event.stopPropagation(); handleDelete(attachment._id); }} aria-label={t.deleteFile} title={t.deleteFile} className='rounded-full border border-rose-200 p-2 text-rose-500 hover:bg-rose-50 dark:border-rose-900/50 dark:hover:bg-rose-950/30'>
+                      <button type='button' onClick={(event) => { event.stopPropagation(); handleDelete(attachment._id); }} aria-label={t.deleteFile} title={t.deleteFile} className='rounded-3xl border border-rose-200 p-2 text-rose-500 hover:bg-rose-50 dark:border-rose-900/50 dark:hover:bg-rose-950/30'>
                         <Trash2 className='h-4 w-4' />
                       </button>
                     </div>
@@ -467,7 +467,7 @@ const ArchivePage = () => {
                 <button
                   type='button'
                   onClick={() => setConfirmDownloadItem(null)}
-                  className='rounded-xl px-4 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition'
+                  className='rounded-3xl px-4 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition'
                 >
                   {t.cancel}
                 </button>
@@ -478,7 +478,7 @@ const ArchivePage = () => {
                     setConfirmDownloadItem(null);
                     processDownload(item);
                   }}
-                  className='rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white shadow-md hover:bg-violet-500 transition'
+                  className='rounded-3xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white shadow-md hover:bg-violet-500 transition'
                 >
                   {t.confirm}
                 </button>
@@ -494,7 +494,7 @@ const ArchivePage = () => {
                 <h3 className='text-lg font-semibold text-slate-900 dark:text-white'>
                   {selectedFile ? t.fileInfoTitle : t.editFileTitle}
                 </h3>
-                <button type='button' disabled={uploading} onClick={() => selectedFile ? setSelectedFile(null) : setEditing(null)} aria-label={t.close} className='rounded-full p-1 text-slate-400 hover:bg-slate-100 disabled:opacity-40 dark:hover:bg-slate-800'>
+                <button type='button' disabled={uploading} onClick={() => selectedFile ? setSelectedFile(null) : setEditing(null)} aria-label={t.close} className='rounded-3xl p-1 text-slate-400 hover:bg-slate-100 disabled:opacity-40 dark:hover:bg-slate-800'>
                   <X className='h-5 w-5' />
                 </button>
               </div>
@@ -510,7 +510,7 @@ const ArchivePage = () => {
                     value={draft.content}
                     onChange={(event) => setDraft({ ...draft, content: event.target.value })}
                     placeholder={t.contentPlaceholder}
-                    className='mt-1 w-full rounded-xl border border-slate-200 bg-transparent p-2.5 text-sm text-slate-800 dark:border-slate-700 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500'
+                    className='mt-1 w-full rounded-3xl border border-slate-200 bg-transparent p-2.5 text-sm text-slate-800 dark:border-slate-700 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500'
                   />
                 </div>
 
@@ -527,7 +527,7 @@ const ArchivePage = () => {
                     }}
                     placeholder={t.captionPlaceholder}
                     rows={3}
-                    className='mt-1 w-full resize-y rounded-xl border border-slate-200 bg-transparent p-2.5 text-sm text-slate-800 dark:border-slate-700 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500'
+                    className='mt-1 w-full resize-y rounded-3xl border border-slate-200 bg-transparent p-2.5 text-sm text-slate-800 dark:border-slate-700 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500'
                   />
                 </div>
                 {selectedFile && (
@@ -539,14 +539,14 @@ const ArchivePage = () => {
                       <span>{kindOf({ mimeType: selectedFile?.type, originalName: selectedFile?.name }) === 'video' ? t.uploadingVideo : t.uploadingFile}</span>
                       <span>{uploadProgress}%</span>
                     </div>
-                    <div className='h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700'>
-                      <div className='h-full rounded-full bg-violet-600 transition-[width] duration-200' style={{ width: `${uploadProgress}%` }} />
+                    <div className='h-2 overflow-hidden rounded-3xl bg-slate-200 dark:bg-slate-700'>
+                      <div className='h-full rounded-3xl bg-violet-600 transition-[width] duration-200' style={{ width: `${uploadProgress}%` }} />
                     </div>
                   </div>
                 )}
               </div>
 
-              <button type='submit' disabled={uploading || (selectedFile && selectedFile.size > MAX_UPLOAD_SIZE)} className='mt-6 w-full rounded-xl bg-violet-600 p-3 text-sm font-semibold text-white shadow-md hover:bg-violet-500 transition disabled:cursor-not-allowed disabled:opacity-60'>
+              <button type='submit' disabled={uploading || (selectedFile && selectedFile.size > MAX_UPLOAD_SIZE)} className='mt-6 w-full rounded-3xl bg-violet-600 p-3 text-sm font-semibold text-white shadow-md hover:bg-violet-500 transition disabled:cursor-not-allowed disabled:opacity-60'>
                 {uploading ? t.uploading : selectedFile ? t.confirmUpload : t.saveChanges}
               </button>
             </form>
@@ -560,13 +560,13 @@ const ArchivePage = () => {
           >
             <div className='relative max-h-[90vh] max-w-4xl flex flex-col items-center rounded-3xl bg-slate-900 p-6 shadow-2xl overflow-hidden border border-slate-800' onClick={(event) => event.stopPropagation()}>
 
-              <div className='absolute top-4 right-4 z-20 flex items-center gap-2 bg-slate-800/80 backdrop-blur-md p-1.5 rounded-xl border border-slate-700'>
+              <div className='absolute top-4 right-4 z-20 flex items-center gap-2 bg-slate-800/80 backdrop-blur-md p-1.5 rounded-3xl border border-slate-700'>
                 {kindOf(preview.attachment) === 'image' && (
                   <>
                     <button
                       type='button'
                       onClick={() => setZoomScale((s) => Math.max(s - 0.25, 0.5))}
-                      className='p-1.5 text-white hover:bg-slate-700 rounded-lg transition'
+                      className='p-1.5 text-white hover:bg-slate-700 rounded-3xl transition'
                       title={t.zoomOut}
                     >
                       <Minus className='h-4 w-4' />
@@ -577,7 +577,7 @@ const ArchivePage = () => {
                     <button
                       type='button'
                       onClick={() => setZoomScale((s) => Math.min(s + 0.25, 3))}
-                      className='p-1.5 text-white hover:bg-slate-700 rounded-lg transition'
+                      className='p-1.5 text-white hover:bg-slate-700 rounded-3xl transition'
                       title={t.zoomIn}
                     >
                       <Plus className='h-4 w-4' />
@@ -588,7 +588,7 @@ const ArchivePage = () => {
                 <button
                   type='button'
                   onClick={closePreview}
-                  className='p-1.5 text-white hover:bg-rose-600 rounded-lg transition'
+                  className='p-1.5 text-white hover:bg-rose-600 rounded-3xl transition'
                   title={t.close}
                 >
                   <X className='h-4 w-4' />
@@ -656,11 +656,11 @@ const ArchivePage = () => {
                     alt={titleOf(preview.attachment)}
                     onDragStart={(e) => e.preventDefault()}
                     style={{ transform: `translate(${panOffset.x}px, ${panOffset.y}px) scale(${zoomScale})`, transition: isPanning ? 'none' : 'transform 0.1s ease-out' }}
-                    className='max-h-[60vh] max-w-full object-contain rounded-lg select-none'
+                    className='max-h-[60vh] max-w-full object-contain rounded-3xl select-none'
                   />
                 )}
                 {kindOf(preview.attachment) === 'video' && (
-                  <video src={preview.url} controls onClick={(event) => { const video = event.currentTarget; if (video.paused) void video.play(); else video.pause(); }} className='max-h-[65vh] max-w-full rounded-lg shadow-lg' />
+                  <video src={preview.url} controls onClick={(event) => { const video = event.currentTarget; if (video.paused) void video.play(); else video.pause(); }} className='max-h-[65vh] max-w-full rounded-3xl shadow-lg' />
                 )}
                 {kindOf(preview.attachment) === 'audio' && (
                   <div className='flex flex-col items-center gap-5 p-12 text-white'>

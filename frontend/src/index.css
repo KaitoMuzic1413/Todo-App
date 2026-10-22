@@ -282,7 +282,7 @@
 
 .sidebar-scrollbar::-webkit-scrollbar-thumb {
   border: 2px solid transparent;
-  border-radius: 9999px;
+  border-radius: 1.5rem;
   background-color: rgb(var(--accent-shadow-rgb) / 0.58);
   background-clip: content-box;
 }
@@ -304,7 +304,7 @@
   margin-inline: auto;
   padding: .75rem 1rem;
   border: 1px solid hsl(var(--border));
-  border-radius: .9rem;
+  border-radius: 1.5rem;
   background: hsl(var(--background));
   color: hsl(var(--foreground));
   box-shadow: 0 8px 30px #0003;

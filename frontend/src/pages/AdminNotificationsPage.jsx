@@ -88,9 +88,9 @@ const AdminNotificationsPage = () => {
   return (
     <LayoutShell>
       <div className='space-y-6'>
-        <header className='rounded-[28px] bg-gradient-to-br from-[#0e1939] via-[#172550] to-[#273d78] p-5 text-white shadow-[0_22px_55px_rgba(15,23,42,0.25)] sm:p-7'>
+        <header className='rounded-3xl bg-gradient-to-br from-[#0e1939] via-[#172550] to-[#273d78] p-5 text-white shadow-[0_22px_55px_rgba(15,23,42,0.25)] sm:p-7'>
           <div className='flex items-center gap-4'>
-            <span className='flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-violet-200'><BellRing className='h-5 w-5' /></span>
+            <span className='flex h-12 w-12 items-center justify-center rounded-3xl bg-white/10 text-violet-200'><BellRing className='h-5 w-5' /></span>
             <div>
               <p className='text-xs font-semibold uppercase tracking-[0.17em] text-blue-200'>Todo App</p>
               <h1 className='mt-1 text-2xl font-bold sm:text-3xl'>{t.adminNotifications}</h1>
@@ -98,24 +98,24 @@ const AdminNotificationsPage = () => {
           </div>
         </header>
 
-        <section className='rounded-3xl border border-slate-200/80 bg-white/90 p-5 shadow-sm sm:rounded-[28px] sm:p-7 dark:border-slate-800 dark:bg-slate-900/80'>
+        <section className='rounded-3xl border border-slate-200/80 bg-white/90 p-5 shadow-sm sm:rounded-3xl sm:p-7 dark:border-slate-800 dark:bg-slate-900/80'>
           <h2 className='text-lg font-bold text-slate-900 dark:text-white'>{t.sendNotifications}</h2>
           <form onSubmit={(event) => void handleSubmit(event)} className='mt-5 space-y-5'>
             <div>
               <label htmlFor='notification-title' className='mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-200'>{t.notificationTitle}</label>
-              <input id='notification-title' required maxLength={120} value={title} onChange={(event) => setTitle(event.target.value)} className='min-h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-base text-slate-900 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:focus:ring-violet-900/30' />
+              <input id='notification-title' required maxLength={120} value={title} onChange={(event) => setTitle(event.target.value)} className='min-h-12 w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 text-base text-slate-900 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:focus:ring-violet-900/30' />
             </div>
             <div>
               <div className='mb-2 flex items-center justify-between gap-3'>
                 <label htmlFor='notification-content' className='text-sm font-semibold text-slate-700 dark:text-slate-200'>{t.notificationContent}</label>
                 <span className='text-xs text-slate-400'>{content.length}/5000</span>
               </div>
-              <textarea id='notification-content' required maxLength={5000} rows={6} value={content} onChange={(event) => setContent(event.target.value)} className='min-h-36 w-full resize-y rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-base leading-6 text-slate-900 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:focus:ring-violet-900/30' />
+              <textarea id='notification-content' required maxLength={5000} rows={6} value={content} onChange={(event) => setContent(event.target.value)} className='min-h-36 w-full resize-y rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-base leading-6 text-slate-900 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:focus:ring-violet-900/30' />
             </div>
             <div className='grid gap-5 sm:grid-cols-2'>
               <div>
                 <label htmlFor='notification-type' className='mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-200'>{t.notificationType}</label>
-                <select id='notification-type' value={type} onChange={(event) => setType(event.target.value)} className='min-h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-base text-slate-900 outline-none focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:focus:ring-violet-900/30'>
+                <select id='notification-type' value={type} onChange={(event) => setType(event.target.value)} className='min-h-12 w-full rounded-3xl border border-slate-200 bg-slate-50 px-3 text-base text-slate-900 outline-none focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:focus:ring-violet-900/30'>
                   {Object.entries(typeLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
                 </select>
               </div>
@@ -126,7 +126,7 @@ const AdminNotificationsPage = () => {
                     { value: 'all', label: t.allUsers },
                     { value: 'user', label: t.oneUser },
                   ].map(({ value, label }) => (
-                    <label key={value} className={`flex min-h-12 cursor-pointer items-center gap-2 rounded-xl border px-3 text-sm font-medium transition ${audienceType === value ? 'border-violet-400 bg-violet-50 text-violet-700 dark:border-violet-500 dark:bg-violet-500/10 dark:text-violet-200' : 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300'}`}>
+                    <label key={value} className={`flex min-h-12 cursor-pointer items-center gap-2 rounded-3xl border px-3 text-sm font-medium transition ${audienceType === value ? 'border-violet-400 bg-violet-50 text-violet-700 dark:border-violet-500 dark:bg-violet-500/10 dark:text-violet-200' : 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300'}`}>
                       <input type='radio' name='audience' value={value} checked={audienceType === value} onChange={() => setAudienceType(value)} className='accent-violet-600' />
                       {label}
                     </label>
@@ -137,12 +137,12 @@ const AdminNotificationsPage = () => {
             {audienceType === 'user' ? (
               <div>
                 <label htmlFor='recipient-email' className='mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-200'>{t.recipientEmail}</label>
-                <input id='recipient-email' type='email' required maxLength={254} value={email} onChange={(event) => setEmail(event.target.value)} className='min-h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-base text-slate-900 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:focus:ring-violet-900/30' />
+                <input id='recipient-email' type='email' required maxLength={254} value={email} onChange={(event) => setEmail(event.target.value)} className='min-h-12 w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 text-base text-slate-900 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:focus:ring-violet-900/30' />
               </div>
             ) : null}
             <div className='flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end dark:border-slate-800'>
-              <button type='button' disabled={!title.trim() || !content.trim()} onClick={() => setIsPreviewOpen(true)} className='min-h-12 rounded-xl border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800'>{t.preview}</button>
-              <button type='submit' disabled={isSending || !title.trim() || !content.trim() || (audienceType === 'user' && !email.trim())} className='inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-6 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:from-violet-500 hover:to-indigo-500 disabled:cursor-not-allowed disabled:opacity-45'>
+              <button type='button' disabled={!title.trim() || !content.trim()} onClick={() => setIsPreviewOpen(true)} className='min-h-12 rounded-3xl border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800'>{t.preview}</button>
+              <button type='submit' disabled={isSending || !title.trim() || !content.trim() || (audienceType === 'user' && !email.trim())} className='inline-flex min-h-12 items-center justify-center gap-2 rounded-3xl bg-gradient-to-r from-violet-600 to-indigo-600 px-6 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:from-violet-500 hover:to-indigo-500 disabled:cursor-not-allowed disabled:opacity-45'>
                 {isSending ? <LoaderCircle className='h-4 w-4 animate-spin' /> : <Send className='h-4 w-4' />}
                 {isSending ? t.sending : t.send}
               </button>
@@ -150,17 +150,17 @@ const AdminNotificationsPage = () => {
           </form>
         </section>
 
-        <section className='rounded-3xl border border-slate-200/80 bg-white/90 p-5 shadow-sm sm:rounded-[28px] sm:p-7 dark:border-slate-800 dark:bg-slate-900/80'>
+        <section className='rounded-3xl border border-slate-200/80 bg-white/90 p-5 shadow-sm sm:p-7 dark:border-slate-800 dark:bg-slate-900/80'>
           <div className='flex items-center justify-between gap-3'>
             <h2 className='text-lg font-bold text-slate-900 dark:text-white'>{t.sentNotifications}</h2>
-            <button type='button' onClick={() => void loadHistory()} className='min-h-10 rounded-xl px-3 text-sm font-semibold text-violet-700 hover:bg-violet-50 dark:text-violet-300 dark:hover:bg-violet-500/10'>{t.retry}</button>
+            <button type='button' onClick={() => void loadHistory()} className='min-h-10 rounded-3xl px-3 text-sm font-semibold text-violet-700 hover:bg-violet-50 dark:text-violet-300 dark:hover:bg-violet-500/10'>{t.retry}</button>
           </div>
           {historyLoading ? (
             <div className='flex min-h-28 items-center justify-center text-violet-600 dark:text-violet-300'><LoaderCircle className='h-6 w-6 animate-spin' /><span className='sr-only'>{t.loading}</span></div>
           ) : historyError ? (
-            <p role='alert' className='mt-5 rounded-xl bg-rose-50 p-4 text-sm text-rose-700 dark:bg-rose-500/10 dark:text-rose-300'>{historyError}</p>
+            <p role='alert' className='mt-5 rounded-3xl bg-rose-50 p-4 text-sm text-rose-700 dark:bg-rose-500/10 dark:text-rose-300'>{historyError}</p>
           ) : history.length === 0 ? (
-            <p className='mt-5 rounded-2xl bg-slate-50 p-6 text-center text-sm text-slate-500 dark:bg-slate-950 dark:text-slate-400'>{t.notificationHistoryEmpty}</p>
+            <p className='mt-5 rounded-3xl bg-slate-50 p-6 text-center text-sm text-slate-500 dark:bg-slate-950 dark:text-slate-400'>{t.notificationHistoryEmpty}</p>
           ) : (
             <ul className='mt-4 divide-y divide-slate-100 dark:divide-slate-800'>
               {history.map((notification) => (
@@ -168,14 +168,14 @@ const AdminNotificationsPage = () => {
                   <div className='min-w-0'>
                     <div className='flex flex-wrap items-center gap-2'>
                       <h3 className='max-w-full break-words text-sm font-semibold text-slate-900 dark:text-white'>{notification.title}</h3>
-                      <span className='rounded-full bg-violet-50 px-2.5 py-1 text-[11px] font-semibold text-violet-700 dark:bg-violet-500/10 dark:text-violet-200'>{typeLabels[notification.type] || notification.type}</span>
+                      <span className='rounded-3xl bg-violet-50 px-2.5 py-1 text-[11px] font-semibold text-violet-700 dark:bg-violet-500/10 dark:text-violet-200'>{typeLabels[notification.type] || notification.type}</span>
                     </div>
                     <p className='mt-1 line-clamp-2 whitespace-pre-wrap text-xs leading-5 text-slate-500 dark:text-slate-400'>{notification.content}</p>
                     <p className='mt-2 text-[11px] text-slate-400 dark:text-slate-500'>{formatDate(notification.createdAt)} · {notification.targetType === 'all' ? t.allUsers : t.oneUser}</p>
                   </div>
                   <div className='flex shrink-0 items-center gap-3 text-xs text-slate-500 dark:text-slate-400'>
                     <span>{notification.recipients} {t.recipients.toLowerCase()}</span>
-                    <span className='rounded-lg bg-emerald-50 px-2.5 py-1.5 font-semibold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300'>{notification.read}/{notification.recipients} {t.readCount.toLowerCase()}</span>
+                    <span className='rounded-3xl bg-emerald-50 px-2.5 py-1.5 font-semibold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300'>{notification.read}/{notification.recipients} {t.readCount.toLowerCase()}</span>
                   </div>
                 </li>
               ))}
@@ -186,10 +186,10 @@ const AdminNotificationsPage = () => {
 
       {isPreviewOpen ? (
         <div className='fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/60 px-4 py-5 backdrop-blur-sm' onMouseDown={(event) => { if (event.target === event.currentTarget) setIsPreviewOpen(false); }}>
-          <section role='dialog' aria-modal='true' aria-labelledby='notification-preview-title' className='flex w-[90vw] max-w-[600px] max-h-[78dvh] min-h-[50dvh] flex-col overflow-hidden rounded-[26px] bg-white shadow-2xl dark:bg-slate-900'>
+          <section role='dialog' aria-modal='true' aria-labelledby='notification-preview-title' className='flex w-[90vw] max-w-[600px] max-h-[78dvh] min-h-[50dvh] flex-col overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-slate-900'>
             <header className='flex shrink-0 items-start justify-between gap-3 border-b border-slate-100 px-5 py-4 dark:border-slate-800'>
               <div className='min-w-0'><p className='text-xs font-semibold uppercase tracking-[0.15em] text-violet-600 dark:text-violet-300'>{t.preview}</p><h2 id='notification-preview-title' className='mt-1 break-words text-lg font-bold text-slate-900 dark:text-white'>{title || t.notificationTitle}</h2></div>
-              <button type='button' autoFocus onClick={() => setIsPreviewOpen(false)} aria-label={t.close} className='flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'><X className='h-5 w-5' /></button>
+              <button type='button' autoFocus onClick={() => setIsPreviewOpen(false)} aria-label={t.close} className='flex h-10 w-10 shrink-0 items-center justify-center rounded-3xl text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'><X className='h-5 w-5' /></button>
             </header>
             <div className='min-h-0 flex-1 overflow-y-auto px-5 py-5 [overscroll-behavior:contain]'>
               <p className='text-xs text-slate-500 dark:text-slate-400'>{typeLabels[type]} · {audienceType === 'all' ? t.allUsers : email}</p>

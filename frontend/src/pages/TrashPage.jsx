@@ -240,7 +240,7 @@ const TrashPage = () => {
     <LayoutShell>
       <div className='space-y-6'>
         <Header />
-        <header className='flex flex-col gap-4 rounded-[28px] border border-slate-200/80 bg-white/80 p-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/70'>
+        <header className='flex flex-col gap-4 rounded-3xl border border-slate-200/80 bg-white/80 p-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/70'>
           <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
             <div className='flex w-full items-center justify-center gap-3 sm:w-auto sm:justify-start'>
               <Trash2 className='h-8 w-8 text-violet-600' />
@@ -251,7 +251,7 @@ const TrashPage = () => {
               type='button'
               onClick={handleClearTrash}
               disabled={!tasks.length && !attachments.length}
-              className='cursor-pointer rounded-2xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-600 shadow-sm transition-opacity hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-rose-900/60 dark:bg-rose-500/10 dark:text-rose-200 dark:hover:bg-rose-500/20'
+              className='cursor-pointer rounded-3xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-600 shadow-sm transition-opacity hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-rose-900/60 dark:bg-rose-500/10 dark:text-rose-200 dark:hover:bg-rose-500/20'
             >
               {t.clearAllTrash}
             </button>
@@ -262,9 +262,9 @@ const TrashPage = () => {
               <p className='mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400'>
                 {t.status || 'Status'}
               </p>
-              <div className='relative inline-grid w-full grid-cols-3 gap-2 rounded-full border border-slate-200/70 bg-slate-100/90 p-1 dark:border-slate-700/70 dark:bg-slate-950/70 sm:w-auto'>
+              <div className='relative inline-grid w-full grid-cols-3 gap-2 rounded-3xl border border-slate-200/70 bg-slate-100/90 p-1 dark:border-slate-700/70 dark:bg-slate-950/70 sm:w-auto'>
                 <div
-                  className='pointer-events-none absolute inset-y-1 rounded-full bg-violet-600 shadow-accent-strong transition-all duration-300 ease-out'
+                  className='pointer-events-none absolute inset-y-1 rounded-3xl bg-violet-600 shadow-accent-strong transition-all duration-300 ease-out'
                   style={{
                     width: `calc(${100 / 3}% - 0.5rem)`,
                     left: `calc(${Math.max(0, ['all', 'complete', 'active'].indexOf(statusFilter)) * (100 / 3)}% + 0.25rem)`,
@@ -276,7 +276,7 @@ const TrashPage = () => {
                     key={key}
                     type='button'
                     onClick={() => setStatusFilter(key)}
-                    className={`relative z-10 cursor-pointer rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
+                    className={`relative z-10 cursor-pointer rounded-3xl px-3 py-1.5 text-sm font-medium transition-colors ${
                       statusFilter === key
                         ? 'text-white'
                         : 'text-slate-600 hover:text-slate-900 dark:text-slate-200 dark:hover:text-white'
@@ -297,7 +297,7 @@ const TrashPage = () => {
           </div>
         </header>
 
-        <section className='rounded-[28px] border border-slate-200/80 bg-white/80 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/70'>
+        <section className='rounded-3xl border border-slate-200/80 bg-white/80 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/70'>
           <div className='mb-4 flex flex-wrap items-center justify-between gap-2'>
             <span className='text-sm font-semibold text-slate-500 dark:text-slate-400'>
               {tasks.length} {t.total || 'Total'}
@@ -309,7 +309,7 @@ const TrashPage = () => {
                   <button
                     type='button'
                     onClick={handleSelectAllInPage}
-                    className='inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'
+                    className='inline-flex cursor-pointer items-center gap-1.5 rounded-3xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'
                   >
                     {isAllPageSelected ? (t.deselectAll || 'Bỏ chọn tất cả') : (t.selectAll || 'Chọn trang này')}
                   </button>
@@ -318,7 +318,7 @@ const TrashPage = () => {
                     type='button'
                     onClick={handleBatchRestore}
                     disabled={selectedTaskIds.length === 0}
-                    className='inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-opacity hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50'
+                    className='inline-flex cursor-pointer items-center gap-1.5 rounded-3xl bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-opacity hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50'
                   >
                     <RotateCcw className='h-3.5 w-3.5' />
                     {t.restore || 'Khôi phục'} ({selectedTaskIds.length})
@@ -328,7 +328,7 @@ const TrashPage = () => {
                     type='button'
                     onClick={handleBatchDeletePermanently}
                     disabled={selectedTaskIds.length === 0}
-                    className='inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-rose-500 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-opacity hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-50'
+                    className='inline-flex cursor-pointer items-center gap-1.5 rounded-3xl bg-rose-500 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-opacity hover:bg-rose-600 disabled:cursor-not-allowed disabled:opacity-50'
                   >
                     <Trash2 className='h-3.5 w-3.5' />
                     {t.deletePermanently || 'Xóa vĩnh viễn'} ({selectedTaskIds.length})
@@ -337,7 +337,7 @@ const TrashPage = () => {
                   <button
                     type='button'
                     onClick={toggleSelectMode}
-                    className='flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                    className='flex h-7 w-7 cursor-pointer items-center justify-center rounded-3xl border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'
                     aria-label='Cancel selection'
                   >
                     <X className='h-4 w-4' />
@@ -348,7 +348,7 @@ const TrashPage = () => {
                   type='button'
                   onClick={toggleSelectMode}
                   disabled={tasks.length === 0}
-                  className='inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-600 shadow-sm transition-opacity disabled:cursor-not-allowed disabled:opacity-50 dark:border-rose-900/60 dark:bg-rose-500/10 dark:text-rose-200'
+                  className='inline-flex cursor-pointer items-center gap-1.5 rounded-3xl border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-600 shadow-sm transition-opacity disabled:cursor-not-allowed disabled:opacity-50 dark:border-rose-900/60 dark:bg-rose-500/10 dark:text-rose-200'
                 >
                   <Trash2 className='h-3.5 w-3.5' />
                   {t.quickRemoveTrash || 'Chọn nhanh'}
@@ -360,7 +360,7 @@ const TrashPage = () => {
           {loading ? (
             <div className='py-8 text-center text-slate-500 dark:text-slate-300'>Loading trash...</div>
           ) : pagedTasks.length === 0 && attachments.length === 0 ? (
-            <div className='rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-950/40 dark:text-slate-300'>
+            <div className='rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-950/40 dark:text-slate-300'>
               {t.noTasksInTrash}
             </div>
           ) : (
@@ -372,7 +372,7 @@ const TrashPage = () => {
                   <div
                     key={task._id}
                     onClick={() => isSelectMode && handleToggleSelectTask(task._id)}
-                    className={`flex flex-col gap-3 rounded-2xl border p-4 transition-colors sm:flex-row sm:items-center sm:justify-between ${
+                    className={`flex flex-col gap-3 rounded-3xl border p-4 transition-colors sm:flex-row sm:items-center sm:justify-between ${
                       isSelectMode ? 'cursor-pointer hover:border-violet-300 dark:hover:border-violet-700' : ''
                     } ${
                       isSelected
@@ -424,7 +424,7 @@ const TrashPage = () => {
                             e.stopPropagation();
                             handleToggleSelectTask(task._id);
                           }}
-                          className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border transition-all ${
+                          className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-3xl border transition-all ${
                             isSelected
                               ? 'border-violet-600 bg-violet-600 text-white'
                               : 'border-slate-300 bg-white text-transparent dark:border-slate-600 dark:bg-slate-900'
@@ -438,14 +438,14 @@ const TrashPage = () => {
                           <button
                             type='button'
                             onClick={() => handleRestoreTask(task._id)}
-                            className='cursor-pointer rounded-full bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-emerald-600'
+                            className='cursor-pointer rounded-3xl bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-emerald-600'
                           >
                             {t.restore}
                           </button>
                           <button
                             type='button'
                             onClick={() => handleDeletePermanently(task._id)}
-                            className='cursor-pointer rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-600 shadow-sm transition-colors hover:bg-rose-100 dark:border-rose-900/60 dark:bg-rose-500/10 dark:text-rose-200 dark:hover:bg-rose-500/20'
+                            className='cursor-pointer rounded-3xl border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-600 shadow-sm transition-colors hover:bg-rose-100 dark:border-rose-900/60 dark:bg-rose-500/10 dark:text-rose-200 dark:hover:bg-rose-500/20'
                           >
                             {t.deletePermanently}
                           </button>
@@ -460,7 +460,7 @@ const TrashPage = () => {
         </section>
 
         {attachments.length > 0 ? (
-          <section className='rounded-[28px] border border-slate-200/80 bg-white/80 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/70'>
+          <section className='rounded-3xl border border-slate-200/80 bg-white/80 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/70'>
             <div className='mb-4 flex items-center gap-2'>
               <FileArchive className='h-5 w-5 text-violet-600' />
               <h2 className='text-lg font-semibold text-slate-900 dark:text-white'>{t.deletedFiles}</h2>
@@ -469,7 +469,7 @@ const TrashPage = () => {
               {attachmentGroups.map(([type, group]) => <div key={type} className='space-y-3'>
                 {attachmentGroups.length > 1 && <h3 className='flex items-center gap-2 text-sm font-semibold text-slate-600 dark:text-slate-300'><TypeIcon type={type} />{typeLabel(type, t)} <span className='text-xs font-normal text-slate-400'>({group.length})</span></h3>}
                 {group.map((attachment) => (
-                <div key={attachment._id} className='flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700 dark:bg-slate-950/50'>
+                <div key={attachment._id} className='flex flex-col gap-3 rounded-3xl border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700 dark:bg-slate-950/50'>
                   <div className='min-w-0'>
                     <p className='truncate font-medium text-slate-800 dark:text-slate-100'>{attachment.originalName}</p>
                     <p className='mt-1 text-xs text-rose-500 dark:text-rose-400'>
@@ -477,10 +477,10 @@ const TrashPage = () => {
                     </p>
                   </div>
                   <div className='flex shrink-0 gap-2'>
-                    <button type='button' onClick={() => handleRestoreAttachment(attachment._id)} className='rounded-full bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-600'>
+                    <button type='button' onClick={() => handleRestoreAttachment(attachment._id)} className='rounded-3xl bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-600'>
                       {t.restore || 'Restore'}
                     </button>
-                    <button type='button' onClick={() => handleDeleteAttachmentPermanently(attachment._id)} className='rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-100 dark:border-rose-900/60 dark:bg-rose-500/10 dark:text-rose-200'>
+                    <button type='button' onClick={() => handleDeleteAttachmentPermanently(attachment._id)} className='rounded-3xl border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-100 dark:border-rose-900/60 dark:bg-rose-500/10 dark:text-rose-200'>
                       {t.deletePermanently || 'Delete permanently'}
                     </button>
                   </div>
@@ -491,7 +491,7 @@ const TrashPage = () => {
           </section>
         ) : null}
 
-        <div className='flex flex-col items-center justify-between gap-4 rounded-[28px] border border-slate-200/80 bg-white/80 p-4 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/70 sm:flex-row'>
+        <div className='flex flex-col items-center justify-between gap-4 rounded-3xl border border-slate-200/80 bg-white/80 p-4 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/70 sm:flex-row'>
           <TaskListPagination
             currentPage={safePage}
             totalPages={totalPages}

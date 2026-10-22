@@ -133,7 +133,7 @@ const TaskList = ({
   const isAllSelected = tasks.length > 0 && selectedTaskIds.length === tasks.length;
 
   return (
-    <div className='relative flex flex-col overflow-hidden rounded-[28px] border border-slate-200/80 bg-white/80 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/70'>
+    <div className='relative flex flex-col overflow-hidden rounded-3xl border border-slate-200/80 bg-white/80 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/70'>
       <div className='mb-4 flex flex-wrap items-center justify-between gap-2'>
         <h3 className='text-xl font-semibold text-slate-900 dark:text-white'>{title || t.todayTasks}</h3>
 
@@ -143,7 +143,7 @@ const TaskList = ({
               <button
                 type='button'
                 onClick={handleSelectAll}
-                className='inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'
+                className='inline-flex cursor-pointer items-center gap-1.5 rounded-3xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700'
               >
                 {isAllSelected ? (t.deselectAll || 'Bỏ chọn tất cả') : (t.selectAll || 'Chọn tất cả')}
               </button>
@@ -152,7 +152,7 @@ const TaskList = ({
                 type='button'
                 onClick={handleConfirmDeleteSelected}
                 disabled={selectedTaskIds.length === 0}
-                className='inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-rose-500 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-opacity disabled:cursor-not-allowed disabled:opacity-50'
+                className='inline-flex cursor-pointer items-center gap-1.5 rounded-3xl bg-rose-500 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-opacity disabled:cursor-not-allowed disabled:opacity-50'
               >
                 <Trash2 className='h-3.5 w-3.5' />
                 {(t.deleteSelected || 'Xóa')} ({selectedTaskIds.length})
@@ -161,7 +161,7 @@ const TaskList = ({
               <button
                 type='button'
                 onClick={toggleSelectMode}
-                className='flex h-7 w-7 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                className='flex h-7 w-7 cursor-pointer items-center justify-center rounded-3xl border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'
                 aria-label='Cancel batch selection'
               >
                 <X className='h-4 w-4' />
@@ -172,7 +172,7 @@ const TaskList = ({
               type='button'
               onClick={toggleSelectMode}
               disabled={tasks.length === 0}
-              className='inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-rose-900/60 dark:bg-rose-500/10 dark:text-rose-200'
+              className='inline-flex cursor-pointer items-center gap-1.5 rounded-3xl border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-medium text-rose-600 disabled:cursor-not-allowed disabled:opacity-50 dark:border-rose-900/60 dark:bg-rose-500/10 dark:text-rose-200'
               title='Quick remove task'
             >
               <Trash2 className='h-3.5 w-3.5' />
@@ -195,7 +195,7 @@ const TaskList = ({
             className={`${viewMode === 'grid' ? 'grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3' : 'space-y-3'} will-change-transform`}
           >
             {tasks.length === 0 ? (
-              <div className={`col-span-full flex ${compact ? 'min-h-40' : 'h-[410px]'} items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-950/40 dark:text-slate-300`}>
+              <div className={`col-span-full flex ${compact ? 'min-h-40' : 'h-[410px]'} items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-950/40 dark:text-slate-300`}>
                 {t.noTasks}
               </div>
             ) : (
@@ -225,7 +225,7 @@ const TaskList = ({
                         if (event.button === 0 && isSelectMode) handleToggleSelectTask(task._id);
                       }}
                       onContextMenu={(event) => event.preventDefault()}
-                      className={`flex min-h-[72px] items-center justify-between gap-4 rounded-2xl border p-4 shadow-sm transition-all duration-300 hover:border-violet-300 hover:shadow-md dark:hover:border-violet-700 will-change-transform ${
+                      className={`flex min-h-[72px] items-center justify-between gap-4 rounded-3xl border p-4 shadow-sm transition-all duration-300 hover:border-violet-300 hover:shadow-md dark:hover:border-violet-700 will-change-transform ${
                         isSelectMode ? 'cursor-pointer hover:border-violet-300 dark:hover:border-violet-700' : ''
                       } ${
                         isSelected
@@ -239,7 +239,7 @@ const TaskList = ({
                             type='button'
                             onClick={() => onToggle?.(task._id)}
                             disabled={editingTaskId !== null}
-                            className={`flex h-9 w-9 shrink-0 ${editingTaskId !== null ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} items-center justify-center rounded-full bg-white text-slate-400 shadow-sm transition-transform dark:bg-slate-900`}
+                            className={`flex h-9 w-9 shrink-0 ${editingTaskId !== null ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} items-center justify-center rounded-3xl bg-white text-slate-400 shadow-sm transition-transform dark:bg-slate-900`}
                             aria-label={done ? 'Mark task as active' : 'Mark task as complete'}
                           >
                             {done ? (
@@ -266,20 +266,20 @@ const TaskList = ({
                                     cancelEditing();
                                   }
                                 }}
-                                className='task-content min-w-0 flex-1 cursor-text rounded-xl border border-slate-200 bg-white px-2.5 py-1 text-sm text-slate-800 outline-none focus:border-violet-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100'
+                                className='task-content min-w-0 flex-1 cursor-text rounded-3xl border border-slate-200 bg-white px-2.5 py-1 text-sm text-slate-800 outline-none focus:border-violet-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100'
                                 autoFocus
                               />
                               <button
                                 type='button'
                                 onClick={() => saveEditing(task._id)}
-                                className='cursor-pointer rounded-full bg-violet-600 px-2.5 py-1 text-xs font-medium text-white'
+                                className='cursor-pointer rounded-3xl bg-violet-600 px-2.5 py-1 text-xs font-medium text-white'
                               >
                                 {t.save}
                               </button>
                               <button
                                 type='button'
                                 onClick={cancelEditing}
-                                className='cursor-pointer rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'
+                                className='cursor-pointer rounded-3xl border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'
                               >
                                 {t.cancel}
                               </button>
@@ -313,7 +313,7 @@ const TaskList = ({
                                       }}
                                       className='flex w-full items-center gap-2 text-left text-sm text-slate-600 dark:text-slate-300'
                                     >
-                                      <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${item.completed ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-slate-300 dark:border-slate-600'}`}>
+                                      <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-3xl border ${item.completed ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-slate-300 dark:border-slate-600'}`}>
                                         {item.completed ? <Check className='h-3 w-3' /> : null}
                                       </span>
                                       <span className={item.completed ? 'line-through opacity-60' : ''}>{item.text}</span>
@@ -345,7 +345,7 @@ const TaskList = ({
                               e.stopPropagation();
                               handleToggleSelectTask(task._id);
                             }}
-                            className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border transition-all ${
+                            className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-3xl border transition-all ${
                               isSelected
                                 ? 'border-violet-600 bg-violet-600 text-white'
                                 : 'border-slate-300 bg-white text-transparent dark:border-slate-600 dark:bg-slate-900'
@@ -360,7 +360,7 @@ const TaskList = ({
                               type='button'
                               onClick={() => toggleImportant(task)}
                               disabled={editingTaskId !== null}
-                              className={`cursor-pointer rounded-full border px-2 py-1 text-xs font-medium transition-colors ${
+                              className={`cursor-pointer rounded-3xl border px-2 py-1 text-xs font-medium transition-colors ${
                                 task.important
                                   ? 'border-amber-300 bg-amber-50 text-amber-500 dark:border-amber-500/50 dark:bg-amber-500/20 dark:text-amber-300'
                                   : 'border-slate-200 bg-white text-slate-400 hover:text-amber-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:text-amber-400'
@@ -374,7 +374,7 @@ const TaskList = ({
                               type='button'
                               onClick={() => (isEditing ? saveEditing(task._id) : startEditing(task))}
                               disabled={editingTaskId !== null && !isEditing}
-                              className={`cursor-pointer rounded-full border px-2.5 py-1 text-xs font-medium ${
+                              className={`cursor-pointer rounded-3xl border px-2.5 py-1 text-xs font-medium ${
                                 editingTaskId !== null && !isEditing
                                   ? 'cursor-not-allowed border-slate-200/50 bg-slate-100 text-slate-400'
                                   : 'border-slate-200 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'
@@ -389,7 +389,7 @@ const TaskList = ({
                               disabled={editingTaskId !== null}
                               className={`flex h-8 w-8 ${
                                 editingTaskId !== null ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
-                              } items-center justify-center rounded-full border border-rose-200 bg-rose-50 text-rose-500 dark:border-rose-900/60 dark:bg-rose-500/10 dark:text-rose-200`}
+                              } items-center justify-center rounded-3xl border border-rose-200 bg-rose-50 text-rose-500 dark:border-rose-900/60 dark:bg-rose-500/10 dark:text-rose-200`}
                               aria-label='Delete task'
                             >
                               <Trash2 className='h-3.5 w-3.5' />
@@ -406,7 +406,7 @@ const TaskList = ({
                     <motion.div
                       key={`empty-slot-${index}`}
                       layout
-                      className='h-[72px] rounded-2xl border border-dashed border-slate-200/60 bg-slate-50/30 dark:border-slate-800/60 dark:bg-slate-950/20'
+                      className='h-[72px] rounded-3xl border border-dashed border-slate-200/60 bg-slate-50/30 dark:border-slate-800/60 dark:bg-slate-950/20'
                     />
                   ))}
               </AnimatePresence>

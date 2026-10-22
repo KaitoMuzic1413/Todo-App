@@ -26,7 +26,7 @@ const AuthLayout = ({ children }) => {
       <button
         type='button'
         onClick={() => setIsOpen(true)}
-        className='fixed left-3 top-3 z-30 flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-200 bg-white/80 shadow-md backdrop-blur-md dark:border-slate-700 dark:bg-slate-900/80'
+        className='fixed left-3 top-3 z-30 flex h-12 w-12 items-center justify-center rounded-3xl border border-slate-200 bg-white/80 shadow-md backdrop-blur-md dark:border-slate-700 dark:bg-slate-900/80'
         aria-label='Open settings sidebar'
       >
         <Menu className='h-5 w-5' />
@@ -60,7 +60,7 @@ const AuthLayout = ({ children }) => {
                 <button
                   type='button'
                   onClick={() => setIsOpen(false)}
-                  className='flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 dark:border-slate-700'
+                  className='flex h-9 w-9 items-center justify-center rounded-3xl border border-slate-200 dark:border-slate-700'
                   aria-label='Close settings sidebar'
                 >
                   <X className='h-4 w-4' />
@@ -71,7 +71,7 @@ const AuthLayout = ({ children }) => {
                 <button
                   type='button'
                   onClick={openContact}
-                  className={`flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left text-sm font-medium transition-colors ${location.pathname === '/about' ? 'bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-200' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-900'}`}
+                  className={`flex w-full items-center gap-3 rounded-3xl px-3 py-3 text-left text-sm font-medium transition-colors ${location.pathname === '/about' ? 'bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-200' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-900'}`}
                 >
                   <Mail className='h-4 w-4' />
                   {t.contact}
@@ -79,7 +79,7 @@ const AuthLayout = ({ children }) => {
                 <button
                   type='button'
                   onClick={() => setDarkMode((current) => !current)}
-                  className='flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-900'
+                  className='flex w-full items-center gap-3 rounded-3xl px-3 py-3 text-left text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-900'
                 >
                   {darkMode ? <SunMedium className='h-4 w-4' /> : <Moon className='h-4 w-4' />}
                   {darkMode ? t.lightMode : t.darkMode}
@@ -87,7 +87,7 @@ const AuthLayout = ({ children }) => {
                 <button
                   type='button'
                   onClick={() => setLanguage(language === 'en' ? 'vi' : 'en')}
-                  className='flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-900'
+                  className='flex w-full items-center gap-3 rounded-3xl px-3 py-3 text-left text-sm font-medium text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-900'
                 >
                   <Globe className='h-4 w-4' />
                   {t.language}: {language === 'en' ? t.english : t.vietnamese}

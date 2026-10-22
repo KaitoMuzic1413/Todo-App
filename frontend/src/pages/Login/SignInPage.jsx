@@ -55,9 +55,9 @@ const SignInPage = () => {
 
   return (
     <AuthLayout>
-      <div className='w-full max-w-md rounded-[32px] border border-slate-200/80 bg-white/80 p-8 shadow-[0_30px_80px_rgba(15,23,42,0.12)] backdrop-blur-sm dark:border-slate-700 dark:bg-slate-900/80'>
+      <div className='w-full max-w-md rounded-3xl border border-slate-200/80 bg-white/80 p-8 shadow-[0_30px_80px_rgba(15,23,42,0.12)] backdrop-blur-sm dark:border-slate-700 dark:bg-slate-900/80'>
         <div className='mb-6 text-center'>
-          <div className='mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-200'>
+          <div className='mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-200'>
             <LogIn className='h-8 w-8' />
           </div>
           <h1 className='mt-5 text-3xl font-bold text-slate-900 dark:text-white'>
@@ -81,7 +81,7 @@ const SignInPage = () => {
                   sessionStorage.setItem('todo-auth-email', e.target.value);
                 }}
                 placeholder='name@example.com'
-                className='h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-3 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:ring-violet-900/40'
+                className='h-12 w-full rounded-3xl border border-slate-200 bg-slate-50 pl-11 pr-3 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:ring-violet-900/40'
               />
             </div>
           </label>
@@ -95,7 +95,7 @@ const SignInPage = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder='Enter your password'
-                className='h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-11 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:ring-violet-900/40'
+                className='h-12 w-full rounded-3xl border border-slate-200 bg-slate-50 pl-11 pr-11 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:ring-violet-900/40'
               />
               <button
                 type='button'
@@ -121,7 +121,7 @@ const SignInPage = () => {
           <button
             type='submit'
             disabled={isSubmitting}
-            className='inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-500 to-indigo-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-accent transition-transform hover:-translate-y-0.5 disabled:opacity-60 '
+            className='inline-flex w-full items-center justify-center gap-2 rounded-3xl bg-gradient-to-r from-violet-500 to-indigo-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-accent transition-transform hover:-translate-y-0.5 disabled:opacity-60 '
           >
             {isSubmitting ? 'Signing in...' : 'Sign In'}
             <ArrowRight className='h-4 w-4' />

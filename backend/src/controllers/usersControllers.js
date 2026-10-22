@@ -226,9 +226,16 @@ export const getCurrentUser = async (req, res) => {
 
 export const getAuthenticatedCurrentUser = async (req, res) => {
   try {
-    const user = await User.findById(req.user.userId).select('_id email name lastActiveAt isAdmin').lean();
+    const user = await User.findById(req.user.userId).select('_id email name lastActiveAt isAdmin');
     if (!user) return res.status(404).json({ message: 'User not found.' });
-    return res.status(200).json({ user: { ...user, isAdmin: Boolean(user.isAdmin) } });
+
+    const adminEmail = process.env.ADMIN_EMAIL ? String(process.env.ADMIN_EMAIL).toLowerCase().trim() : '';
+    if (adminEmail && user.email?.toLowerCase().trim() === adminEmail && !user.isAdmin) {
+      user.isAdmin = true;
+      await user.save();
+    }
+
+    return res.status(200).json({ user: { ...user.toObject(), isAdmin: Boolean(user.isAdmin) } });
   } catch (error) {
     console.error('Get authenticated user error:', error);
     return res.status(500).json({ message: 'Server error' });

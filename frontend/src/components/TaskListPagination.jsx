@@ -44,7 +44,7 @@ const TaskListPagination = ({ currentPage = 1, totalPages = 1, onPageChange }) =
     }
   };
 
-  const inputClassName = `h-10 w-20 rounded-full border border-slate-200 bg-white px-2 text-center text-sm font-medium text-slate-700 shadow-sm outline-none transition-all duration-300 placeholder:text-slate-400 focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:placeholder:text-slate-500 dark:focus:ring-violet-900/40 ${
+  const inputClassName = `h-10 w-20 rounded-3xl border border-slate-200 bg-white px-2 text-center text-sm font-medium text-slate-700 shadow-sm outline-none transition-all duration-300 placeholder:text-slate-400 focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:placeholder:text-slate-500 dark:focus:ring-violet-900/40 ${
     pageError
       ? 'border-red-400 bg-red-50 text-red-600 focus:border-red-500 focus:ring-red-100 dark:border-red-600 dark:bg-red-950/40 dark:text-red-200'
       : ''
@@ -61,13 +61,13 @@ const TaskListPagination = ({ currentPage = 1, totalPages = 1, onPageChange }) =
             setPageError('');
             onPageChange?.(nextPage);
           }}
-          className='inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800'
+          className='inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-3xl border border-slate-200 bg-white text-slate-600 shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800'
           aria-label='Previous page'
         >
           <ChevronLeft className='h-4 w-4' />
         </button>
 
-        <div aria-label={`${t.page || 'Page'} ${safePage} ${t.of || 'of'} ${safeTotalPages}`} className='whitespace-nowrap rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 sm:px-4'>
+        <div aria-label={`${t.page || 'Page'} ${safePage} ${t.of || 'of'} ${safeTotalPages}`} className='whitespace-nowrap rounded-3xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 sm:px-4'>
           <span className='hidden sm:inline'>{t.page || 'Page'} </span>
           {safePage} {t.of || 'of'} {safeTotalPages}
         </div>
@@ -80,7 +80,7 @@ const TaskListPagination = ({ currentPage = 1, totalPages = 1, onPageChange }) =
             setPageError('');
             onPageChange?.(nextPage);
           }}
-          className='inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800'
+          className='inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-3xl border border-slate-200 bg-white text-slate-600 shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800'
           aria-label='Next page'
         >
           <ChevronRight className='h-4 w-4' />
@@ -114,7 +114,7 @@ const TaskListPagination = ({ currentPage = 1, totalPages = 1, onPageChange }) =
                 handleGoToPage();
               }
             }}
-            className={`inline-flex h-10 items-center justify-center rounded-full px-4 text-sm font-semibold text-white transition-all duration-300 ${
+            className={`inline-flex h-10 items-center justify-center rounded-3xl px-4 text-sm font-semibold text-white transition-all duration-300 ${
               isInputEmpty
                 ? 'cursor-not-allowed bg-violet-500/40 opacity-50 dark:bg-violet-600/30'
                 : 'cursor-pointer bg-gradient-to-r from-violet-600 to-indigo-600 shadow-md shadow-accent active:scale-95 hover:-translate-y-0.5 hover:from-violet-500 hover:to-indigo-500 hover:shadow-accent-strong '

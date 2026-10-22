@@ -3,7 +3,13 @@ import Attachment from '../models/Attachment.js';
 import Task from '../models/Task.js';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
-const ALLOWED_TYPES = /^(image\/(jpeg|png|gif|webp)|audio\/(mpeg|wav|ogg|webm)|application\/pdf|text\/plain|text\/markdown)$/;
+const ALLOWED_TYPES = /^(image\/(jpeg|png|gif|webp|bmp|svg\+xml|heic|heif|avif)|audio\/(mpeg|wav|x-wav|ogg|aac|mp4|opus|flac|x-flac|x-ms-wma|midi|x-midi)|application\/(pdf|rtf|msword|vnd\.openxmlformats-officedocument\.(wordprocessingml\.document|spreadsheetml\.sheet|presentationml\.presentation)|vnd\.oasis\.opendocument\.(text|spreadsheet|presentation)|vnd\.ms-excel|vnd\.ms-powerpoint|json|xml)|text\/(plain|markdown|x-markdown|csv|xml))$/i;
+const ALLOWED_FILE_EXTENSIONS = new Set([
+  'jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'heic', 'heif', 'avif',
+  'mp3', 'wav', 'm4a', 'aac', 'ogg', 'opus', 'flac', 'wma', 'mid', 'midi',
+  'txt', 'md', 'markdown', 'rtf', 'pdf', 'doc', 'docx', 'odt',
+  'xls', 'xlsx', 'ods', 'ppt', 'pptx', 'odp', 'csv', 'json', 'xml',
+]);
 const VIDEO_FILE_EXTENSION = /\.(mp4|m4v|mov|webm|mkv|avi|wmv|mpg|mpeg|3gp)$/i;
 let legacyAttachmentTtlIndexRemoved = false;
 
@@ -63,7 +69,7 @@ export const uploadAttachment = async (req, res) => {
       return res.status(400).json({ message: 'A file is required.' });
     }
     if (!title.trim()) {
-      return res.status(400).json({ message: 'Image title is required.' });
+      return res.status(400).json({ message: 'File title is required.' });
     }
 
     if (taskId && !mongoose.isValidObjectId(taskId)) {
@@ -81,7 +87,8 @@ export const uploadAttachment = async (req, res) => {
     if (file.mimetype.toLowerCase().startsWith('video/') || VIDEO_FILE_EXTENSION.test(file.originalname)) {
       return res.status(400).json({ message: 'Video files cannot be uploaded to the archive.' });
     }
-    if (!ALLOWED_TYPES.test(file.mimetype)) {
+    const extension = file.originalname.split('.').pop()?.toLowerCase();
+    if (!ALLOWED_TYPES.test(file.mimetype) && !ALLOWED_FILE_EXTENSIONS.has(extension)) {
       return res.status(400).json({ message: 'This file type is not supported.' });
     }
 

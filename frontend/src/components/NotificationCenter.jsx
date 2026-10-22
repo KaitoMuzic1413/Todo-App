@@ -158,11 +158,11 @@ const NotificationCenter = ({ userId }) => {
         type='button'
         onClick={openDrawer}
         aria-label={`${t.notifications}${unreadCount > 0 ? `, ${unreadCount} ${t.unreadNotifications.toLowerCase()}` : ''}`}
-        className='relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/20 bg-white/10 text-white shadow-sm transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/30'
+        className='relative flex h-12 w-12 shrink-0 items-center justify-center rounded-3xl border border-slate-200 bg-white/80 text-slate-700 shadow-md backdrop-blur-md transition hover:bg-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-500/25 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-200 dark:hover:bg-slate-900'
       >
         <Bell className='h-5 w-5' />
         {unreadCount > 0 ? (
-          <span className='absolute -right-1 -top-1 flex min-h-5 min-w-5 items-center justify-center rounded-full border-2 border-[#101b3e] bg-rose-500 px-1 text-[10px] font-bold leading-none text-white' aria-hidden='true'>
+          <span className='absolute -right-1 -top-1 flex min-h-5 min-w-5 items-center justify-center rounded-3xl border-2 border-white bg-rose-500 px-1 text-[10px] font-bold leading-none text-white dark:border-slate-900' aria-hidden='true'>
             {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         ) : null}
@@ -185,7 +185,7 @@ const NotificationCenter = ({ userId }) => {
               aria-labelledby='notification-drawer-title'
               initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
               transition={{ duration: 0.24, ease: [0.2, 0.8, 0.2, 1] }}
-              className='fixed inset-y-0 right-0 z-[61] flex w-[min(430px,94vw)] flex-col border-l border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-950'
+              className='fixed inset-y-0 right-0 z-[61] flex w-[min(320px,88vw)] flex-col border-l border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-950'
               style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
             >
               <header className='flex shrink-0 items-center justify-between border-b border-slate-200 px-5 py-4 dark:border-slate-800 sm:px-6'>
@@ -193,17 +193,17 @@ const NotificationCenter = ({ userId }) => {
                   <h2 id='notification-drawer-title' className='text-lg font-bold text-slate-900 dark:text-white'>{t.notifications}</h2>
                   {unreadCount > 0 ? <p className='mt-0.5 text-xs text-slate-500 dark:text-slate-400'>{unreadCount} {t.unreadNotifications.toLowerCase()}</p> : null}
                 </div>
-                <button type='button' autoFocus onClick={() => { setDrawerOpen(false); focusNotificationButton(); }} aria-label={t.close} className='flex h-10 w-10 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white'>
+                <button type='button' autoFocus onClick={() => { setDrawerOpen(false); focusNotificationButton(); }} aria-label={t.close} className='flex h-10 w-10 items-center justify-center rounded-3xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white'>
                   <X className='h-5 w-5' />
                 </button>
               </header>
               <div className='shrink-0 border-b border-slate-100 px-5 py-3 dark:border-slate-800 sm:px-6'>
-                <div className='grid grid-cols-2 gap-2 rounded-xl bg-slate-100 p-1 dark:bg-slate-900' role='tablist' aria-label={t.notifications}>
+                <div className='grid grid-cols-2 gap-2 rounded-3xl bg-slate-100 p-1 dark:bg-slate-900' role='tablist' aria-label={t.notifications}>
                   {[
                     { key: 'all', label: t.allNotifications },
                     { key: 'unread', label: t.unreadNotifications },
                   ].map(({ key, label }) => (
-                    <button key={key} type='button' role='tab' aria-selected={filter === key} onClick={() => setFilter(key)} className={`min-h-10 rounded-lg px-3 text-sm font-semibold transition ${filter === key ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100'}`}>
+                    <button key={key} type='button' role='tab' aria-selected={filter === key} onClick={() => setFilter(key)} className={`min-h-10 rounded-3xl px-3 text-sm font-semibold transition ${filter === key ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100'}`}>
                       {label}
                     </button>
                   ))}
@@ -215,11 +215,11 @@ const NotificationCenter = ({ userId }) => {
                 ) : listError ? (
                   <div className='flex min-h-48 flex-col items-center justify-center gap-3 text-center'>
                     <p className='text-sm text-rose-600 dark:text-rose-300'>{listError}</p>
-                    <button type='button' onClick={() => void refreshList(filter)} className='min-h-10 rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-900'>{t.retry}</button>
+                    <button type='button' onClick={() => void refreshList(filter)} className='min-h-10 rounded-3xl border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-900'>{t.retry}</button>
                   </div>
                 ) : notifications.length === 0 ? (
                   <div className='flex min-h-56 flex-col items-center justify-center px-6 text-center'>
-                    <span className='mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-300'><Check className='h-6 w-6' /></span>
+                    <span className='mb-4 flex h-14 w-14 items-center justify-center rounded-3xl bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-300'><Check className='h-6 w-6' /></span>
                     <p className='text-sm font-medium text-slate-600 dark:text-slate-300'>{t.noNotifications}</p>
                   </div>
                 ) : (
@@ -229,10 +229,10 @@ const NotificationCenter = ({ userId }) => {
                         <button
                           type='button'
                           onClick={() => void openNotification(notification.id)}
-                          className={`w-full rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${notification.isRead ? 'border-slate-100 bg-white text-slate-600 hover:border-slate-200 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400 dark:hover:border-slate-700' : 'border-violet-100 bg-violet-50/80 text-slate-900 hover:border-violet-200 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-slate-100 dark:hover:border-violet-500/40'}`}
+                          className={`w-full rounded-3xl border p-4 text-left transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${notification.isRead ? 'border-slate-100 bg-white text-slate-600 hover:border-slate-200 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400 dark:hover:border-slate-700' : 'border-violet-100 bg-violet-50/80 text-slate-900 hover:border-violet-200 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-slate-100 dark:hover:border-violet-500/40'}`}
                         >
                           <span className='flex items-start gap-3'>
-                            <span className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${notification.isRead ? 'bg-slate-300 dark:bg-slate-700' : 'bg-violet-600 dark:bg-violet-300'}`} aria-hidden='true' />
+                            <span className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-3xl ${notification.isRead ? 'bg-slate-300 dark:bg-slate-700' : 'bg-violet-600 dark:bg-violet-300'}`} aria-hidden='true' />
                             <span className='min-w-0 flex-1'>
                               <span className={`block truncate text-sm ${notification.isRead ? 'font-medium' : 'font-bold'}`}>{notification.title}</span>
                               <span className='mt-1 line-clamp-2 block text-xs leading-5 text-slate-500 dark:text-slate-400'>{notification.content}</span>
@@ -272,7 +272,7 @@ const NotificationCenter = ({ userId }) => {
               aria-labelledby='notification-detail-title'
               initial={{ opacity: 0, y: 14, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8, scale: 0.99 }}
               transition={{ duration: 0.2 }}
-              className='flex w-[90vw] min-h-[50dvh] max-w-[600px] max-h-[78dvh] flex-col overflow-hidden rounded-[26px] border border-white/60 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900'
+              className='flex w-[90vw] min-h-[50dvh] max-w-[600px] max-h-[78dvh] flex-col overflow-hidden rounded-3xl border border-white/60 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900'
             >
               <header className='flex shrink-0 items-start justify-between gap-4 border-b border-slate-100 px-5 py-4 sm:px-6 sm:py-5 dark:border-slate-800'>
                 <div className='min-w-0'>
@@ -282,7 +282,7 @@ const NotificationCenter = ({ userId }) => {
                   </h2>
                   {detail?.createdAt ? <p className='mt-1 text-xs text-slate-500 dark:text-slate-400'>{t.sentAt}: {formatDate(detail.createdAt)}</p> : null}
                 </div>
-                <button type='button' autoFocus onClick={() => { setSelectedId(null); setDetail(null); focusNotificationButton(); }} aria-label={t.close} className='flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white'>
+                <button type='button' autoFocus onClick={() => { setSelectedId(null); setDetail(null); focusNotificationButton(); }} aria-label={t.close} className='flex h-10 w-10 shrink-0 items-center justify-center rounded-3xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white'>
                   <X className='h-5 w-5' />
                 </button>
               </header>
@@ -292,7 +292,7 @@ const NotificationCenter = ({ userId }) => {
                 ) : detailError ? (
                   <div className='flex min-h-32 flex-col items-center justify-center gap-3 text-center'>
                     <p className='text-sm text-rose-600 dark:text-rose-300'>{detailError || t.notificationReadError}</p>
-                    <button type='button' onClick={retryDetail} className='min-h-10 rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800'>{t.retry}</button>
+                    <button type='button' onClick={retryDetail} className='min-h-10 rounded-3xl border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800'>{t.retry}</button>
                   </div>
                 ) : (
                   <p className='whitespace-pre-wrap break-words text-sm leading-7 text-slate-700 dark:text-slate-200'>{detail?.content}</p>

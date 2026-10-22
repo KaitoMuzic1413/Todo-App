@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Route, Routes, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
@@ -21,6 +21,7 @@ import SettingsPage from './pages/SettingsPage';
 import AdminNotificationsPage from './pages/AdminNotificationsPage';
 import DueTaskReminderWatcher from './components/DueTaskReminderWatcher';
 import InstallAppNotice from './components/InstallAppNotice';
+import { fetchCurrentUser } from './lib/api';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -52,11 +53,45 @@ const ProtectedRoute = () => {
 };
 
 const AdminRoute = () => {
-  const storedUser = localStorage.getItem('todo-user');
-  const user = (() => {
-    try { return storedUser ? JSON.parse(storedUser) : null; } catch { return null; }
-  })();
-  return user?.isAdmin ? <AdminNotificationsPage /> : <Navigate to='/settings' replace />;
+  const [access, setAccess] = useState('checking');
+
+  useEffect(() => {
+    let cancelled = false;
+
+    fetchCurrentUser()
+      .then(({ data }) => {
+        if (cancelled) return;
+
+        const currentUser = data?.user;
+        if (!currentUser?._id) {
+          setAccess('denied');
+          return;
+        }
+
+        let storedUser = {};
+        try {
+          storedUser = JSON.parse(localStorage.getItem('todo-user') || '{}');
+        } catch {
+          // Replace invalid cached user data with the authenticated server response.
+        }
+
+        localStorage.setItem('todo-user', JSON.stringify({ ...storedUser, ...currentUser }));
+        setAccess(currentUser.isAdmin ? 'allowed' : 'denied');
+      })
+      .catch(() => {
+        if (!cancelled) setAccess('denied');
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (access === 'checking') {
+    return <div className='min-h-[40vh]' role='status' aria-label='Checking access' />;
+  }
+
+  return access === 'allowed' ? <AdminNotificationsPage /> : <Navigate to='/settings' replace />;
 };
 
 const RootRedirect = () => {

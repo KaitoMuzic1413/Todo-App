@@ -92,7 +92,7 @@ const ForgotPasswordPage = () => {
 
   return (
     <AuthLayout>
-      <div className='w-full max-w-md rounded-[32px] border border-slate-200/80 bg-white/80 p-8 shadow-[0_30px_80px_rgba(15,23,42,0.12)] backdrop-blur-sm dark:border-slate-700 dark:bg-slate-900/80'>
+      <div className='w-full max-w-md rounded-3xl border border-slate-200/80 bg-white/80 p-8 shadow-[0_30px_80px_rgba(15,23,42,0.12)] backdrop-blur-sm dark:border-slate-700 dark:bg-slate-900/80'>
         <div className='mb-6 text-center'>
           <h1 className='text-3xl font-bold text-slate-900 dark:text-white'>
             Forgot Password
@@ -115,7 +115,7 @@ const ForgotPasswordPage = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder='name@example.com'
-                className='h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-11 pr-3 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:ring-violet-900/40'
+                className='h-12 w-full rounded-3xl border border-slate-200 bg-slate-50 pl-11 pr-3 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:ring-violet-900/40'
               />
             </div>
           </label>
@@ -134,7 +134,7 @@ const ForgotPasswordPage = () => {
                   autoComplete='one-time-code'
                   maxLength={6}
                   placeholder='6-digit code'
-                  className='mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:ring-violet-900/40'
+                  className='mt-2 h-12 w-full rounded-3xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:ring-violet-900/40'
                 />
               </label>
               <p className='mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400'>{t.resetCodeDeliveryHelp}</p>
@@ -154,10 +154,10 @@ const ForgotPasswordPage = () => {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder='8-20 characters with letters and numbers'
-                  className='mt-2 h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:ring-violet-900/40'
+                  className='mt-2 h-12 w-full rounded-3xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:ring-violet-900/40'
                 />
               </label>
-              <div className='space-y-3 rounded-2xl border border-slate-200 p-3 dark:border-slate-700'>
+              <div className='space-y-3 rounded-3xl border border-slate-200 p-3 dark:border-slate-700'>
                 <p className='text-sm font-medium text-slate-700 dark:text-slate-200'>{t.changeNameQuestion || 'Would you like to change your display name?'}</p>
                 <label className='flex cursor-pointer items-center gap-2 text-sm text-slate-600 dark:text-slate-300'>
                   <input type='checkbox' checked={changeName} onChange={(event) => setChangeName(event.target.checked)} className='h-4 w-4 accent-violet-600' />
@@ -171,7 +171,7 @@ const ForgotPasswordPage = () => {
                     value={name}
                     onChange={(event) => setName(event.target.value)}
                     placeholder={t.displayName || 'Display name'}
-                    className='h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:ring-violet-900/40'
+                    className='h-12 w-full rounded-3xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:ring-violet-900/40'
                   />
                 ) : null}
               </div>
@@ -195,7 +195,7 @@ const ForgotPasswordPage = () => {
           <button
             type='submit'
             disabled={loading}
-            className='inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-500 to-indigo-500 px-4 py-3 text-sm font-semibold text-white shadow-lg transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60'
+            className='inline-flex w-full items-center justify-center gap-2 rounded-3xl bg-gradient-to-r from-violet-500 to-indigo-500 px-4 py-3 text-sm font-semibold text-white shadow-lg transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60'
           >
             {loading ? (!codeSent ? 'Sending...' : codeVerified ? 'Updating...' : 'Verifying...') : (!codeSent ? 'Send Verification Code' : codeVerified ? 'Reset Password' : 'Verify Code')}
           </button>

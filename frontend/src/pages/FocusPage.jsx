@@ -232,15 +232,15 @@ const FocusPage = () => {
         </header>
 
         {activeQuery.isError || tasksQuery.isError || summaryQuery.isError ? (
-          <div role='alert' className='rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-200'>{t.focusLoadError}</div>
+          <div role='alert' className='rounded-3xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-200'>{t.focusLoadError}</div>
         ) : null}
 
-        <section className='space-y-6 rounded-[2rem] border border-slate-200/80 bg-white/85 p-5 text-center shadow-[0_24px_70px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-slate-900/75 sm:p-8'>
+        <section className='space-y-6 rounded-3xl border border-slate-200/80 bg-white/85 p-5 text-center shadow-[0_24px_70px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-slate-900/75 sm:p-8'>
           {!activeSession ? (
-            <div className='relative mx-auto grid max-w-lg grid-cols-3 gap-1 rounded-full border border-slate-200/80 bg-slate-100/90 p-1.5 shadow-inner dark:border-slate-700 dark:bg-slate-950/70' role='group' aria-label={t.focusMode}>
-              <span className='pointer-events-none absolute inset-y-1.5 left-1.5 w-[calc((100%-1.5rem)/3)] rounded-full bg-violet-600 shadow-accent-indicator transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]' style={{ transform: `translateX(calc(${modeOptions.findIndex(([key]) => key === mode) * 100}% + ${modeOptions.findIndex(([key]) => key === mode) * 6}px))` }} />
+            <div className='relative mx-auto grid max-w-lg grid-cols-3 gap-1 rounded-3xl border border-slate-200/80 bg-slate-100/90 p-1.5 shadow-inner dark:border-slate-700 dark:bg-slate-950/70' role='group' aria-label={t.focusMode}>
+              <span className='pointer-events-none absolute inset-y-1.5 left-1.5 w-[calc((100%-1.5rem)/3)] rounded-3xl bg-violet-600 shadow-accent-indicator transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]' style={{ transform: `translateX(calc(${modeOptions.findIndex(([key]) => key === mode) * 100}% + ${modeOptions.findIndex(([key]) => key === mode) * 6}px))` }} />
               {modeOptions.map(([key, label]) => (
-                <button key={key} type='button' aria-pressed={mode === key} onClick={() => setMode(key)} className={`relative z-10 rounded-full px-3 py-2 text-xs font-semibold transition-colors sm:px-4 sm:text-sm ${mode === key ? 'text-white' : 'text-slate-600 dark:text-slate-300'}`}>
+                <button key={key} type='button' aria-pressed={mode === key} onClick={() => setMode(key)} className={`relative z-10 rounded-3xl px-3 py-2 text-xs font-semibold transition-colors sm:px-4 sm:text-sm ${mode === key ? 'text-white' : 'text-slate-600 dark:text-slate-300'}`}>
                   {label}
                 </button>
               ))}
@@ -260,7 +260,7 @@ const FocusPage = () => {
             <div className='mx-auto grid max-w-md gap-3 text-left'>
               <label className='grid gap-1 text-xs text-slate-500 dark:text-slate-400'>
                 {t.linkTask}
-                <select value={taskId} onChange={(event) => setTaskId(event.target.value)} className='h-11 rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-700 shadow-sm outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:focus:ring-violet-900/40'>
+                <select value={taskId} onChange={(event) => setTaskId(event.target.value)} className='h-11 rounded-3xl border border-slate-200 bg-white px-4 text-sm text-slate-700 shadow-sm outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:focus:ring-violet-900/40'>
                   <option value=''>{t.noLinkedTask}</option>
                   {taskList.map((task) => <option key={task._id} value={task._id}>{task.title}</option>)}
                 </select>
@@ -269,30 +269,30 @@ const FocusPage = () => {
                 {modeOptions.map(([key, label]) => (
                   <label key={key} className='grid gap-1 text-xs text-slate-500 dark:text-slate-400'>
                     {label} ({t.minutes})
-                    <input type='number' min='1' max={durationLimits[key]} step='1' value={durationInputs[key]} onChange={(event) => changeDuration(key, event.target.value)} className='h-11 min-w-0 rounded-2xl border border-slate-200 bg-white px-3 text-sm text-slate-700 shadow-sm outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:ring-violet-900/40' />
+                    <input type='number' min='1' max={durationLimits[key]} step='1' value={durationInputs[key]} onChange={(event) => changeDuration(key, event.target.value)} className='h-11 min-w-0 rounded-3xl border border-slate-200 bg-white px-3 text-sm text-slate-700 shadow-sm outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:ring-violet-900/40' />
                   </label>
                 ))}
               </div>
             </div>
           ) : linkedTask ? (
-            <p className='mx-auto max-w-md truncate rounded-xl bg-violet-50 px-3 py-2 text-sm text-violet-700 dark:bg-violet-950/40 dark:text-violet-200'>{linkedTask.title}</p>
+            <p className='mx-auto max-w-md truncate rounded-3xl bg-violet-50 px-3 py-2 text-sm text-violet-700 dark:bg-violet-950/40 dark:text-violet-200'>{linkedTask.title}</p>
           ) : null}
 
           <div className='flex flex-wrap justify-center gap-2'>
             {!activeSession ? (
-              <button type='button' disabled={isWorking || activeQuery.isLoading || !hasValidDurations} onClick={startSession} className='inline-flex h-12 items-center gap-2 rounded-full bg-violet-600 px-7 text-sm font-semibold text-white shadow-lg shadow-accent transition-all hover:-translate-y-0.5 hover:bg-violet-700 hover:shadow-xl disabled:opacity-50'>
+              <button type='button' disabled={isWorking || activeQuery.isLoading || !hasValidDurations} onClick={startSession} className='inline-flex h-12 items-center gap-2 rounded-3xl bg-violet-600 px-7 text-sm font-semibold text-white shadow-lg shadow-accent transition-all hover:-translate-y-0.5 hover:bg-violet-700 hover:shadow-xl disabled:opacity-50'>
                 <Play className='h-4 w-4' />{t.startSession}
               </button>
             ) : (
               <>
-                <button type='button' disabled={isWorking} onClick={() => actionMutation.mutate({ sessionId: activeSession._id, action: sessionStatus === 'running' ? 'pause' : 'resume' })} className='inline-flex h-12 items-center gap-2 rounded-full bg-violet-600 px-7 text-sm font-semibold text-white shadow-lg shadow-accent transition-all hover:-translate-y-0.5 hover:bg-violet-700 hover:shadow-xl disabled:opacity-50'>
+                <button type='button' disabled={isWorking} onClick={() => actionMutation.mutate({ sessionId: activeSession._id, action: sessionStatus === 'running' ? 'pause' : 'resume' })} className='inline-flex h-12 items-center gap-2 rounded-3xl bg-violet-600 px-7 text-sm font-semibold text-white shadow-lg shadow-accent transition-all hover:-translate-y-0.5 hover:bg-violet-700 hover:shadow-xl disabled:opacity-50'>
                   {sessionStatus === 'running' ? <Pause className='h-4 w-4' /> : <Play className='h-4 w-4' />}
                   {sessionStatus === 'running' ? t.pauseSession : t.resumeSession}
                 </button>
-                <button type='button' disabled={isWorking} onClick={() => actionMutation.mutate({ sessionId: activeSession._id, action: 'complete' })} className='inline-flex h-12 items-center gap-2 rounded-full border border-emerald-300 bg-emerald-50/70 px-5 text-sm font-semibold text-emerald-700 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-emerald-100 hover:shadow-md dark:border-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-emerald-500/20'>
+                <button type='button' disabled={isWorking} onClick={() => actionMutation.mutate({ sessionId: activeSession._id, action: 'complete' })} className='inline-flex h-12 items-center gap-2 rounded-3xl border border-emerald-300 bg-emerald-50/70 px-5 text-sm font-semibold text-emerald-700 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-emerald-100 hover:shadow-md dark:border-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-emerald-500/20'>
                   <Check className='h-4 w-4' />{t.finishSession}
                 </button>
-                <button type='button' disabled={isWorking} onClick={() => actionMutation.mutate({ sessionId: activeSession._id, action: 'cancel' })} className='inline-flex h-12 items-center gap-2 rounded-full border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-600 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-slate-50 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800'>
+                <button type='button' disabled={isWorking} onClick={() => actionMutation.mutate({ sessionId: activeSession._id, action: 'cancel' })} className='inline-flex h-12 items-center gap-2 rounded-3xl border border-slate-200 bg-white px-5 text-sm font-semibold text-slate-600 shadow-sm transition-all hover:-translate-y-0.5 hover:bg-slate-50 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800'>
                   <RotateCcw className='h-4 w-4' />{t.cancelSession}
                 </button>
               </>
@@ -304,11 +304,11 @@ const FocusPage = () => {
         </section>
 
         <section className='grid gap-3 sm:grid-cols-2'>
-          <div className='rounded-[1.5rem] border border-slate-200/80 bg-white/80 p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900/70'>
+          <div className='rounded-3xl border border-slate-200/80 bg-white/80 p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900/70'>
             <p className='text-2xl font-bold text-slate-900 dark:text-white'>{summaryQuery.data?.sessions ?? 0}</p>
             <p className='text-xs text-slate-500 dark:text-slate-400'>{t.focusSessions}</p>
           </div>
-          <div className='rounded-[1.5rem] border border-slate-200/80 bg-white/80 p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900/70'>
+          <div className='rounded-3xl border border-slate-200/80 bg-white/80 p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900/70'>
             <p className='text-2xl font-bold text-slate-900 dark:text-white'>{Math.floor((summaryQuery.data?.actualSeconds || 0) / 60)} {t.minutes}</p>
             <p className='text-xs text-slate-500 dark:text-slate-400'>{t.focusTime}</p>
           </div>
