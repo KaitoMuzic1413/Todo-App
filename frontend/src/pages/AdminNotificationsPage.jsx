@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BellRing, LoaderCircle, Send, X } from 'lucide-react';
+import { BellRing, LoaderCircle, Send, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { LayoutShell } from '@/components/LayoutShell';
-import { fetchAdminNotifications, sendAdminNotification } from '@/lib/api';
+import { deleteAdminNotification, fetchAdminNotifications, sendAdminNotification } from '@/lib/api';
 import { useLanguage } from '@/lib/i18n';
 
 const createRequestId = () => (globalThis.crypto?.randomUUID?.()
@@ -23,6 +23,8 @@ const AdminNotificationsPage = () => {
   const [email, setEmail] = useState('');
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [notificationToDelete, setNotificationToDelete] = useState(null);
+  const [deletingNotificationId, setDeletingNotificationId] = useState('');
   const [history, setHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [historyError, setHistoryError] = useState('');
@@ -71,9 +73,26 @@ const AdminNotificationsPage = () => {
       setIsPreviewOpen(false);
       await loadHistory();
     } catch (error) {
-      toast.error(error.response?.data?.message || t.notificationSendError);
+      toast.error(error.response?.data?.message || (error.request ? t.notificationConnectionError : t.notificationSendError));
     } finally {
       setIsSending(false);
+    }
+  };
+
+  const handleDeleteNotification = async () => {
+    if (!notificationToDelete || deletingNotificationId) return;
+
+    const notificationId = notificationToDelete.id;
+    setDeletingNotificationId(notificationId);
+    try {
+      await deleteAdminNotification(notificationId);
+      setHistory((currentHistory) => currentHistory.filter(({ id }) => id !== notificationId));
+      setNotificationToDelete(null);
+      toast.success(t.notificationDeleted);
+    } catch (error) {
+      toast.error(error.response?.data?.message || t.notificationDeleteError);
+    } finally {
+      setDeletingNotificationId('');
     }
   };
 
@@ -176,6 +195,9 @@ const AdminNotificationsPage = () => {
                   <div className='flex shrink-0 items-center gap-3 text-xs text-slate-500 dark:text-slate-400'>
                     <span>{notification.recipients} {t.recipients.toLowerCase()}</span>
                     <span className='rounded-3xl bg-emerald-50 px-2.5 py-1.5 font-semibold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300'>{notification.read}/{notification.recipients} {t.readCount.toLowerCase()}</span>
+                    <button type='button' aria-label={t.deleteNotification} title={t.deleteNotification} disabled={Boolean(deletingNotificationId)} onClick={() => setNotificationToDelete(notification)} className='flex h-10 w-10 items-center justify-center rounded-3xl text-slate-500 transition hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-50 dark:text-slate-400 dark:hover:bg-rose-500/10 dark:hover:text-rose-300'>
+                      <Trash2 className='h-4 w-4' />
+                    </button>
                   </div>
                 </li>
               ))}
@@ -194,6 +216,23 @@ const AdminNotificationsPage = () => {
             <div className='min-h-0 flex-1 overflow-y-auto px-5 py-5 [overscroll-behavior:contain]'>
               <p className='text-xs text-slate-500 dark:text-slate-400'>{typeLabels[type]} · {audienceType === 'all' ? t.allUsers : email}</p>
               <p className='mt-4 whitespace-pre-wrap break-words text-sm leading-7 text-slate-700 dark:text-slate-200'>{content || t.notificationContent}</p>
+            </div>
+          </section>
+        </div>
+      ) : null}
+
+      {notificationToDelete ? (
+        <div className='fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/60 px-4 py-5 backdrop-blur-sm' onMouseDown={(event) => { if (event.target === event.currentTarget && !deletingNotificationId) setNotificationToDelete(null); }}>
+          <section role='dialog' aria-modal='true' aria-labelledby='delete-notification-title' className='w-[90vw] max-w-[440px] rounded-3xl bg-white p-5 shadow-2xl dark:bg-slate-900 sm:p-6'>
+            <h2 id='delete-notification-title' className='text-lg font-bold text-slate-900 dark:text-white'>{t.deleteNotification}</h2>
+            <p className='mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300'>{t.deleteNotificationConfirm}</p>
+            <p className='mt-3 break-words text-sm font-semibold text-slate-800 dark:text-slate-100'>{notificationToDelete.title}</p>
+            <div className='mt-6 flex justify-end gap-3'>
+              <button type='button' disabled={Boolean(deletingNotificationId)} onClick={() => setNotificationToDelete(null)} className='min-h-11 rounded-3xl border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800'>{t.cancel}</button>
+              <button type='button' disabled={Boolean(deletingNotificationId)} onClick={() => void handleDeleteNotification()} className='inline-flex min-h-11 items-center gap-2 rounded-3xl bg-rose-600 px-4 text-sm font-semibold text-white hover:bg-rose-500 disabled:cursor-not-allowed disabled:opacity-60'>
+                {deletingNotificationId === notificationToDelete.id ? <LoaderCircle className='h-4 w-4 animate-spin' /> : <Trash2 className='h-4 w-4' />}
+                {t.deleteNotification}
+              </button>
             </div>
           </section>
         </div>

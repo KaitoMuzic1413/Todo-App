@@ -54,6 +54,7 @@ export const fetchNotification = (notificationId) => api.get(`/notifications/${n
 export const markNotificationRead = (notificationId) => api.patch(`/notifications/${notificationId}/read`);
 export const markAllNotificationsRead = () => api.patch('/notifications/read-all');
 export const fetchAdminNotifications = () => api.get('/notifications/admin');
+export const deleteAdminNotification = (notificationId) => api.delete(`/notifications/admin/${notificationId}`);
 export const sendAdminNotification = (payload, requestId) => api.post('/notifications/admin', payload, {
   headers: { 'Idempotency-Key': requestId },
 });

@@ -123,6 +123,25 @@ export const listAdminNotifications = async (req, res) => {
   }
 };
 
+export const deleteAdminNotification = async (req, res) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+      return res.status(404).json({ message: 'Notification not found.' });
+    }
+
+    const notification = await Notification.findById(req.params.id).select('_id').lean();
+    if (!notification) return res.status(404).json({ message: 'Notification not found.' });
+
+    await NotificationRecipient.deleteMany({ notificationId: notification._id });
+    await Notification.deleteOne({ _id: notification._id });
+
+    return res.status(200).json({ deleted: true });
+  } catch (error) {
+    console.error('Delete admin notification error:', error);
+    return res.status(500).json({ message: 'Unable to delete this notification.' });
+  }
+};
+
 export const createNotification = async (req, res) => {
   const { value, error: validationError } = validateNotificationInput(req.body);
   if (validationError) return res.status(400).json({ message: validationError });
