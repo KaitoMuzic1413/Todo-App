@@ -27,16 +27,43 @@ Google Play Console work still includes creating the app listing, completing con
 
 ## Desktop with Tauri
 
-The Tauri shell loads the same Vite output and talks to the remote API. Install Rust plus the platform webview/build dependencies described in the Tauri v2 prerequisites (WebView2 on Windows; WebKitGTK and GTK development packages on Linux).
+The Tauri shell loads the same Vite output and talks to the existing remote Express API. It does not package Node.js, MongoDB, the backend, or backend secrets. The production API defaults to the deployed Render URL in `src/lib/apiConfig.js`; set `VITE_API_BASE_URL` before building only when using a different deployed API. Install Rust and the platform build dependencies described in the Tauri v2 prerequisites (WebView2 on Windows; WebKitGTK and GTK development packages on Linux).
 
 ```sh
 npm run tauri:dev
-npm run tauri:build
-npm run tauri:build:linux    # On Linux: AppImage
-npm run tauri:build:windows  # On Windows: NSIS installer .exe
+npm run tauri:build:linux    # On Linux x64: AppImage and .deb
+npm run tauri:build:windows  # On Windows x64: NSIS installer .exe
 ```
 
-The desktop build checks GitHub Releases for a signed update on startup, downloads it, installs it, and relaunches the app. New builds must have a higher SemVer version and be published as a `v*` tag. This updater applies to Tauri desktop builds; Android updates are distributed through Google Play, and installed PWAs use the service worker update prompt described above. Tauri's CSP allows secure HTTPS/WSS API connections. Configure `VITE_API_BASE_URL` to the same backend before building if it differs from the current default.
+Build outputs are written under `src-tauri/target/release/bundle/`. A Windows installer must be built on Windows; use the GitHub Actions tag workflow to build both target operating systems from one release. To run Linux outputs, make an AppImage executable with `chmod +x <file>.AppImage` and launch it, or install a Debian package with `sudo apt install ./<file>.deb`.
+
+The desktop packages do not require Node.js or npm on the user's computer. They keep using the same hosted API, so sign-in, tasks, notes, calendar, attachments, and other server-backed data remain shared with the web app. Tauri's CSP allows secure HTTPS/WSS API connections. The app checks GitHub Releases for a signed desktop update on startup, installs one when available, and relaunches. Android updates continue through Google Play, and installed PWAs use the service worker update prompt described above.
+
+The website's `/download` page reads the configured public repository's GitHub Releases API. `VITE_GITHUB_REPOSITORY` uses the `owner/repository` format and defaults to this repository. It displays release version, date, notes, sizes, and direct download links only for published `.exe`, `.msi`, `.AppImage`, and `.deb` assets. If GitHub has no desktop files or cannot be reached, it shows status text and the real releases-history link without manufacturing download URLs. Download buttons are hidden on phone-sized screens, where the page explains that these builds target Windows and Linux.
+
+### Desktop release workflow
+
+`.github/workflows/desktop-release.yml` builds Linux x64 AppImage and Debian packages on Ubuntu and a Windows x64 NSIS `.exe` on Windows. It verifies that the three configured version values match the pushed tag, checks for the updater signing key, validates the packaged files and signatures, and attaches only those build outputs plus the signed updater archives and `latest.json` to the GitHub Release. A manual workflow run creates test artifacts and does not publish a release.
+
+Before the first release, configure these repository settings:
+
+- Actions variable `VITE_API_BASE_URL`: optional; omit it to use the production Render API already configured in the client.
+- Actions variable `VITE_GITHUB_REPOSITORY`: optional; the website uses `KaitoMuzic1413/Todo-App` when it is unset.
+- Actions secret `TAURI_SIGNING_PRIVATE_KEY`: required for updater signatures and it must match the public key in `src-tauri/tauri.conf.json`.
+- Actions secret `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`: optional; set it only if the private key has a password.
+
+The documented local private-key path is not present in this checkout. Do not generate a replacement unless the original signing key cannot be recovered: changing the public key means existing desktop installs signed against the old key will not accept future automatic updates and will need a manual reinstall. To intentionally rotate the key, generate it outside the repo with `node node_modules/@tauri-apps/cli/tauri.js signer generate --write-keys <private-key-path>`, update the Tauri `plugins.updater.pubkey` to the generated public key, and store the matching private key in the Actions secret. Keep the private key out of Git and out of client build variables.
+
+For each release, use the same SemVer version in `frontend/package.json`, `frontend/src-tauri/Cargo.toml`, and `frontend/src-tauri/tauri.conf.json`. Commit and push those changes, then push a matching `v` tag:
+
+```sh
+node .github/scripts/verify-desktop-version.mjs vX.Y.Z
+git push origin HEAD
+git tag vX.Y.Z
+git push origin vX.Y.Z
+```
+
+GitHub Actions builds both operating systems, fails if an expected installer or updater signature is missing, creates the release notes, and attaches the real binaries. Do not create a release by uploading source archives in place of installers. Windows users download and run the `.exe`; Linux users download the `.AppImage` (and may use the `.deb` package instead). The `.exe` is not signed with a commercial publisher certificate, so Windows may show SmartScreen. Installer builds are downloadable from the [official repository releases](https://github.com/KaitoMuzic1413/Todo-App/releases).
 
 ## Configuration and security notes
 
@@ -47,19 +74,7 @@ The desktop build checks GitHub Releases for a signed update on startup, downloa
 
 ## Phát hành cho người dùng tải desktop
 
-Repo đã có workflow `.github/workflows/desktop-release.yml`. Updater cần khóa ký để xác thực bản phát hành. Khóa riêng đã được tạo và giữ ngoài repo tại `~/.tauri/kaito-todo-updater.key`; không commit hoặc chia sẻ khóa này. Trong GitHub repo, thêm Actions secret `TAURI_SIGNING_PRIVATE_KEY` với nội dung file khóa riêng đó. Khóa không đặt password nên không cần secret password.
-
-Phiên bản hiện tại là `3.1.0`. Các bản desktop cũ hơn cần có bản updater đầu tiên được cài thủ công; sau đó app sẽ tự tải, cài và khởi động lại khi có release mới. Mỗi lần phát hành, tăng version trong `frontend/package.json`, `frontend/src-tauri/Cargo.toml` và `frontend/src-tauri/tauri.conf.json`, commit và push code, rồi tạo tag `v` khớp với version.
-
-```sh
-git push origin HEAD
-git tag v3.1.0
-git push origin v3.1.0
-```
-
-GitHub Actions sẽ build Linux AppImage và Windows NSIS installer `.exe`, tạo gói updater có chữ ký cùng `latest.json`, rồi gắn các file vào **GitHub → Releases**. Đặt GitHub Actions variable `VITE_API_BASE_URL` nếu release dùng API khác; nếu bỏ trống, app dùng backend Render đã cấu hình mặc định. Nếu chạy workflow thủ công từ tab Actions trên branch, nó chỉ tạo artifacts thử nghiệm và không phát hành update.
-
-Người dùng tải bản mới nhất từ trang Releases của repo. Linux: tải file `.AppImage`, cấp quyền chạy (`chmod +x <file>.AppImage`) rồi mở. Windows: tải file setup `.exe` và chạy để cài. Bản `.exe` hiện chưa ký bằng chứng thư nhà phát hành, nên Windows có thể hiện SmartScreen. AppImage/installer cũng chưa được ký; chỉ tải từ Releases chính thức của repo.
+Repo đã có workflow `.github/workflows/desktop-release.yml` và trang tải `/download`. Xem mục **Desktop release workflow** phía trên để cấu hình signing secret, đồng bộ version, tạo tag và tải app. Release đầu tiên có thể cần cài thủ công; sau đó app desktop hỗ trợ cập nhật tự động bằng artifact updater có chữ ký. Cần giữ khóa riêng ngoài repo và cấu hình đúng public key trong Tauri.
 
 ## Phát hành Android lên Google Play
 

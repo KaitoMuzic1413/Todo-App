@@ -1,13 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { AnimatePresence, animate, motion, useMotionValue, useTransform } from 'framer-motion';
-import { ChevronLeft, Archive, BarChart3, CalendarDays, ClipboardList, FileText, LogOut, Mail, Timer, X, Home, Trash2, Settings2, Menu } from 'lucide-react';
+import { AnimatePresence, animate, motion, useMotionValue } from 'framer-motion';
+import { ChevronLeft, Archive, BarChart3, CalendarDays, ClipboardList, Download, FileText, LogOut, Mail, Timer, X, Home, Trash2, Settings2, Menu } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
 import NotificationCenter from '@/components/NotificationCenter';
 
 const SIDEBAR_WIDTH = 320;
 const EDGE_WIDTH = 35;
+const SIDEBAR_TRANSITION = { duration: 0.24, ease: [0.2, 0.8, 0.2, 1] };
+const SIDEBAR_TRANSITION_MS = SIDEBAR_TRANSITION.duration * 1000;
 const getSidebarWidth = () => typeof window === 'undefined'
   ? SIDEBAR_WIDTH
   : Math.min(SIDEBAR_WIDTH, window.innerWidth * 0.88);
@@ -42,10 +44,6 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
   const navigationTimer = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
   const sidebarX = useMotionValue(-getSidebarWidth());
-  const backdropOpacity = useTransform(sidebarX, (offset) => {
-    const width = getSidebarWidth();
-    return Math.max(0, Math.min(1, (width + offset) / width));
-  });
 
   const [currentUser, setCurrentUser] = useState(getStoredUser);
   const { preferences, hasLoadedPreferences } = useUserPreferences(currentUser?._id);
@@ -69,6 +67,7 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
   const isHorizontalSwipe = useRef(false);
 
   const navItems = [
+    { name: t.desktopDownloadNav, to: '/download' },
     { name: t.contact, to: '/about' },
     ...(currentUser ? [
       { name: t.home, to: '/home' },
@@ -98,7 +97,7 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
     navigationTimer.current = window.setTimeout(() => {
       navigate(to);
       navigationTimer.current = null;
-    }, 450);
+    }, SIDEBAR_TRANSITION_MS);
   };
 
   useEffect(() => () => {
@@ -109,10 +108,7 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
 
   useEffect(() => {
     if (!isSidebarOpen || isDragging) return undefined;
-    const controls = animate(sidebarX, 0, {
-      duration: 0.45,
-      ease: [0.16, 1, 0.3, 1],
-    });
+    const controls = animate(sidebarX, 0, SIDEBAR_TRANSITION);
     return () => controls.stop();
   }, [isSidebarOpen, isDragging, sidebarX]);
 
@@ -256,7 +252,7 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
       emitAuthChange();
 
       navigate('/signin', { replace: true });
-    }, 450);
+    }, SIDEBAR_TRANSITION_MS);
   };
 
   const userEmail = currentUser?.email || '';
@@ -265,7 +261,7 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
 
   return (
     <div ref={shellRef} className='min-h-screen overflow-x-hidden bg-[#f5f7fb] text-slate-900 transition-colors duration-500 dark:bg-[#0f172a] dark:text-slate-50'>
-      <div className={`fixed left-0 top-0 z-40 m-3 flex items-center gap-2 transition-opacity duration-[450ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${isSidebarOpen ? 'pointer-events-none opacity-0' : 'opacity-100'}`} style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+      <div className={`fixed left-0 top-0 z-40 m-3 flex items-center gap-2 transition-opacity duration-[240ms] ease-[cubic-bezier(0.2,0.8,0.2,1)] ${isSidebarOpen ? 'pointer-events-none opacity-0' : 'opacity-100'}`} style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <button
           type='button'
           onClick={() => setIsSidebarOpen(true)}
@@ -276,7 +272,12 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
         </button>
       </div>
       {currentUser?._id ? (
-        <div className={`fixed right-0 top-0 z-40 m-3 transition-opacity duration-[450ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${isSidebarOpen ? 'pointer-events-none opacity-0' : 'opacity-100'}`} style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+        <div
+          aria-hidden={isSidebarOpen}
+          inert={isSidebarOpen}
+          className={`fixed right-0 top-0 m-3 transition-opacity duration-[240ms] ease-[cubic-bezier(0.2,0.8,0.2,1)] ${isSidebarOpen ? 'pointer-events-none invisible z-10 opacity-0' : 'visible z-40 opacity-100'}`}
+          style={{ paddingTop: 'env(safe-area-inset-top)' }}
+        >
           <NotificationCenter userId={currentUser._id} />
         </div>
       ) : null}
@@ -286,8 +287,10 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
           <>
             <motion.div
               key='backdrop'
-              initial={false}
-              style={{ opacity: backdropOpacity }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={SIDEBAR_TRANSITION}
               className='fixed inset-0 z-20 bg-slate-950/40 backdrop-blur-none md:backdrop-blur-xs lg:hidden'
               onClick={() => setIsSidebarOpen(false)}
               aria-hidden='true'
@@ -297,7 +300,7 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
               key='sidebar'
               initial={false}
               exit={{ x: -getSidebarWidth(), opacity: 0 }}
-              transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+              transition={SIDEBAR_TRANSITION}
               className='fixed left-0 top-0 z-30 flex h-[100dvh] min-h-0 w-[min(320px,88vw)] flex-col border-r border-slate-200/80 bg-white/95 dark:border-slate-800 dark:bg-slate-950/95 md:bg-white/80 md:backdrop-blur-xl md:dark:bg-slate-950/80'
               style={{ x: sidebarX, touchAction: 'none' }}
             >
@@ -354,6 +357,7 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
                           {item.to === '/archive' ? <Archive className='h-4 w-4' /> : null}
                           {item.to === '/trash' ? <Trash2 className='h-4 w-4' /> : null}
                           {item.to === '/about' ? <Mail className='h-4 w-4' /> : null}
+                          {item.to === '/download' ? <Download className='h-4 w-4' /> : null}
                           <span>{item.name}</span>
                         </span>
                         <span className='text-xs text-slate-400'>→</span>
@@ -431,7 +435,7 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
         )}
       </AnimatePresence>
 
-      <main className={`min-h-screen transition-all duration-[450ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${isSidebarOpen ? 'lg:ml-[320px]' : 'lg:ml-0'}`}>
+      <main className={`min-h-screen transition-all duration-[240ms] ease-[cubic-bezier(0.2,0.8,0.2,1)] ${isSidebarOpen ? 'lg:ml-[320px]' : 'lg:ml-0'}`}>
         <div className='mx-auto max-w-6xl px-4 pb-8 sm:px-6' style={{ paddingTop: 'calc(5rem + env(safe-area-inset-top))' }}>
           {renderedChildren}
         </div>

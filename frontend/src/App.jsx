@@ -6,6 +6,7 @@ import { Toaster } from 'sonner';
 import { isTauri } from '@tauri-apps/api/core';
 import { PageTransition } from './components/PageTransition';
 import AboutPage from './pages/AboutPage';
+import DownloadPage from './pages/DownloadPage';
 import HomePages from './pages/HomePage';
 import SignUpPage from './pages/Login/SignUpPage';
 import SignInPage from './pages/Login/SignInPage';
@@ -161,6 +162,7 @@ function App() {
         <Route path='/forgot-password' element={<ForgotPasswordPage />} />
         <Route path='/reset-password' element={<ResetPasswordPage />} />
         <Route path='/about' element={<AboutPage />} />
+        <Route path='/download' element={<DownloadPage />} />
 
         <Route element={<ProtectedRoute />}>
           <Route path='/home' element={<HomePages />} />
