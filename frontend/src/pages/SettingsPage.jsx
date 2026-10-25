@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Settings2, Palette, Check, Globe, Moon, Sun, Download, ShieldCheck, Pencil, X } from 'lucide-react';
+import { Settings2, Palette, Check, Globe, Moon, Sun, ShieldCheck, Pencil, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { LayoutShell } from '@/components/LayoutShell';
+import DesktopAppDownloads from '@/components/DesktopAppDownloads';
 import { Link } from 'react-router-dom';
 import { fetchCurrentUser, updateUserProfile } from '@/lib/api';
 import { useLanguage } from '@/lib/i18n';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
-import { getInstallPromptAvailable, promptInstall, subscribeToInstallState } from '@/lib/pwaInstall';
-import { applyPwaUpdate, hasPwaUpdate, subscribeToPwaUpdate } from '@/lib/pwaUpdates';
 
 const getStoredUser = () => {
   try {
@@ -17,6 +16,15 @@ const getStoredUser = () => {
   }
 };
 
+const detectDownloadPlatform = () => {
+  const userAgent = window.navigator.userAgent || '';
+  const platform = window.navigator.userAgentData?.platform || window.navigator.platform || '';
+  if (/Android/i.test(userAgent) || /Android/i.test(platform)) return 'android';
+  if (/Windows|Win32|Win64/i.test(platform) || /Windows NT/i.test(userAgent)) return 'windows';
+  if (/Linux/i.test(platform) || (/Linux/i.test(userAgent) && !/Android/i.test(userAgent))) return 'linux';
+  return null;
+};
+
 const SettingsPage = () => {
   const { t, language, setLanguage } = useLanguage();
   const [currentUser, setCurrentUser] = useState(getStoredUser);
@@ -24,9 +32,7 @@ const SettingsPage = () => {
   const [name, setName] = useState(() => currentUser?.name || '');
   const [isEditingName, setIsEditingName] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [canInstall, setCanInstall] = useState(getInstallPromptAvailable);
-  const [isInstalled, setIsInstalled] = useState(() => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true);
-  const [hasUpdate, setHasUpdate] = useState(hasPwaUpdate);
+  const currentPlatform = detectDownloadPlatform();
   const { preferences, hasLoadedPreferences, savePreferences } = useUserPreferences(currentUser?._id);
   const selectedAccent = hasLoadedPreferences ? preferences.accent : (localStorage.getItem('todo-accent') || 'violet');
 
@@ -46,18 +52,6 @@ const SettingsPage = () => {
       window.dispatchEvent(new Event('todo-auth-changed'));
     }).catch(() => {});
     return () => { active = false; };
-  }, []);
-
-  useEffect(() => {
-    const unsubscribe = subscribeToInstallState(() => setCanInstall(getInstallPromptAvailable()));
-    const unsubscribeUpdate = subscribeToPwaUpdate(() => setHasUpdate(hasPwaUpdate()));
-    const handleInstalled = () => setIsInstalled(true);
-    window.addEventListener('appinstalled', handleInstalled);
-    return () => {
-      unsubscribe();
-      unsubscribeUpdate();
-      window.removeEventListener('appinstalled', handleInstalled);
-    };
   }, []);
 
   const handleSubmit = async (event) => {
@@ -260,33 +254,7 @@ const SettingsPage = () => {
             </div>
           </section>
 
-          <section className='rounded-3xl border border-slate-200/80 bg-white/85 p-6 shadow-[0_16px_44px_rgba(15,23,42,0.08)] backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/75'>
-            <div className='flex items-center gap-3'>
-              <span className='flex h-10 w-10 items-center justify-center rounded-3xl bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-200'><Download className='h-5 w-5' /></span>
-              <h2 className='text-lg font-semibold text-slate-900 dark:text-white'>{t.installApp}</h2>
-            </div>
-            <p className='mt-5 text-sm text-slate-600 dark:text-slate-300'>
-              {isInstalled ? (hasUpdate ? t.appUpdateAvailable : t.appInstalled) : canInstall ? t.installAppDescription : t.installAppInstructions}
-            </p>
-            {isInstalled && hasUpdate && (
-              <button
-                type='button'
-                onClick={applyPwaUpdate}
-                className='mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-3xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-500 active:scale-[.98]'
-              >
-                <Download className='h-4 w-4' />{t.updateApp}
-              </button>
-            )}
-            {canInstall && !isInstalled && (
-              <button
-                type='button'
-                onClick={() => void promptInstall().then(() => setCanInstall(false))}
-                className='mt-4 inline-flex min-h-11 items-center justify-center gap-2 rounded-3xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-violet-500 active:scale-[.98]'
-              >
-                <Download className='h-4 w-4' />{t.install}
-              </button>
-            )}
-          </section>
+          <DesktopAppDownloads className='lg:col-span-2' recommendedPlatform={currentPlatform} />
         </div>
       </div>
     </LayoutShell>

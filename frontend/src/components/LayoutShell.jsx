@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, animate, motion, useMotionValue } from 'framer-motion';
-import { ChevronLeft, Archive, BarChart3, CalendarDays, ClipboardList, Download, FileText, LogOut, Mail, Timer, X, Home, Trash2, Settings2, Menu } from 'lucide-react';
+import { ChevronLeft, Archive, BarChart3, CalendarDays, ClipboardList, FileText, LogOut, Mail, Timer, X, Home, Trash2, Settings2, Menu } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
 import NotificationCenter from '@/components/NotificationCenter';
@@ -67,7 +67,6 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
   const isHorizontalSwipe = useRef(false);
 
   const navItems = [
-    { name: t.desktopDownloadNav, to: '/download' },
     { name: t.contact, to: '/about' },
     ...(currentUser ? [
       { name: t.home, to: '/home' },
@@ -357,7 +356,6 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
                           {item.to === '/archive' ? <Archive className='h-4 w-4' /> : null}
                           {item.to === '/trash' ? <Trash2 className='h-4 w-4' /> : null}
                           {item.to === '/about' ? <Mail className='h-4 w-4' /> : null}
-                          {item.to === '/download' ? <Download className='h-4 w-4' /> : null}
                           <span>{item.name}</span>
                         </span>
                         <span className='text-xs text-slate-400'>→</span>
