@@ -62,7 +62,7 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
   const startOffset = useRef(-SIDEBAR_WIDTH);
-  const currentOffset = useRef(-getSidebarWidth());
+  const currentOffset = useRef(getSidebarWidth());
   const isEligibleSwipe = useRef(false);
   const isHorizontalSwipe = useRef(false);
 
@@ -106,7 +106,11 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
   }, []);
 
   useEffect(() => {
-    if (!isSidebarOpen || isDragging) return undefined;
+    if (isDragging) return undefined;
+    if (!isSidebarOpen) {
+      sidebarX.set(getSidebarWidth());
+      return undefined;
+    }
     const controls = animate(sidebarX, 0, SIDEBAR_TRANSITION);
     return () => controls.stop();
   }, [isSidebarOpen, isDragging, sidebarX]);
