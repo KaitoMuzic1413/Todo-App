@@ -19,10 +19,13 @@ import CalendarPage from './pages/CalendarPage';
 import FocusPage from './pages/FocusPage';
 import DashboardPage from './pages/DashboardPage';
 import SettingsPage from './pages/SettingsPage';
+import LegalPoliciesPage from './pages/LegalPoliciesPage';
 import AdminNotificationsPage from './pages/AdminNotificationsPage';
 import DueTaskReminderWatcher from './components/DueTaskReminderWatcher';
 import InstallAppNotice from './components/InstallAppNotice';
 import { fetchCurrentUser } from './lib/api';
+
+const LEGAL_ACCEPTANCE_VERSION = '2026-10-26';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -47,6 +50,10 @@ const ProtectedRoute = () => {
   const token = localStorage.getItem('token');
 
   if (!user?._id || !token?.trim()) {
+    return <Navigate to='/signin' replace />;
+  }
+
+  if (localStorage.getItem('todo-legal-accepted-version') !== LEGAL_ACCEPTANCE_VERSION) {
     return <Navigate to='/signin' replace />;
   }
 
@@ -98,7 +105,8 @@ const AdminRoute = () => {
 const RootRedirect = () => {
   const user = localStorage.getItem('todo-user');
   const token = localStorage.getItem('token');
-  return <Navigate to={user && token ? '/dashboard' : '/signin'} replace />;
+  const acceptedPolicies = localStorage.getItem('todo-legal-accepted-version') === LEGAL_ACCEPTANCE_VERSION;
+  return <Navigate to={user && token && acceptedPolicies ? '/dashboard' : '/signin'} replace />;
 };
 
 function App() {
@@ -163,6 +171,7 @@ function App() {
         <Route path='/reset-password' element={<ResetPasswordPage />} />
         <Route path='/about' element={<AboutPage />} />
         <Route path='/download' element={<DownloadPage />} />
+        <Route path='/policies/:policySlug' element={<LegalPoliciesPage />} />
 
         <Route element={<ProtectedRoute />}>
           <Route path='/home' element={<HomePages />} />
