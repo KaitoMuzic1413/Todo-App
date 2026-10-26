@@ -17,11 +17,11 @@ const formatDate = (value) => {
 };
 
 const NotificationCenter = ({ userId }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [unreadCount, setUnreadCount] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [filter, setFilter] = useState('all');
-  const [notifications, setNotifications] = useState([]);
+  const [notifications, setNotifications] = useState([]);\n  const [translatedNotifications, setTranslatedNotifications] = useState({});\n  const [translatedDetail, setTranslatedDetail] = useState(null);
   const [listLoading, setListLoading] = useState(false);
   const [listError, setListError] = useState('');
   const [selectedId, setSelectedId] = useState(null);
@@ -236,8 +236,8 @@ const NotificationCenter = ({ userId }) => {
                           <span className='flex items-start gap-3'>
                             <span className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-3xl ${notification.isRead ? 'bg-slate-300 dark:bg-slate-700' : 'bg-violet-600 dark:bg-violet-300'}`} aria-hidden='true' />
                             <span className='min-w-0 flex-1'>
-                              <span className={`block truncate text-sm ${notification.isRead ? 'font-medium' : 'font-bold'}`}>{notification.title}</span>
-                              <span className='mt-1 line-clamp-2 block text-xs leading-5 text-slate-500 dark:text-slate-400'>{notification.content}</span>
+                              <span className={`block truncate text-sm ${notification.isRead ? 'font-medium' : 'font-bold'}`}>{translatedNotifications[notification.id]?.title || notification.title}</span>
+                              <span className='mt-1 line-clamp-2 block text-xs leading-5 text-slate-500 dark:text-slate-400'>{translatedNotifications[notification.id]?.content || notification.content}</span>
                               <span className='mt-2 block text-[11px] text-slate-400 dark:text-slate-500'>{formatDate(notification.createdAt || notification.deliveredAt)}</span>
                             </span>
                           </span>
@@ -280,7 +280,7 @@ const NotificationCenter = ({ userId }) => {
                 <div className='min-w-0'>
                   <p className='text-xs font-semibold uppercase tracking-[0.16em] text-violet-600 dark:text-violet-300'>{t.notifications}</p>
                   <h2 id='notification-detail-title' className='mt-1 break-words text-lg font-bold leading-7 text-slate-900 dark:text-white sm:text-xl'>
-                    {detail?.title || t.notifications}
+                    {translatedDetail?.title || detail?.title || t.notifications}
                   </h2>
                   {detail?.createdAt ? <p className='mt-1 text-xs text-slate-500 dark:text-slate-400'>{t.sentAt}: {formatDate(detail.createdAt)}</p> : null}
                 </div>
