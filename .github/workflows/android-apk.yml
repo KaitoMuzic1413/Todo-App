@@ -1,0 +1,65 @@
+name: Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - fix/auth-401-task-api
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-apk:
+    name: Build installable Android APK
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build web app and sync Capacitor Android project
+        run: npm run build:android
+
+      - name: Build installable debug APK
+        run: |
+          chmod +x android/gradlew
+          cd android
+          ./gradlew --no-daemon assembleDebug
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kaito-todo-android-apk
+          path: frontend/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish APK to GitHub Release for version tags
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: frontend/android/app/build/outputs/apk/debug/app-debug.apk
+          name: Kaito Todo ${{ github.ref_name }}
+          generate_release_notes: true
