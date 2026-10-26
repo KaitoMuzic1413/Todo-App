@@ -134,10 +134,13 @@ const SignInPage = () => {
             </div>
           </label>
 
-          <div className='flex justify-end pt-1'>
+          <div className='flex min-h-5 items-center justify-between gap-3 pt-1'>
+            <div className='min-w-0 flex-1'>
+              {error ? <p role='alert' className='text-xs leading-5 text-rose-500'>{error}</p> : null}
+            </div>
             <Link
               to='/forgot-password'
-              className='text-xs font-medium text-violet-600 hover:underline dark:text-violet-400'
+              className='shrink-0 text-xs font-medium text-violet-600 hover:underline dark:text-violet-400'
             >
               Forgot password?
             </Link>
@@ -150,8 +153,6 @@ const SignInPage = () => {
             {isVietnamese ? ' và ' : ' '}
             <Link to='/policies/cookies' className='font-medium text-violet-600 underline underline-offset-2 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300'>{isVietnamese ? 'chính sách cookie &amp; lưu trữ' : 'Cookie & Storage Policy'}</Link>
           </p>
-
-          {error ? <p className='text-sm text-rose-500'>{error}</p> : null}
 
           <button
             type='submit'
