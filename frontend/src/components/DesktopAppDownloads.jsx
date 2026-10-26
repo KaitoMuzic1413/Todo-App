@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { CalendarDays, CircleAlert, Download, ExternalLink, Laptop2, LoaderCircle, Terminal } from 'lucide-react';
+import { Download, LoaderCircle } from 'lucide-react';
 import { fetchDesktopReleases, getDesktopAssets, GITHUB_RELEASES_URL } from '@/lib/desktopReleases';
 import { promptInstall, getInstallPromptAvailable } from '@/lib/pwaInstall';
 import { useLanguage } from '@/lib/i18n';
@@ -13,16 +13,6 @@ const formatBytes = (bytes, language) => {
     unitDisplay: 'narrow',
     maximumFractionDigits: 1,
   }).format(bytes / (1024 * 1024));
-};
-
-const formatDate = (value, language) => {
-  if (!value) return null;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return null;
-
-  return new Intl.DateTimeFormat(language === 'vi' ? 'vi-VN' : 'en-US', {
-    dateStyle: 'medium',
-  }).format(date);
 };
 
 const DownloadAsset = ({ asset, language, t }) => (
@@ -73,7 +63,7 @@ const PlatformCard = ({ assets, Icon, title, description, language, noAssetMessa
   </section>
 );
 
-export default function DesktopAppDownloads({ className = '', selectedPlatform = null, recommendedPlatform = null }) {
+export default function DesktopAppDownloads({ className = '', recommendedPlatform = null }) {
   const { language, t } = useLanguage();
   const [releaseData, setReleaseData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -99,8 +89,6 @@ export default function DesktopAppDownloads({ className = '', selectedPlatform =
   const desktopAssets = getDesktopAssets(latestRelease);
   const windowsAssets = desktopAssets.filter((asset) => ['.exe', '.msi'].includes(asset.format));
   const linuxAssets = desktopAssets.filter((asset) => ['.appimage', '.deb'].includes(asset.format));
-  const publishedDate = formatDate(latestRelease?.published_at, language);
-  const noAssetMessage = latestRelease ? t.desktopDownloadNoPlatformAsset : t.desktopDownloadNoRelease;
 
   const recommendedAsset = recommendedPlatform === 'windows'
     ? windowsAssets.find((asset) => ['.exe', '.msi'].includes(asset.format))
