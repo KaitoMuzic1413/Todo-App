@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { ArrowRight, LogIn, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { loginWithEmail } from '@/lib/api';
 import AuthLayout from '@/components/AuthLayout';
+import PolicyConsentModal from '@/components/PolicyConsentModal';
 import LegalConsentModal from '@/components/LegalConsentModal';
 
 const SignInPage = () => {
@@ -69,7 +70,7 @@ const SignInPage = () => {
 
   return (
     <AuthLayout>
-      <div className='w-full max-w-md rounded-3xl border border-slate-200/80 bg-white/80 p-8 shadow-[0_30px_80px_rgba(15,23,42,0.12)] backdrop-blur-sm dark:border-slate-700 dark:bg-slate-900/80'>
+      <div className='w-full max-w-md rounded-3xl border border-violet-200/70 bg-white/85 p-8 shadow-[0_24px_70px_rgba(124,58,237,0.22)] backdrop-blur-sm dark:border-violet-500/20 dark:bg-slate-900/85 dark:shadow-[0_24px_70px_rgba(139,92,246,0.2)]'>
         <div className='mb-6 text-center'>
           <div className='mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-200'>
             <LogIn className='h-8 w-8' />
@@ -82,7 +83,7 @@ const SignInPage = () => {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className='space-y-4'>
+        <form id='signin-form' onSubmit={handleSubmit} className='space-y-4'>
           <label className='block text-sm font-medium text-slate-700 dark:text-slate-200'>
             Email address
             <div className='relative mt-2'>
