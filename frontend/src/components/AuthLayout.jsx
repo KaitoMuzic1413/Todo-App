@@ -12,6 +12,9 @@ const AuthLayout = ({ children }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
+    if (!document.documentElement.dataset.accent) {
+      document.documentElement.dataset.accent = localStorage.getItem('todo-accent') || 'violet';
+    }
     document.documentElement.classList.toggle('dark', darkMode);
     localStorage.setItem('todo-theme', darkMode ? 'dark' : 'light');
   }, [darkMode]);
