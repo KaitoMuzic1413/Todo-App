@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useLanguage } from '@/lib/i18n';
 import { useNavigate, Link } from 'react-router-dom';
 import { ArrowRight, LogIn, Mail, Lock, Eye, EyeOff } from 'lucide-react';
@@ -13,6 +13,7 @@ const SignInPage = () => {
   const [email, setEmail] = useState(() => sessionStorage.getItem('todo-auth-email') || '');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const passwordInputRef = useRef(null);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [acceptedPolicies, setAcceptedPolicies] = useState(() => localStorage.getItem('todo-legal-accepted-version') === '2026-10-26');
@@ -118,6 +119,7 @@ const SignInPage = () => {
             <div className='relative mt-2'>
               <Lock className='absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400' />
               <input
+                ref={passwordInputRef}
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -126,7 +128,17 @@ const SignInPage = () => {
               />
               <button
                 type='button'
-                onClick={() => setShowPassword(!showPassword)}
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => {
+                  const input = passwordInputRef.current;
+                  const cursorPosition = input?.selectionStart ?? password.length;
+                  setShowPassword((visible) => !visible);
+                  requestAnimationFrame(() => {
+                    if (!input) return;
+                    input.focus();
+                    input.setSelectionRange(cursorPosition, cursorPosition);
+                  });
+                }}
                 className='absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
               >
                 {showPassword ? <EyeOff className='h-5 w-5' /> : <Eye className='h-5 w-5' />}
