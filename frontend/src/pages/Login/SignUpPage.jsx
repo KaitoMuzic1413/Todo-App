@@ -4,6 +4,7 @@ import { ArrowRight, UserPlus, Mail, Lock, Eye, EyeOff, CheckCircle2, UserRound 
 import { registerWithEmail } from '@/lib/api';
 import { useLanguage } from '@/lib/i18n';
 import AuthLayout from '@/components/AuthLayout';
+import PolicyConsentModal from '@/components/PolicyConsentModal';
 
 const SignUpPage = () => {
   const navigate = useNavigate();
@@ -15,7 +16,8 @@ const SignUpPage = () => {
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [acceptedPolicies, setAcceptedPolicies] = useState(false);
+  const [acceptedPolicies, setAcceptedPolicies] = useState(() => localStorage.getItem('todo-legal-accepted-version') === '2026-10-26');
+  const [showPolicyConsent, setShowPolicyConsent] = useState(false);
 
   const validatePassword = (pwd) => {
     const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z0-9]{8,20}$/;
@@ -26,6 +28,11 @@ const SignUpPage = () => {
     event.preventDefault();
     setError('');
     setSuccessMessage('');
+
+    if (!acceptedPolicies) {
+      setShowPolicyConsent(true);
+      return;
+    }
 
     const trimmedEmail = email.trim();
     const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail);
@@ -70,7 +77,7 @@ const SignUpPage = () => {
 
   return (
     <AuthLayout>
-      <div className='w-full max-w-md rounded-3xl border border-slate-200/80 bg-white/80 p-8 shadow-[0_30px_80px_rgba(15,23,42,0.12)] backdrop-blur-sm dark:border-slate-700 dark:bg-slate-900/80'>
+      <div className='w-full max-w-md rounded-3xl border border-violet-200/70 bg-white/85 p-8 shadow-[0_24px_70px_rgba(124,58,237,0.22)] backdrop-blur-sm dark:border-violet-500/20 dark:bg-slate-900/85 dark:shadow-[0_24px_70px_rgba(139,92,246,0.2)]'>
         <div className='mb-6 text-center'>
           <div className='mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-200'>
             <UserPlus className='h-8 w-8' />
@@ -83,7 +90,7 @@ const SignUpPage = () => {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className='space-y-4'>
+        <form id='signup-form' onSubmit={handleSubmit} className='space-y-4'>
           <label className='block text-sm font-medium text-slate-700 dark:text-slate-200'>
             {t.displayNameOptional || 'Display name (optional)'}
             <div className='relative mt-2'>
@@ -142,12 +149,7 @@ const SignUpPage = () => {
             </p>
           </label>
 
-          <label className='flex items-start gap-3 rounded-2xl border border-slate-200 p-3 text-sm leading-6 text-slate-600 dark:border-slate-700 dark:text-slate-300'>
-            <input type='checkbox' required checked={acceptedPolicies} onChange={(event) => setAcceptedPolicies(event.target.checked)} disabled={Boolean(successMessage)} className='mt-1 h-4 w-4 shrink-0 accent-violet-600' />
-            <span>
-              Tôi xác nhận đã đọc và đồng ý với <Link to='/policies/privacy' target='_blank' rel='noreferrer' className='font-semibold text-violet-600 underline dark:text-violet-400'>Chính sách quyền riêng tư</Link>, <Link to='/policies/terms' target='_blank' rel='noreferrer' className='font-semibold text-violet-600 underline dark:text-violet-400'>Điều khoản sử dụng</Link> và <Link to='/policies/cookies' target='_blank' rel='noreferrer' className='font-semibold text-violet-600 underline dark:text-violet-400'>Chính sách Cookie & lưu trữ</Link>.
-            </span>
-          </label>
+          <p className='rounded-2xl px-1 py-2 text-center text-xs leading-6 text-slate-500 dark:text-slate-400'>Chính sách quyền riêng tư, điều khoản sử dụng và chính sách cookie &amp; lưu trữ</p>
 
           {error ? <p className='text-sm text-rose-500'>{error}</p> : null}
 
@@ -160,7 +162,7 @@ const SignUpPage = () => {
 
           <button
             type='submit'
-            disabled={isSubmitting || Boolean(successMessage) || !acceptedPolicies}
+            disabled={isSubmitting || Boolean(successMessage)}
             className='inline-flex w-full items-center justify-center gap-2 rounded-3xl bg-gradient-to-r from-violet-500 to-indigo-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-accent transition-transform hover:-translate-y-0.5 disabled:opacity-60 '
           >
             {isSubmitting
@@ -182,6 +184,7 @@ const SignUpPage = () => {
           </Link>
         </div>
       </div>
+      <PolicyConsentModal open={showPolicyConsent} onDecline={() => setShowPolicyConsent(false)} onAccept={() => { localStorage.setItem('todo-legal-accepted-version', '2026-10-26'); setAcceptedPolicies(true); setShowPolicyConsent(false); window.setTimeout(() => document.getElementById('signup-form')?.requestSubmit(), 0); }} />
     </AuthLayout>
   );
 };
