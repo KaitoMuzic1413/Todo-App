@@ -35,7 +35,7 @@ const PolicyConsentModal = ({ open, onAccept, onDecline }) => {
 
   return (
     <div className='fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/65 p-3 backdrop-blur-md sm:p-6' role='presentation'>
-      <section role='dialog' aria-modal='true' aria-labelledby='policy-consent-title' className='flex max-h-[92dvh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-violet-300/40 bg-white shadow-[0_28px_100px_rgba(124,58,237,0.38)] dark:border-violet-400/20 dark:bg-slate-900 dark:shadow-[0_28px_100px_rgba(139,92,246,0.28)]'>
+      <section role='dialog' aria-modal='true' aria-labelledby='policy-consent-title' className='flex max-h-[92dvh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-violet-300/40 bg-white shadow-accent-ring dark:border-violet-400/20 dark:bg-slate-900 dark:shadow-accent-ring'>
         <header className='flex shrink-0 items-center gap-3 border-b border-slate-200 px-5 py-4 dark:border-slate-800 sm:px-7'>
           <span className='flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300'><ShieldCheck className='h-5 w-5' /></span>
           <div className='min-w-0 flex-1'>
