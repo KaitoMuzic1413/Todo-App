@@ -286,13 +286,13 @@ const NotificationCenter = ({ userId }) => {
                         <button
                           type='button'
                           onClick={() => void openNotification(notification.id)}
-                          className={`w-full rounded-3xl border p-4 text-left transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${notification.isRead ? 'border-slate-100 bg-white text-slate-600 hover:border-slate-200 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400 dark:hover:border-slate-700' : 'border-violet-100 bg-violet-50/80 text-slate-900 hover:border-violet-200 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-slate-100 dark:hover:border-violet-500/40'}`}
+                          className={`w-full rounded-2xl border p-3 text-left transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${notification.isRead ? 'border-slate-100 bg-white text-slate-600 hover:border-slate-200 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400 dark:hover:border-slate-700' : 'border-violet-100 bg-violet-50/80 text-slate-900 hover:border-violet-200 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-slate-100 dark:hover:border-violet-500/40'}`}
                         >
                           <span className='flex items-start gap-3'>
                             <span className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-3xl ${notification.isRead ? 'bg-slate-300 dark:bg-slate-700' : 'bg-violet-600 dark:bg-violet-300'}`} aria-hidden='true' />
                             <span className='min-w-0 flex-1'>
                               <span className={`block truncate text-sm ${notification.isRead ? 'font-medium' : 'font-bold'}`}>{translatedNotifications[notification.id]?.title || notification.title}</span>
-                              <span className='mt-1 line-clamp-2 block text-xs leading-5 text-slate-500 dark:text-slate-400'>{translatedNotifications[notification.id]?.content || notification.content}</span>
+                              <span className='mt-1 block overflow-hidden text-ellipsis text-xs leading-5 text-slate-500 dark:text-slate-400' style={{ display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, overflow: 'hidden' }}>{translatedNotifications[notification.id]?.content || notification.content}</span>
                               <span className='mt-2 block text-[11px] text-slate-400 dark:text-slate-500'>{formatDate(notification.createdAt || notification.deliveredAt)}</span>
                             </span>
                           </span>
