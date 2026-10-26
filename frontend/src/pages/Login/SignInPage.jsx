@@ -11,6 +11,7 @@ const SignInPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [acceptedPolicies, setAcceptedPolicies] = useState(false);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -41,6 +42,7 @@ const SignInPage = () => {
         localStorage.setItem('token', res.data.token);
       }
 
+      localStorage.setItem('todo-legal-accepted-version', '2026-10-26');
       window.dispatchEvent(new Event('todo-auth-changed'));
 
       navigate('/dashboard', { replace: true });
@@ -116,11 +118,18 @@ const SignInPage = () => {
             </Link>
           </div>
 
+          <label className='flex items-start gap-3 rounded-2xl border border-slate-200 p-3 text-sm leading-6 text-slate-600 dark:border-slate-700 dark:text-slate-300'>
+            <input type='checkbox' required checked={acceptedPolicies} onChange={(event) => setAcceptedPolicies(event.target.checked)} className='mt-1 h-4 w-4 shrink-0 accent-violet-600' />
+            <span>
+              Tôi xác nhận đã đọc và đồng ý với <Link to='/policies/privacy' target='_blank' rel='noreferrer' className='font-semibold text-violet-600 underline dark:text-violet-400'>Chính sách quyền riêng tư</Link>, <Link to='/policies/terms' target='_blank' rel='noreferrer' className='font-semibold text-violet-600 underline dark:text-violet-400'>Điều khoản sử dụng</Link> và <Link to='/policies/cookies' target='_blank' rel='noreferrer' className='font-semibold text-violet-600 underline dark:text-violet-400'>Chính sách Cookie & lưu trữ</Link>.
+            </span>
+          </label>
+
           {error ? <p className='text-sm text-rose-500'>{error}</p> : null}
 
           <button
             type='submit'
-            disabled={isSubmitting}
+            disabled={isSubmitting || !acceptedPolicies}
             className='inline-flex w-full items-center justify-center gap-2 rounded-3xl bg-gradient-to-r from-violet-500 to-indigo-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-accent transition-transform hover:-translate-y-0.5 disabled:opacity-60 '
           >
             {isSubmitting ? 'Signing in...' : 'Sign In'}
