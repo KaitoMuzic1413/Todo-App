@@ -199,7 +199,7 @@ const NotificationCenter = ({ userId }) => {
               </header>
               <div className='shrink-0 border-b border-slate-100 px-5 py-3 dark:border-slate-800 sm:px-6'>
                 <div className='relative grid grid-cols-3 gap-1 rounded-3xl bg-slate-100 p-1 dark:bg-slate-900' role='tablist' aria-label={t.notifications}>
-                  <motion.span aria-hidden='true' layoutId='notification-filter-indicator' className='absolute bottom-1 top-1 rounded-3xl bg-white shadow-sm dark:bg-slate-800' initial={false} animate={{ left: filter === 'all' ? '4px' : filter === 'unread' ? 'calc(33.333% + 1px)' : 'calc(66.666% - 2px)', width: 'calc(33.333% - 2px)' }} transition={{ type: 'spring', stiffness: 420, damping: 34 }} />
+                  <motion.span aria-hidden='true' layoutId='notification-filter-indicator' className='absolute bottom-1 top-1 rounded-3xl bg-violet-100 shadow-sm dark:bg-violet-500/15' initial={false} animate={{ left: filter === 'all' ? '4px' : filter === 'unread' ? 'calc(33.333% + 1px)' : 'calc(66.666% - 2px)', width: 'calc(33.333% - 2px)' }} transition={{ type: 'spring', stiffness: 420, damping: 34 }} />
                   {[
                     { key: 'all', label: t.allNotifications },
                     { key: 'unread', label: t.unreadNotifications },
@@ -284,7 +284,7 @@ const NotificationCenter = ({ userId }) => {
                   </h2>
                   {detail?.createdAt ? <p className='mt-1 text-xs text-slate-500 dark:text-slate-400'>{t.sentAt}: {formatDate(detail.createdAt)}</p> : null}
                 </div>
-                <button type='button' autoFocus onClick={() => { setSelectedId(null); setDetail(null); focusNotificationButton(); }} aria-label={t.close} className='flex h-10 w-10 shrink-0 items-center justify-center rounded-3xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white'>
+                <button type='button' autoFocus onClick={() => { setSelectedId(null); setDetail(null); focusNotificationButton(); }} aria-label={t.close} className='flex h-10 w-10 shrink-0 items-center justify-center rounded-3xl border border-violet-200/70 text-violet-700 transition hover:bg-violet-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:border-violet-500/20 dark:text-violet-200 dark:hover:bg-violet-500/10'>
                   <X className='h-5 w-5' />
                 </button>
               </header>
