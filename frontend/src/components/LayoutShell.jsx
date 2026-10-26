@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, animate, motion, useMotionValue } from 'framer-motion';
-import { ChevronLeft, Archive, BarChart3, CalendarDays, ClipboardList, FileText, LogOut, Mail, Timer, X, Home, Trash2, Menu } from 'lucide-react';
+import { ChevronLeft, Archive, BarChart3, CalendarDays, ClipboardList, FileText, Mail, Timer, X, Home, Trash2, Menu } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
 import NotificationCenter from '@/components/NotificationCenter';
@@ -43,7 +43,7 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const navigationTimer = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
-  const sidebarX = useMotionValue(-getSidebarWidth());
+  const sidebarX = useMotionValue(getSidebarWidth());
 
   const [currentUser, setCurrentUser] = useState(getStoredUser);
   const { preferences, hasLoadedPreferences } = useUserPreferences(currentUser?._id);
@@ -134,12 +134,12 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
       const touchX = event.touches[0].clientX;
       const touchY = event.touches[0].clientY;
 
-      if ((!isSidebarOpen && touchX <= EDGE_WIDTH) || isSidebarOpen) {
+      if ((!isSidebarOpen && touchX >= window.innerWidth - EDGE_WIDTH) || isSidebarOpen) {
         isEligibleSwipe.current = true;
         isHorizontalSwipe.current = false;
         touchStartX.current = touchX;
         touchStartY.current = touchY;
-        startOffset.current = isSidebarOpen ? 0 : -getSidebarWidth();
+        startOffset.current = isSidebarOpen ? 0 : getSidebarWidth();
         currentOffset.current = startOffset.current;
       } else {
         isEligibleSwipe.current = false;
@@ -162,7 +162,7 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
         }
 
         if (Math.abs(deltaX) <= 6) return;
-        if ((!isSidebarOpen && deltaX < 0) || (isSidebarOpen && deltaX > 0)) {
+        if ((!isSidebarOpen && deltaX > 0) || (isSidebarOpen && deltaX < 0)) {
           isEligibleSwipe.current = false;
           return;
         }
@@ -178,8 +178,8 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
       let nextOffset = startOffset.current + deltaX;
       const sidebarWidth = getSidebarWidth();
 
-      if (nextOffset > 0) nextOffset = 0;
-      if (nextOffset < -sidebarWidth) nextOffset = -sidebarWidth;
+      if (nextOffset < 0) nextOffset = 0;
+      if (nextOffset > sidebarWidth) nextOffset = sidebarWidth;
 
       currentOffset.current = nextOffset;
       sidebarX.set(nextOffset);
@@ -191,9 +191,12 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
       setIsDragging(false);
       isEligibleSwipe.current = false;
 
-      const threshold = -getSidebarWidth() * 0.7;
+      const sidebarWidth = getSidebarWidth();
+      const shouldRemainOpen = isSidebarOpen
+        ? currentOffset.current < sidebarWidth * 0.3
+        : currentOffset.current < sidebarWidth * 0.7;
 
-      if (currentOffset.current > threshold) {
+      if (shouldRemainOpen) {
         setIsSidebarOpen(true);
       } else {
         setIsSidebarOpen(false);
@@ -230,30 +233,6 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
     if (hasLoadedPreferences) return;
     document.documentElement.dataset.accent = localAccent;
   }, [hasLoadedPreferences, localAccent]);
-
-  const emitAuthChange = () => {
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new Event('todo-auth-changed'));
-    }
-  };
-
-  const handleLogout = () => {
-    setIsSidebarOpen(false);
-    setTimeout(() => {
-      localStorage.removeItem('todo-user');
-      localStorage.removeItem('todo-user-email');
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      localStorage.removeItem('todo-legal-accepted-version');
-      sessionStorage.clear();
-
-      setCurrentUser(null);
-
-      emitAuthChange();
-
-      navigate('/signin', { replace: true });
-    }, SIDEBAR_TRANSITION_MS);
-  };
 
   const userEmail = currentUser?.email || '';
   const displayName = currentUser?.name?.trim() || userEmail;
@@ -299,9 +278,9 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
             <motion.aside
               key='sidebar'
               initial={false}
-              exit={{ x: -getSidebarWidth(), opacity: 0 }}
+              exit={{ x: getSidebarWidth(), opacity: 0 }}
               transition={SIDEBAR_TRANSITION}
-              className='fixed left-0 top-0 z-30 flex h-[100dvh] min-h-0 w-[min(320px,88vw)] flex-col border-r border-slate-200/80 bg-white/95 dark:border-slate-800 dark:bg-slate-950/95 md:bg-white/80 md:backdrop-blur-xl md:dark:bg-slate-950/80'
+              className='fixed right-0 top-0 z-30 flex h-[100dvh] min-h-0 w-[min(320px,88vw)] flex-col border-l border-slate-200/80 bg-white/95 dark:border-slate-800 dark:bg-slate-950/95 md:bg-white/80 md:backdrop-blur-xl md:dark:bg-slate-950/80'
               style={{ x: sidebarX, touchAction: 'none' }}
             >
               <div className='flex shrink-0 items-center justify-between border-b border-slate-200/80 bg-white/60 p-4 dark:border-slate-800 dark:bg-slate-950/60'>
@@ -392,7 +371,7 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
         )}
       </AnimatePresence>
 
-      <main className={`min-h-screen transition-all duration-[240ms] ease-[cubic-bezier(0.2,0.8,0.2,1)] ${isSidebarOpen ? 'lg:ml-[320px]' : 'lg:ml-0'}`}>
+      <main className={`min-h-screen transition-all duration-[240ms] ease-[cubic-bezier(0.2,0.8,0.2,1)] ${isSidebarOpen ? 'lg:mr-[320px]' : 'lg:mr-0'}`}>
         <div className='mx-auto max-w-6xl px-4 pb-8 sm:px-6' style={{ paddingTop: 'calc(5rem + env(safe-area-inset-top))' }}>
           {renderedChildren}
         </div>
