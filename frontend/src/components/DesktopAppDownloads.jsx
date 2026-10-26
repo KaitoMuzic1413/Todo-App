@@ -89,25 +89,28 @@ export default function DesktopAppDownloads({ className = '', recommendedPlatfor
   const desktopAssets = getDesktopAssets(latestRelease);
   const windowsAssets = desktopAssets.filter((asset) => ['.exe', '.msi'].includes(asset.format));
   const linuxAssets = desktopAssets.filter((asset) => ['.appimage', '.deb'].includes(asset.format));
+  const androidAssets = desktopAssets.filter((asset) => asset.format === '.apk');
 
   const recommendedAsset = recommendedPlatform === 'windows'
     ? windowsAssets.find((asset) => ['.exe', '.msi'].includes(asset.format))
     : recommendedPlatform === 'linux'
       ? linuxAssets.find((asset) => ['.appimage', '.deb'].includes(asset.format))
-      : null;
+      : recommendedPlatform === 'android'
+        ? androidAssets.find((asset) => asset.format === '.apk')
+        : null;
 
   const handleDownload = async () => {
+    if (recommendedAsset?.browser_download_url) {
+      window.open(recommendedAsset.browser_download_url, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
     if (recommendedPlatform === 'android') {
       if (getInstallPromptAvailable()) {
         await promptInstall();
       } else {
         setInstallHelp(true);
       }
-      return;
-    }
-
-    if (recommendedAsset?.browser_download_url) {
-      window.location.assign(recommendedAsset.browser_download_url);
       return;
     }
 
@@ -123,10 +126,10 @@ export default function DesktopAppDownloads({ className = '', recommendedPlatfor
         <div className='min-w-0'>
           <h2 className='text-sm font-semibold text-slate-900 dark:text-white'>{t.desktopDownloadTitle}</h2>
           <p className='mt-0.5 text-xs text-slate-500 dark:text-slate-400'>
-            {recommendedPlatform === 'android'
-              ? t.installAppDescription
-              : recommendedAsset
-                ? `${recommendedAsset.name} · ${formatBytes(recommendedAsset.size, language) || recommendedAsset.format}`
+            {recommendedAsset
+              ? `${recommendedAsset.name} · ${formatBytes(recommendedAsset.size, language) || recommendedAsset.format}`
+              : recommendedPlatform === 'android'
+                ? t.installAppDescription
                 : isLoading
                   ? t.desktopDownloadLoading
                   : t.desktopDownloadSubtitle}
@@ -138,13 +141,13 @@ export default function DesktopAppDownloads({ className = '', recommendedPlatfor
       <button
         type='button'
         onClick={() => void handleDownload()}
-        disabled={isLoading && recommendedPlatform !== 'android'}
+        disabled={isLoading}
         className='inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-violet-700 disabled:cursor-wait disabled:opacity-60'
       >
         {isLoading && recommendedPlatform !== 'android'
           ? <LoaderCircle className='h-4 w-4 animate-spin' aria-hidden='true' />
           : <Download className='h-4 w-4' aria-hidden='true' />}
-        {recommendedPlatform === 'android' ? t.install : t.desktopDownloadButton}
+        {recommendedPlatform === 'android' && !recommendedAsset ? t.install : t.desktopDownloadButton}
       </button>
     </section>
   );
