@@ -17,6 +17,11 @@ const userSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    avatarUrl: {
+      type: String,
+      default: '',
+      maxlength: 1500000,
+    },
     lastActiveAt: {
       type: Date,
       default: Date.now,
