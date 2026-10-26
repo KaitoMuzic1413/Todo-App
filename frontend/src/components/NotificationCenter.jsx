@@ -17,6 +17,16 @@ const formatDate = (value) => {
   return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(date);
 };
 
+const translateTextsInBatches = async (texts, language) => {
+  const translations = [];
+  for (let start = 0; start < texts.length; start += 40) {
+    const batch = texts.slice(start, start + 40);
+    const { data } = await translateNotificationTexts(batch, language);
+    translations.push(...(Array.isArray(data.translations) ? data.translations : batch));
+  }
+  return translations;
+};
+
 const NotificationCenter = ({ userId }) => {
   const { t, language } = useLanguage();
   const [unreadCount, setUnreadCount] = useState(null);
@@ -78,13 +88,13 @@ const NotificationCenter = ({ userId }) => {
       return () => { active = false; };
     }
     const texts = notifications.flatMap((item) => [item.title || '', item.content || '']);
-    void translateNotificationTexts(texts, language).then(({ data }) => {
-      if (!active || !Array.isArray(data.translations)) return;
+    void translateTextsInBatches(texts, language).then((translations) => {
+      if (!active || !Array.isArray(translations)) return;
       const translated = {};
       notifications.forEach((item, index) => {
         translated[item.id] = {
-          title: data.translations[index * 2] || item.title,
-          content: data.translations[index * 2 + 1] || item.content,
+          title: translations[index * 2] || item.title,
+          content: translations[index * 2 + 1] || item.content,
         };
       });
       setTranslatedNotifications(translated);
