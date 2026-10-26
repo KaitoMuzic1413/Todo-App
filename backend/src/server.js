@@ -22,8 +22,20 @@ const INACTIVE_ACCOUNT_CHECK_INTERVAL = 60 * 60 * 1000;
 
 const app = express();
 
+const configuredOrigins = [
+  process.env.FRONTEND_URL,
+  ...(process.env.CORS_ORIGINS || '').split(','),
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+].map((origin) => origin.trim()).filter(Boolean);
+const allowedOrigins = new Set(configuredOrigins);
+
 const corsOptions = {
-  origin: true,
+  origin(origin, callback) {
+    // Native clients and same-origin requests may not send an Origin header.
+    if (!origin || allowedOrigins.has(origin)) return callback(null, true);
+    return callback(null, false);
+  },
   credentials: false,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Idempotency-Key"],
