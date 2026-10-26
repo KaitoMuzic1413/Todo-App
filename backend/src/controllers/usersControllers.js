@@ -42,6 +42,27 @@ export const updateUserPreferences = async (req, res) => {
   }
 };
 
+export const updateCurrentUserAvatar = async (req, res) => {
+  try {
+    const avatarUrl = typeof req.body?.avatarUrl === 'string' ? req.body.avatarUrl : '';
+    const allowedImageDataUrl = /^data:image\/(?:jpeg|png|webp|gif);base64,[A-Za-z0-9+/]+=*$/;
+    if (!allowedImageDataUrl.test(avatarUrl) || avatarUrl.length > 1400000) {
+      return res.status(400).json({ message: 'Choose a valid image smaller than 1 MB.' });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user.userId,
+      { $set: { avatarUrl } },
+      { new: true, runValidators: true, select: '_id email name avatarUrl' }
+    );
+    if (!user) return res.status(404).json({ message: 'User not found.' });
+    return res.status(200).json({ user: { _id: user._id, email: user.email, name: user.name, avatarUrl: user.avatarUrl || '' } });
+  } catch (error) {
+    console.error('Update user avatar error:', error);
+    return res.status(500).json({ message: 'Unable to update your profile picture.' });
+  }
+};
+
 export const updateCurrentUserName = async (req, res) => {
   try {
     const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
@@ -52,10 +73,10 @@ export const updateCurrentUserName = async (req, res) => {
     const user = await User.findByIdAndUpdate(
       req.user.userId,
       { $set: { name } },
-      { new: true, runValidators: true, select: '_id email name' }
+      { new: true, runValidators: true, select: '_id email name avatarUrl' }
     );
     if (!user) return res.status(404).json({ message: 'User not found.' });
-    return res.status(200).json({ user: { _id: user._id, email: user.email, name: user.name } });
+    return res.status(200).json({ user: { _id: user._id, email: user.email, name: user.name, avatarUrl: user.avatarUrl || '' } });
   } catch (error) {
     console.error('Update user name error:', error);
     return res.status(500).json({ message: 'Unable to update your name.' });
@@ -201,6 +222,7 @@ export const loginUserWithEmail = async (req, res) => {
         _id: user._id,
         email: user.email,
         name: user.name,
+        avatarUrl: user.avatarUrl || '',
         isAdmin: !!user.isAdmin,
         premium: user.premium || null,
       },
@@ -216,7 +238,7 @@ export const getCurrentUser = async (req, res) => {
     const userId = req.user?.userId;
     if (!userId) return res.status(401).json({ message: 'Authentication required.' });
 
-    const user = await User.findById(userId).select('_id email name lastActiveAt');
+    const user = await User.findById(userId).select('_id email name avatarUrl lastActiveAt');
     if (!user) return res.status(404).json({ message: 'User not found.' });
 
     return res.status(200).json({ user });
@@ -228,7 +250,7 @@ export const getCurrentUser = async (req, res) => {
 
 export const getAuthenticatedCurrentUser = async (req, res) => {
   try {
-    const user = await User.findById(req.user.userId).select('_id email name lastActiveAt isAdmin');
+    const user = await User.findById(req.user.userId).select('_id email name avatarUrl lastActiveAt isAdmin');
     if (!user) return res.status(404).json({ message: 'User not found.' });
 
     const adminEmail = process.env.ADMIN_EMAIL ? String(process.env.ADMIN_EMAIL).toLowerCase().trim() : '';
