@@ -137,16 +137,15 @@ const SignInPage = () => {
 
           {error ? <p className='text-sm text-rose-500'>{error}</p> : null}
 
-          {isFormValid && (
-            <button
-              type='submit'
-              disabled={isSubmitting}
-              className='inline-flex w-full items-center justify-center gap-2 rounded-3xl bg-gradient-to-r from-violet-500 to-indigo-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-accent transition-transform hover:-translate-y-0.5 disabled:opacity-60'
-            >
-              {isSubmitting ? 'Signing in...' : 'Sign In'}
-              <ArrowRight className='h-4 w-4' />
-            </button>
-          )}
+          <button
+            type='submit'
+            disabled={!isFormValid || isSubmitting}
+            aria-disabled={!isFormValid || isSubmitting}
+            className={`inline-flex w-full items-center justify-center gap-2 rounded-3xl bg-gradient-to-r from-violet-500 to-indigo-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-accent transition-all ${!isFormValid || isSubmitting ? 'cursor-not-allowed opacity-40 grayscale' : 'cursor-pointer hover:-translate-y-0.5'}`}
+          >
+            {isSubmitting ? 'Signing in...' : 'Sign In'}
+            <ArrowRight className='h-4 w-4' />
+          </button>
         </form>
 
         <div className='mt-6 text-center text-sm text-slate-500 dark:text-slate-400'>
