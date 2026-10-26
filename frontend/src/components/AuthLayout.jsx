@@ -28,6 +28,19 @@ const AuthLayout = ({ children }) => {
     };
   }, []);
 
+  useEffect(() => {
+    if (!['/signin', '/signup'].includes(location.pathname)) return undefined;
+
+    const preventPageWheel = (event) => {
+      const target = event.target;
+      if (target instanceof Element && target.closest('[data-policy-scroll-area]')) return;
+      event.preventDefault();
+    };
+
+    document.addEventListener('wheel', preventPageWheel, { capture: true, passive: false });
+    return () => document.removeEventListener('wheel', preventPageWheel, true);
+  }, [location.pathname]);
+
   const openContact = () => {
     setIsOpen(false);
     navigate('/about');
