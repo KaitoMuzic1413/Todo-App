@@ -5,7 +5,7 @@ import User from '../models/User.js';
 import { sendEmail } from '../utils/email.js';
 import { deliverNewAccountNotifications } from '../utils/onboardingNotifications.js';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'SECRET_KEY';
+const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = '30d';
 const PASSWORD_RESET_MESSAGE = 'If an account exists for that email, a reset code will be sent shortly.';
 const isConfiguredAdmin = (email) => {
