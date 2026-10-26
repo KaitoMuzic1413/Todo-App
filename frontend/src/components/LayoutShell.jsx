@@ -7,7 +7,6 @@ import { useUserPreferences } from '@/hooks/useUserPreferences';
 import NotificationCenter from '@/components/NotificationCenter';
 
 const SIDEBAR_WIDTH = 320;
-const EDGE_WIDTH = 35;
 const SIDEBAR_TRANSITION = { duration: 0.24, ease: [0.2, 0.8, 0.2, 1] };
 const SIDEBAR_TRANSITION_MS = SIDEBAR_TRANSITION.duration * 1000;
 const getSidebarWidth = () => typeof window === 'undefined'
@@ -138,16 +137,13 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
       const touchX = event.touches[0].clientX;
       const touchY = event.touches[0].clientY;
 
-      if ((!isSidebarOpen && touchX <= EDGE_WIDTH) || isSidebarOpen) {
-        isEligibleSwipe.current = true;
-        isHorizontalSwipe.current = false;
-        touchStartX.current = touchX;
-        touchStartY.current = touchY;
-        startOffset.current = isSidebarOpen ? 0 : -getSidebarWidth();
-        currentOffset.current = startOffset.current;
-      } else {
-        isEligibleSwipe.current = false;
-      }
+      // Accept horizontal gestures that begin anywhere in the app, not only at the screen edge.
+      isEligibleSwipe.current = true;
+      isHorizontalSwipe.current = false;
+      touchStartX.current = touchX;
+      touchStartY.current = touchY;
+      startOffset.current = isSidebarOpen ? 0 : -getSidebarWidth();
+      currentOffset.current = startOffset.current;
     };
 
     const handleTouchMove = (event) => {
@@ -256,9 +252,7 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
       </div>
       {currentUser?._id ? (
         <div
-          aria-hidden={isSidebarOpen}
-          inert={isSidebarOpen}
-          className={`fixed right-0 top-0 m-3 transition-opacity duration-[240ms] ease-[cubic-bezier(0.2,0.8,0.2,1)] ${isSidebarOpen ? 'pointer-events-none invisible z-10 opacity-0' : 'visible z-40 opacity-100'}`}
+          className={`fixed right-0 top-0 m-3 transition-opacity duration-[240ms] ease-[cubic-bezier(0.2,0.8,0.2,1)] ${isSidebarOpen ? 'z-40 opacity-45 hover:opacity-100 focus-within:opacity-100 max-lg:pointer-events-none max-lg:invisible' : 'visible z-40 opacity-100'}`}
           style={{ paddingTop: 'env(safe-area-inset-top)' }}
         >
           <NotificationCenter userId={currentUser._id} />
