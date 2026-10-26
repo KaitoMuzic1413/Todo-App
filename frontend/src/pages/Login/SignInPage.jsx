@@ -132,8 +132,8 @@ const SignInPage = () => {
             <Link to='/policies/privacy' className='font-medium text-violet-600 underline underline-offset-2 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300'>{isVietnamese ? 'Chính sách quyền riêng tư' : 'Privacy Policy'}</Link>
             {', '}
             <Link to='/policies/terms' className='font-medium text-violet-600 underline underline-offset-2 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300'>{isVietnamese ? 'điều khoản sử dụng' : 'Terms of Use'}</Link>
-            {' và '}
-            <Link to='/policies/cookies' className='font-medium text-violet-600 underline underline-offset-2 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300'>{isVietnamese ? 'chính sách cookie &amp; lưu trữ' : 'Cookie &amp; Storage Policy'}</Link>
+            {isVietnamese ? ' và ' : ' '}
+            <Link to='/policies/cookies' className='font-medium text-violet-600 underline underline-offset-2 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300'>{isVietnamese ? 'chính sách cookie &amp; lưu trữ' : 'Cookie & Storage Policy'}</Link>
           </p>
 
           {error ? <p className='text-sm text-rose-500'>{error}</p> : null}
