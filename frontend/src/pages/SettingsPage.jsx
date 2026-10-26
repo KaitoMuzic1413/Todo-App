@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom';
 import { fetchCurrentUser, updateUserProfile } from '@/lib/api';
 import { useLanguage } from '@/lib/i18n';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
+import { detectedDownloadPlatform as currentPlatform } from '@/lib/devicePlatform';
 
 const getStoredUser = () => {
   try {
@@ -16,15 +17,6 @@ const getStoredUser = () => {
   }
 };
 
-const detectDownloadPlatform = () => {
-  const userAgent = window.navigator.userAgent || '';
-  const platform = window.navigator.userAgentData?.platform || window.navigator.platform || '';
-  if (/Android/i.test(userAgent) || /Android/i.test(platform)) return 'android';
-  if (/Windows|Win32|Win64/i.test(platform) || /Windows NT/i.test(userAgent)) return 'windows';
-  if (/Linux/i.test(platform) || (/Linux/i.test(userAgent) && !/Android/i.test(userAgent))) return 'linux';
-  return null;
-};
-
 const SettingsPage = () => {
   const { t, language, setLanguage } = useLanguage();
   const [currentUser, setCurrentUser] = useState(getStoredUser);
@@ -32,7 +24,6 @@ const SettingsPage = () => {
   const [name, setName] = useState(() => currentUser?.name || '');
   const [isEditingName, setIsEditingName] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const currentPlatform = detectDownloadPlatform();
   const { preferences, hasLoadedPreferences, savePreferences } = useUserPreferences(currentUser?._id);
   const selectedAccent = hasLoadedPreferences ? preferences.accent : (localStorage.getItem('todo-accent') || 'violet');
 
