@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Settings2, Palette, Check, Globe, Moon, Sun, ShieldCheck, Pencil, X, Camera } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Settings2, Palette, Check, Globe, Moon, Sun, ShieldCheck, Pencil, X, Camera, LogOut } from 'lucide-react';
 import { toast } from 'sonner';
 import { LayoutShell } from '@/components/LayoutShell';
 import DesktopAppDownloads from '@/components/DesktopAppDownloads';
@@ -27,6 +28,7 @@ const detectDownloadPlatform = () => {
 
 const SettingsPage = () => {
   const { t, language, setLanguage } = useLanguage();
+  const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState(getStoredUser);
   const [savedName, setSavedName] = useState(() => currentUser?.name || '');
   const [name, setName] = useState(() => currentUser?.name || '');
@@ -55,6 +57,17 @@ const SettingsPage = () => {
     }).catch(() => {});
     return () => { active = false; };
   }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('todo-user');
+    localStorage.removeItem('todo-user-email');
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('todo-legal-accepted-version');
+    sessionStorage.clear();
+    window.dispatchEvent(new Event('todo-auth-changed'));
+    navigate('/signin', { replace: true });
+  };
 
   const handleAvatarChange = async (event) => {
     const file = event.target.files?.[0];
@@ -242,6 +255,15 @@ const SettingsPage = () => {
                   <ShieldCheck className='h-5 w-5' />
                 </Link>
               ) : null}
+              <button
+                type='button'
+                onClick={handleLogout}
+                aria-label={t.signOut}
+                title={t.signOut}
+                className='flex h-12 w-12 items-center justify-center rounded-3xl border border-white/20 bg-white/10 text-white transition hover:bg-rose-500/25 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/30'
+              >
+                <LogOut className='h-5 w-5' />
+              </button>
             </div>
           </div>
         </header>
