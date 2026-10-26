@@ -43,7 +43,7 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const navigationTimer = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
-  const sidebarX = useMotionValue(getSidebarWidth());
+  const sidebarX = useMotionValue(-getSidebarWidth());
 
   const [currentUser, setCurrentUser] = useState(getStoredUser);
   const { preferences, hasLoadedPreferences } = useUserPreferences(currentUser?._id);
@@ -61,8 +61,8 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
   const shellRef = useRef(null);
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
-  const startOffset = useRef(-SIDEBAR_WIDTH);
-  const currentOffset = useRef(getSidebarWidth());
+  const startOffset = useRef(-getSidebarWidth());
+  const currentOffset = useRef(-getSidebarWidth());
   const isEligibleSwipe = useRef(false);
   const isHorizontalSwipe = useRef(false);
 
@@ -108,7 +108,7 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
   useEffect(() => {
     if (isDragging) return undefined;
     if (!isSidebarOpen) {
-      sidebarX.set(getSidebarWidth());
+      sidebarX.set(-getSidebarWidth());
       return undefined;
     }
     const controls = animate(sidebarX, 0, SIDEBAR_TRANSITION);
@@ -138,12 +138,12 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
       const touchX = event.touches[0].clientX;
       const touchY = event.touches[0].clientY;
 
-      if ((!isSidebarOpen && touchX >= window.innerWidth - EDGE_WIDTH) || isSidebarOpen) {
+      if ((!isSidebarOpen && touchX <= EDGE_WIDTH) || isSidebarOpen) {
         isEligibleSwipe.current = true;
         isHorizontalSwipe.current = false;
         touchStartX.current = touchX;
         touchStartY.current = touchY;
-        startOffset.current = isSidebarOpen ? 0 : getSidebarWidth();
+        startOffset.current = isSidebarOpen ? 0 : -getSidebarWidth();
         currentOffset.current = startOffset.current;
       } else {
         isEligibleSwipe.current = false;
@@ -166,7 +166,7 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
         }
 
         if (Math.abs(deltaX) <= 6) return;
-        if ((!isSidebarOpen && deltaX > 0) || (isSidebarOpen && deltaX < 0)) {
+        if ((!isSidebarOpen && deltaX < 0) || (isSidebarOpen && deltaX > 0)) {
           isEligibleSwipe.current = false;
           return;
         }
@@ -182,8 +182,8 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
       let nextOffset = startOffset.current + deltaX;
       const sidebarWidth = getSidebarWidth();
 
-      if (nextOffset < 0) nextOffset = 0;
-      if (nextOffset > sidebarWidth) nextOffset = sidebarWidth;
+      if (nextOffset < -sidebarWidth) nextOffset = -sidebarWidth;
+      if (nextOffset > 0) nextOffset = 0;
 
       currentOffset.current = nextOffset;
       sidebarX.set(nextOffset);
@@ -197,8 +197,8 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
 
       const sidebarWidth = getSidebarWidth();
       const shouldRemainOpen = isSidebarOpen
-        ? currentOffset.current < sidebarWidth * 0.3
-        : currentOffset.current < sidebarWidth * 0.7;
+        ? currentOffset.current > -sidebarWidth * 0.3
+        : currentOffset.current > -sidebarWidth * 0.7;
 
       if (shouldRemainOpen) {
         setIsSidebarOpen(true);
@@ -282,9 +282,9 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
             <motion.aside
               key='sidebar'
               initial={false}
-              exit={{ x: getSidebarWidth(), opacity: 0 }}
+              exit={{ x: -getSidebarWidth(), opacity: 0 }}
               transition={SIDEBAR_TRANSITION}
-              className='fixed right-0 top-0 z-30 flex h-[100dvh] min-h-0 w-[min(320px,88vw)] flex-col border-l border-slate-200/80 bg-white/95 dark:border-slate-800 dark:bg-slate-950/95 md:bg-white/80 md:backdrop-blur-xl md:dark:bg-slate-950/80'
+              className='fixed left-0 top-0 z-30 flex h-[100dvh] min-h-0 w-[min(320px,88vw)] flex-col border-r border-slate-200/80 bg-white/95 dark:border-slate-800 dark:bg-slate-950/95 md:bg-white/80 md:backdrop-blur-xl md:dark:bg-slate-950/80'
               style={{ x: sidebarX, touchAction: 'none' }}
             >
               <div className='flex shrink-0 items-center justify-between border-b border-slate-200/80 bg-white/60 p-4 dark:border-slate-800 dark:bg-slate-950/60'>
@@ -351,7 +351,7 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
               </div>
 
               {!hideAccountPanel && currentUser ? (
-                <div className='mt-auto flex shrink-0 justify-center px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3'>
+                <div className='mt-auto flex shrink-0 justify-end px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3'>
                   <button
                     type='button'
                     onClick={() => handleNavClick('/settings')}
@@ -375,7 +375,7 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
         )}
       </AnimatePresence>
 
-      <main className={`min-h-screen transition-all duration-[240ms] ease-[cubic-bezier(0.2,0.8,0.2,1)] ${isSidebarOpen ? 'lg:mr-[320px]' : 'lg:mr-0'}`}>
+      <main className={`min-h-screen transition-all duration-[240ms] ease-[cubic-bezier(0.2,0.8,0.2,1)] ${isSidebarOpen ? 'lg:ml-[320px]' : 'lg:ml-0'}`}>
         <div className='mx-auto max-w-6xl px-4 pb-8 sm:px-6' style={{ paddingTop: 'calc(5rem + env(safe-area-inset-top))' }}>
           {renderedChildren}
         </div>
