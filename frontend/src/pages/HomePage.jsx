@@ -110,9 +110,35 @@ const HomePage = ({ contentType = 'task' }) => {
 
   const toggleTaskMutation = useMutation({
     mutationFn: (taskId) => toggleTaskStatus(taskId, currentUser._id),
+    onMutate: async (taskId) => {
+      const queryKey = ['tasks', currentUser?._id, contentType];
+      await queryClient.cancelQueries({ queryKey });
+      const previousTasks = queryClient.getQueryData(queryKey);
+
+      queryClient.setQueryData(queryKey, (currentTasks) => {
+        if (!Array.isArray(currentTasks)) return currentTasks;
+        return currentTasks.map((task) => {
+          if (task._id !== taskId) return task;
+          const isComplete = task.status === 'complete';
+          return {
+            ...task,
+            status: isComplete ? 'active' : 'complete',
+            completedAt: isComplete ? null : new Date().toISOString(),
+          };
+        });
+      });
+
+      return { previousTasks, queryKey };
+    },
+    onError: (error, _taskId, context) => {
+      if (context?.queryKey) queryClient.setQueryData(context.queryKey, context.previousTasks);
+      toast.error(error.response?.data?.message || 'Could not update task status.');
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks', currentUser?._id, contentType] });
       queryClient.invalidateQueries({ queryKey: ['gamification', currentUser?._id] });
+    },
+    onSettled: (_data, _error, _taskId, context) => {
+      if (context?.queryKey) queryClient.invalidateQueries({ queryKey: context.queryKey });
     },
   });
 
