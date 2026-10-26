@@ -27,3 +27,8 @@ dist-ssr
 *.deb
 *.msi
 *.nsis.zip
+
+# Environment files may contain deployment configuration or secrets.
+.env
+.env.*
+!.env.example
