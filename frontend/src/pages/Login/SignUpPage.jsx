@@ -8,7 +8,8 @@ import PolicyConsentModal from '@/components/PolicyConsentModal';
 
 const SignUpPage = () => {
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const isVietnamese = language === 'vi';
   const [email, setEmail] = useState(() => sessionStorage.getItem('todo-auth-email') || '');
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
@@ -63,7 +64,9 @@ const SignUpPage = () => {
         requestError?.response?.status === 409 ||
         requestError?.response?.data?.exists
       ) {
-        setError('Account already exists. Please sign in instead.');
+        sessionStorage.setItem('todo-auth-email', trimmedEmail);
+        navigate('/signin', { replace: true });
+        return;
       } else {
         setError(
           requestError?.response?.data?.message ||
@@ -150,11 +153,11 @@ const SignUpPage = () => {
           </label>
 
           <p className='text-center text-xs leading-6 text-slate-500 dark:text-slate-400'>
-            <Link to='/policies/privacy' className='font-medium text-violet-600 underline underline-offset-2 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300'>Chính sách quyền riêng tư</Link>
+            <Link to='/policies/privacy' className='font-medium text-violet-600 underline underline-offset-2 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300'>{isVietnamese ? 'Chính sách quyền riêng tư' : 'Privacy Policy'}</Link>
             {', '}
-            <Link to='/policies/terms' className='font-medium text-violet-600 underline underline-offset-2 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300'>điều khoản sử dụng</Link>
+            <Link to='/policies/terms' className='font-medium text-violet-600 underline underline-offset-2 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300'>{isVietnamese ? 'điều khoản sử dụng' : 'Terms of Use'}</Link>
             {' và '}
-            <Link to='/policies/cookies' className='font-medium text-violet-600 underline underline-offset-2 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300'>chính sách cookie &amp; lưu trữ</Link>
+            <Link to='/policies/cookies' className='font-medium text-violet-600 underline underline-offset-2 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300'>{isVietnamese ? 'chính sách cookie &amp; lưu trữ' : 'Cookie &amp; Storage Policy'}</Link>
           </p>
 
           {error ? <p className='text-sm text-rose-500'>{error}</p> : null}
