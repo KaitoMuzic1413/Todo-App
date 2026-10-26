@@ -23,10 +23,25 @@ api.interceptors.response.use(
   },
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('todo-user');
-      localStorage.removeItem('todo-user-email');
-      localStorage.removeItem('token');
-      window.dispatchEvent(new Event('todo-auth-changed'));
+      // A 401 from a protected API means the current session cannot be used.
+      // Clear every token key used by the app so stale credentials are not retried.
+      [
+        'todo-user',
+        'todo-user-email',
+        'token',
+        'accessToken',
+        'user',
+      ].forEach((key) => localStorage.removeItem(key));
+      sessionStorage.clear();
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('todo-auth-changed'));
+        window.dispatchEvent(new Event('todo-auth-expired'));
+
+        if (!window.location.pathname.includes('/signin')) {
+          window.location.href = '/signin';
+        }
+      }
     }
     return Promise.reject(error);
   }
