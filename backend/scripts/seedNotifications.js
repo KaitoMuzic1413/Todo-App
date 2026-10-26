@@ -26,7 +26,7 @@ if (process.env.NODE_ENV !== 'development') {
       seedKey: 'development-task-reminder-v1',
       title: 'Nhắc nhở công việc',
       content: 'Bạn có một công việc sắp đến hạn. Hãy kiểm tra danh sách Todo để cập nhật tiến độ.',
-      type: 'reminder',
+      type: 'task',
     },
   ];
 
