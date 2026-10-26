@@ -17,7 +17,27 @@ const SignInPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [acceptedPolicies, setAcceptedPolicies] = useState(() => localStorage.getItem('todo-legal-accepted-version') === '2026-10-26');
   const [showPolicyModal, setShowPolicyModal] = useState(false);
+  const [pendingLoginResponse, setPendingLoginResponse] = useState(null);
   const isFormValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) && password.length > 0;
+
+  const completeLogin = (res) => {
+    const rawUser = res.data?.user || res.data;
+    const safeUser = { ...(rawUser || {}) };
+    delete safeUser.password;
+
+    localStorage.setItem('todo-user', JSON.stringify(safeUser));
+
+    if (safeUser?.email) {
+      localStorage.setItem('todo-user-email', safeUser.email);
+    }
+    sessionStorage.removeItem('todo-auth-email');
+    if (res.data?.token) {
+      localStorage.setItem('token', res.data.token);
+    }
+
+    window.dispatchEvent(new Event('todo-auth-changed'));
+    navigate('/dashboard', { replace: true });
+  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -27,40 +47,36 @@ const SignInPage = () => {
       return;
     }
 
-    if (!acceptedPolicies) {
-      setShowPolicyModal(true);
-      return;
-    }
-
     try {
       setIsSubmitting(true);
       const res = await loginWithEmail(trimmedEmail, password);
-      
-      const rawUser = res.data?.user || res.data;
 
-      const safeUser = { ...(rawUser || {}) };
-      delete safeUser.password;
-
-      localStorage.setItem('todo-user', JSON.stringify(safeUser));
-      
-      if (safeUser?.email) {
-        localStorage.setItem('todo-user-email', safeUser.email);
-      }
-      sessionStorage.removeItem('todo-auth-email');
-      if (res.data?.token) {
-        localStorage.setItem('token', res.data.token);
+      // Only show the policy popup after the server confirms the credentials.
+      if (!acceptedPolicies) {
+        setPendingLoginResponse(res);
+        setShowPolicyModal(true);
+        return;
       }
 
-      localStorage.setItem('todo-legal-accepted-version', '2026-10-26');
-      window.dispatchEvent(new Event('todo-auth-changed'));
-
-      navigate('/dashboard', { replace: true });
+      completeLogin(res);
     } catch (requestError) {
       setError(
         requestError?.response?.data?.message || 'Invalid email or password.'
       );
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleAcceptPolicies = () => {
+    localStorage.setItem('todo-legal-accepted-version', '2026-10-26');
+    setAcceptedPolicies(true);
+    setShowPolicyModal(false);
+
+    if (pendingLoginResponse) {
+      const response = pendingLoginResponse;
+      setPendingLoginResponse(null);
+      completeLogin(response);
     }
   };
 
@@ -158,7 +174,7 @@ const SignInPage = () => {
           </Link>
         </div>
       </div>
-      <PolicyConsentModal open={showPolicyModal} onDecline={() => setShowPolicyModal(false)} onAccept={() => { localStorage.setItem('todo-legal-accepted-version', '2026-10-26'); setAcceptedPolicies(true); setShowPolicyModal(false); window.setTimeout(() => document.getElementById('signin-form')?.requestSubmit(), 0); }} />
+      <PolicyConsentModal open={showPolicyModal} onDecline={() => { setShowPolicyModal(false); setPendingLoginResponse(null); }} onAccept={handleAcceptPolicies} />
     </AuthLayout>
   );
 };
