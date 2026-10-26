@@ -8,7 +8,7 @@ test('notification model accepts supported in-app notification data', async () =
   const notification = new Notification({
     title: '  Reminder  ',
     content: 'A task is due soon.',
-    type: 'reminder',
+    type: 'task',
     createdBy: '507f1f77bcf86cd799439011',
     targetType: 'all',
   });
