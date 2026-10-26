@@ -212,19 +212,12 @@ export const loginUserWithEmail = async (req, res) => {
 
 export const getCurrentUser = async (req, res) => {
   try {
-    const { email } = req.query;
+    const userId = req.user?.userId;
+    if (!userId) return res.status(401).json({ message: 'Authentication required.' });
 
-    if (!email) {
-      return res.status(400).json({ message: 'Email is required.' });
-    }
+    const user = await User.findById(userId).select('_id email name lastActiveAt');
+    if (!user) return res.status(404).json({ message: 'User not found.' });
 
-    const user = await User.findOne({ email: String(email).toLowerCase() }).select('_id email name lastActiveAt');
-
-    if (!user) {
-      return res.status(404).json({ message: 'User not found.' });
-    }
-
-    await markUserActive(user._id);
     return res.status(200).json({ user });
   } catch (error) {
     console.error('Error getCurrentUser:', error);
