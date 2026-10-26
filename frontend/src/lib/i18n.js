@@ -141,7 +141,7 @@ export const translations = {
     nextPeriod: 'Next period',
     continuesLabel: 'Continues',
     signedIn: 'Signed in',
-    signOut: 'Out',
+    signOut: 'Sign out',
     emailAddress: 'Email address',
     displayName: 'Display name',
     displayNameOptional: 'Display name (optional)',
