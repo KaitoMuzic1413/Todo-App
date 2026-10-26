@@ -254,6 +254,15 @@ const SettingsPage = () => {
             </div>
           </section>
 
+          <section className='lg:col-span-2 rounded-3xl border border-slate-200/80 bg-white/85 p-6 shadow-[0_16px_44px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-slate-900/75'>
+            <h2 className='text-lg font-semibold text-slate-900 dark:text-white'>Chính sách & điều khoản</h2>
+            <p className='mt-2 text-sm text-slate-600 dark:text-slate-300'>Đọc các chính sách công khai của Kaito Todo.</p>
+            <div className='mt-4 grid gap-3 sm:grid-cols-3'>
+              <Link to='/policies/privacy' className='rounded-2xl border border-slate-200 p-4 text-sm font-semibold text-violet-700 hover:border-violet-300 hover:bg-violet-50 dark:border-slate-700 dark:text-violet-300 dark:hover:bg-violet-500/10'>Chính sách quyền riêng tư</Link>
+              <Link to='/policies/terms' className='rounded-2xl border border-slate-200 p-4 text-sm font-semibold text-violet-700 hover:border-violet-300 hover:bg-violet-50 dark:border-slate-700 dark:text-violet-300 dark:hover:bg-violet-500/10'>Điều khoản sử dụng</Link>
+              <Link to='/policies/cookies' className='rounded-2xl border border-slate-200 p-4 text-sm font-semibold text-violet-700 hover:border-violet-300 hover:bg-violet-50 dark:border-slate-700 dark:text-violet-300 dark:hover:bg-violet-500/10'>Cookie & lưu trữ thiết bị</Link>
+            </div>
+          </section>
           <DesktopAppDownloads className='lg:col-span-2' recommendedPlatform={currentPlatform} />
         </div>
       </div>
