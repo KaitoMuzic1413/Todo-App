@@ -187,7 +187,7 @@ const SettingsPage = () => {
                 </button>
               </div>
               <div className='min-w-0'>
-                <p className='text-xs font-semibold uppercase tracking-[0.16em] text-blue-200'>{t.profile}</p>
+                <p className='text-xs font-semibold uppercase tracking-[0.16em] text-white/75'>{t.profile}</p>
                 {isEditingName ? (
                   <form onSubmit={handleSubmit} className='mt-1 flex min-w-0 items-center gap-2'>
                     <label className='sr-only' htmlFor='display-name'>{t.displayName}</label>
@@ -229,7 +229,7 @@ const SettingsPage = () => {
                       onClick={() => { setName(savedName || currentUser?.name || ''); setIsEditingName(true); }}
                       aria-label={t.displayName}
                       title={t.displayName}
-                      className='flex h-8 w-8 shrink-0 items-center justify-center rounded-3xl border border-white/15 bg-white/10 text-blue-100 transition hover:bg-white/20 hover:text-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/25'
+                      className='flex h-8 w-8 shrink-0 items-center justify-center rounded-3xl border border-white/15 bg-white/10 text-white/85 transition hover:bg-white/20 hover:text-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/25'
                     >
                       <Pencil className='h-4 w-4' />
                     </button>
