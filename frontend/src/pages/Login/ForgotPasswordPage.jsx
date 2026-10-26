@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Mail } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, Mail } from 'lucide-react';
 import { forgotPassword, resetPassword, verifyResetOtp } from '@/lib/api';
 import AuthLayout from '@/components/AuthLayout';
 import { useLanguage } from '@/lib/i18n';
@@ -10,6 +10,8 @@ const ForgotPasswordPage = () => {
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const newPasswordInputRef = useRef(null);
   const [changeName, setChangeName] = useState(false);
   const [name, setName] = useState('');
   const [codeSent, setCodeSent] = useState(false);
@@ -28,6 +30,14 @@ const ForgotPasswordPage = () => {
     const timer = window.setInterval(updateCountdown, 250);
     return () => window.clearInterval(timer);
   }, [resendAvailableAt]);
+
+  useEffect(() => {
+    const input = newPasswordInputRef.current;
+    if (!input || !codeVerified || passwordReset) return;
+    input.focus();
+    const end = input.value.length;
+    input.setSelectionRange(end, end);
+  }, [showNewPassword, codeVerified, passwordReset]);
 
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
@@ -145,17 +155,30 @@ const ForgotPasswordPage = () => {
             <>
               <label className='block text-sm font-medium text-slate-700 dark:text-slate-200'>
                 New password
-                <input
-                  type='password'
-                  required
-                  minLength={8}
-                  maxLength={20}
-                  disabled={loading}
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder='8-20 characters with letters and numbers'
-                  className='mt-2 h-12 w-full rounded-3xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:ring-violet-900/40'
-                />
+                <div className='relative mt-2'>
+                  <input
+                    ref={newPasswordInputRef}
+                    type={showNewPassword ? 'text' : 'password'}
+                    required
+                    minLength={8}
+                    maxLength={20}
+                    disabled={loading}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder='8-20 characters with letters and numbers'
+                    className='h-12 w-full rounded-3xl border border-slate-200 bg-slate-50 px-3 pr-12 text-sm text-slate-700 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:ring-violet-900/40'
+                  />
+                  <button
+                    type='button'
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => setShowNewPassword((visible) => !visible)}
+                    aria-label={showNewPassword ? 'Hide password' : 'Show password'}
+                    aria-pressed={showNewPassword}
+                    className='absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1.5 text-slate-500 transition hover:bg-slate-200/70 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-violet-400 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200'
+                  >
+                    {showNewPassword ? <EyeOff className='h-5 w-5' /> : <Eye className='h-5 w-5' />}
+                  </button>
+                </div>
               </label>
               <div className='space-y-3 rounded-3xl border border-slate-200 p-3 dark:border-slate-700'>
                 <p className='text-sm font-medium text-slate-700 dark:text-slate-200'>{t.changeNameQuestion || 'Would you like to change your display name?'}</p>
