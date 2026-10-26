@@ -244,6 +244,7 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
       localStorage.removeItem('todo-user-email');
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+      localStorage.removeItem('todo-legal-accepted-version');
       sessionStorage.clear();
 
       setCurrentUser(null);
