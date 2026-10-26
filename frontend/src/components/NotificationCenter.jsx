@@ -6,6 +6,7 @@ import {
   fetchNotifications,
   fetchUnreadNotificationCount,
   markNotificationRead,
+  translateNotificationTexts,
 } from '@/lib/api';
 import { useLanguage } from '@/lib/i18n';
 
@@ -21,7 +22,9 @@ const NotificationCenter = ({ userId }) => {
   const [unreadCount, setUnreadCount] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [filter, setFilter] = useState('all');
-  const [notifications, setNotifications] = useState([]);\n  const [translatedNotifications, setTranslatedNotifications] = useState({});\n  const [translatedDetail, setTranslatedDetail] = useState(null);
+  const [notifications, setNotifications] = useState([]);
+  const [translatedNotifications, setTranslatedNotifications] = useState({});
+  const [translatedDetail, setTranslatedDetail] = useState(null);
   const [listLoading, setListLoading] = useState(false);
   const [listError, setListError] = useState('');
   const [selectedId, setSelectedId] = useState(null);
@@ -67,6 +70,48 @@ const NotificationCenter = ({ userId }) => {
       window.clearInterval(timer);
     };
   }, [drawerOpen, filter, refreshCount, refreshList, userId]);
+
+  useEffect(() => {
+    let active = true;
+    if (language !== 'vi' || notifications.length === 0) {
+      setTranslatedNotifications({});
+      return () => { active = false; };
+    }
+    const texts = notifications.flatMap((item) => [item.title || '', item.content || '']);
+    void translateNotificationTexts(texts, language).then(({ data }) => {
+      if (!active || !Array.isArray(data.translations)) return;
+      const translated = {};
+      notifications.forEach((item, index) => {
+        translated[item.id] = {
+          title: data.translations[index * 2] || item.title,
+          content: data.translations[index * 2 + 1] || item.content,
+        };
+      });
+      setTranslatedNotifications(translated);
+    }).catch(() => {
+      if (active) setTranslatedNotifications({});
+    });
+    return () => { active = false; };
+  }, [language, notifications]);
+
+  useEffect(() => {
+    let active = true;
+    if (language !== 'vi' || !detail) {
+      setTranslatedDetail(null);
+      return () => { active = false; };
+    }
+    void translateNotificationTexts([detail.title || '', detail.content || ''], language)
+      .then(({ data }) => {
+        if (active && Array.isArray(data.translations)) {
+          setTranslatedDetail({
+            title: data.translations[0] || detail.title,
+            content: data.translations[1] || detail.content,
+          });
+        }
+      })
+      .catch(() => { if (active) setTranslatedDetail(null); });
+    return () => { active = false; };
+  }, [detail, language]);
 
   useEffect(() => {
     if (!drawerOpen || !userId) return undefined;
@@ -297,7 +342,7 @@ const NotificationCenter = ({ userId }) => {
                     <button type='button' onClick={retryDetail} className='min-h-10 rounded-3xl border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800'>{t.retry}</button>
                   </div>
                 ) : (
-                  <p className='whitespace-pre-wrap break-words text-sm leading-7 text-slate-700 dark:text-slate-200'>{detail?.content}</p>
+                  <p className='whitespace-pre-wrap break-words text-sm leading-7 text-slate-700 dark:text-slate-200'>{translatedDetail?.content || detail?.content}</p>
                 )}
               </div>
             </motion.section>
