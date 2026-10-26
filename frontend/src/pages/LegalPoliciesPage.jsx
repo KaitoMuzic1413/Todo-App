@@ -47,6 +47,55 @@ export const policies = {
   }
 };
 
+
+const englishPolicies = {
+  privacy: {
+    title: 'Privacy Policy',
+    updated: '26/10/2026',
+    icon: ShieldCheck,
+    intro: 'This policy explains how Kaito Todo collects, uses, retains, and protects information when you use the application.',
+    sections: [
+      ['1. Operator and contact', 'Kaito Todo is operated by an individual, Nguyễn Văn Thái. Contact email: kaitomuzicvn@gmail.com. Phone: +84 793 903 870. Facebook: https://www.facebook.com/share/1KPgW9jyHm/.'],
+      ['2. Data processed', 'Depending on the features you use, the system may process account information such as email address, display name, authentication information, and activity timestamps; content you create such as tasks, notes, lists, calendars, and deadlines; focus-session data and progress statistics; files you upload and related filenames, file types, sizes, and metadata; and technical data needed for sessions, interface preferences, and language settings. Do not put passwords, verification codes, or confidential information in notes.'],
+      ['3. How data is used', 'Data is used to provide application features, authenticate and protect accounts, synchronize content with the server when that feature is used, save preferences, send necessary notifications or emails, handle support requests, diagnose errors, and protect the service from abuse. Kaito Todo does not integrate an AI model to analyze user content in the current product.'],
+      ['4. Storage and data processors', 'Data may be stored on database servers, file-storage infrastructure, application-hosting services, and email providers configured for the service. These providers may process the data necessary to supply their infrastructure. The exact storage locations and active provider list must be verified against the production configuration before the final policy is published.'],
+      ['5. Retention and deletion', 'Retention periods depend on the data type, account status, operational needs, and applicable law. The current source code includes cleanup mechanisms for some inactive accounts after approximately 90 days with prior notice, and for some Trash items after approximately 30 days. These periods are not guarantees for every type of data; the operator must verify the deployed configuration. You may contact support to request access to, correction of, or deletion of data after account ownership is verified.'],
+      ['6. Security', 'The application uses technical measures appropriate to its current architecture, including account authentication and server-side password hashing. No system can guarantee absolute security. Use a unique password, protect your devices, and sign out on shared devices. Do not share your login credentials.'],
+      ['7. User rights and policy changes', 'You may request information about your data, ask for updates or deletion, and submit complaints through the contact channels above. Requests may require identity verification and will be handled under applicable law. Material policy changes will be published on this page, and the application may ask you to confirm the updated version before continuing.']
+    ]
+  },
+  terms: {
+    title: 'Terms of Use',
+    updated: '26/10/2026',
+    icon: FileText,
+    intro: 'By creating an account or continuing to use Kaito Todo after confirming these terms, you agree to the following conditions.',
+    sections: [
+      ['1. Operator and contact', 'Kaito Todo is operated by an individual, Nguyễn Văn Thái. Email: kaitomuzicvn@gmail.com. Phone: +84 793 903 870. Facebook: https://www.facebook.com/share/1KPgW9jyHm/.'],
+      ['2. Accounts', 'You are responsible for providing appropriate information, keeping your login credentials confidential, and activity carried out through your account. Notify the operator if you suspect unauthorized access. Do not impersonate others, break into systems, or violate the law through the service.'],
+      ['3. User content', 'You are responsible for tasks, notes, lists, and files you create or upload, including having the legal rights to that content. Do not upload unlawful content, content that infringes others’ rights, malware, or material that threatens the safety or operation of the service.'],
+      ['4. Availability and data', 'An internet connection may be required to sign in and access server-stored data. Some interfaces may open offline, but that does not mean all data has synchronized or can be edited offline. Keep your own copies of important data. Recovery of permanently deleted data or data lost due to incidents beyond reasonable control is not guaranteed.'],
+      ['5. Acceptable use', 'Do not disrupt the service, bypass safeguards, exploit vulnerabilities without authorization, send spam, upload prohibited files, or use the service in a way that puts others at risk. The operator may restrict activity that appears abusive and will review the circumstances as appropriate.'],
+      ['6. Service limits and changes', 'Features may change, be temporarily unavailable for maintenance, or be discontinued. These terms do not exclude liability where exclusion is prohibited by law and do not remove mandatory consumer rights. No Premium plan or payment process is currently described on this page; do not make payments based on information that is not clearly displayed in the application.'],
+      ['7. Governing law and updates', 'These terms apply in accordance with the laws of Vietnam and other applicable mandatory rules. Important updates will be published, and users may be asked to confirm them again. If a dispute arises, the parties should first contact each other to seek a resolution, without limiting any rights available under law.']
+    ]
+  },
+  cookies: {
+    title: 'Cookies & Device Storage Policy',
+    updated: '26/10/2026',
+    icon: Cookie,
+    intro: 'This page describes how Kaito Todo uses browser storage and related technologies to keep the application working.',
+    sections: [
+      ['1. Browser storage', 'The current source code uses localStorage and sessionStorage for certain information, such as session tokens, account details cached on the device, temporary email values in authentication forms, theme, language, and user preferences. This is browser-side storage and is not the same thing as HTTP cookies.'],
+      ['2. Purpose', 'This storage helps maintain sign-in state, restore interface preferences, retain temporary data during authentication, and make the application more convenient to use. We do not claim that no cookies are used in every environment, because server, provider, and browser configurations may differ.'],
+      ['3. Service worker and cache', 'The web application uses a service worker to cache the application shell and some static assets to improve loading performance. According to the current source code, the service worker does not cache API requests or user data. Offline use remains limited; the application cache should not be treated as a data backup.'],
+      ['4. Managing device data', 'You can clear website data in your browser settings or sign out of the application. Clearing browser storage may sign you out or remove preferences stored only on the device; it does not necessarily delete data stored on the server. Do not clear application data until you understand how it may affect your local data.'],
+      ['5. Analytics and advertising tools', 'This policy does not claim that every deployment is free of analytics tools, cookies, or third-party services. The operator must check the actual deployment and add accurate details if such tools are used.']
+    ]
+  }
+};
+
+export const getLocalizedPolicies = (language) => language === 'en' ? englishPolicies : policies;
+
 const LegalPoliciesPage = () => {
   const { policySlug } = useParams();
   const policy = policies[policySlug];
