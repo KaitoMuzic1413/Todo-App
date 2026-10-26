@@ -17,19 +17,18 @@ const SignInPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [acceptedPolicies, setAcceptedPolicies] = useState(() => localStorage.getItem('todo-legal-accepted-version') === '2026-10-26');
   const [showPolicyModal, setShowPolicyModal] = useState(false);
-
+  const isFormValid = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email.trim()) && password.length > 0;
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError('');
-    if (!acceptedPolicies) {
-      setShowPolicyModal(true);
+    const trimmedEmail = email.trim();
+    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(trimmedEmail) || !password) {
       return;
     }
 
-    const trimmedEmail = email.trim();
-    if (!trimmedEmail || !password) {
-      setError('Please fill in all fields.');
+    if (!acceptedPolicies) {
+      setShowPolicyModal(true);
       return;
     }
 
@@ -138,14 +137,16 @@ const SignInPage = () => {
 
           {error ? <p className='text-sm text-rose-500'>{error}</p> : null}
 
-          <button
-            type='submit'
-            disabled={isSubmitting}
-            className='inline-flex w-full items-center justify-center gap-2 rounded-3xl bg-gradient-to-r from-violet-500 to-indigo-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-accent transition-transform hover:-translate-y-0.5 disabled:opacity-60 '
-          >
-            {isSubmitting ? 'Signing in...' : 'Sign In'}
-            <ArrowRight className='h-4 w-4' />
-          </button>
+          {isFormValid && (
+            <button
+              type='submit'
+              disabled={isSubmitting}
+              className='inline-flex w-full items-center justify-center gap-2 rounded-3xl bg-gradient-to-r from-violet-500 to-indigo-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-accent transition-transform hover:-translate-y-0.5 disabled:opacity-60'
+            >
+              {isSubmitting ? 'Signing in...' : 'Sign In'}
+              <ArrowRight className='h-4 w-4' />
+            </button>
+          )}
         </form>
 
         <div className='mt-6 text-center text-sm text-slate-500 dark:text-slate-400'>
