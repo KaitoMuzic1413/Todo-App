@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
-import { Settings2, Palette, Check, Globe, Moon, Sun, ShieldCheck, Pencil, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { Settings2, Palette, Check, Globe, Moon, Sun, ShieldCheck, Pencil, X, Camera } from 'lucide-react';
 import { toast } from 'sonner';
 import { LayoutShell } from '@/components/LayoutShell';
 import DesktopAppDownloads from '@/components/DesktopAppDownloads';
 import { Link } from 'react-router-dom';
-import { fetchCurrentUser, updateUserProfile } from '@/lib/api';
+import { fetchCurrentUser, updateUserAvatar, updateUserProfile } from '@/lib/api';
 import { useLanguage } from '@/lib/i18n';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
 
@@ -32,6 +32,8 @@ const SettingsPage = () => {
   const [name, setName] = useState(() => currentUser?.name || '');
   const [isEditingName, setIsEditingName] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const avatarInputRef = useRef(null);
   const currentPlatform = detectDownloadPlatform();
   const { preferences, hasLoadedPreferences, savePreferences } = useUserPreferences(currentUser?._id);
   const selectedAccent = hasLoadedPreferences ? preferences.accent : (localStorage.getItem('todo-accent') || 'violet');
@@ -53,6 +55,42 @@ const SettingsPage = () => {
     }).catch(() => {});
     return () => { active = false; };
   }, []);
+
+  const handleAvatarChange = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error(language === 'vi' ? 'Chỉ hỗ trợ ảnh JPG, PNG, WebP hoặc GIF.' : 'Only JPG, PNG, WebP, or GIF images are supported.');
+      return;
+    }
+    if (file.size > 1024 * 1024) {
+      toast.error(language === 'vi' ? 'Ảnh đại diện phải nhỏ hơn 1 MB.' : 'Profile pictures must be smaller than 1 MB.');
+      return;
+    }
+
+    try {
+      setIsUploadingAvatar(true);
+      const avatarUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error('Could not read image'));
+        reader.readAsDataURL(file);
+      });
+      const response = await updateUserAvatar(avatarUrl);
+      const updatedUser = { ...getStoredUser(), ...response.data.user };
+      localStorage.setItem('todo-user', JSON.stringify(updatedUser));
+      setCurrentUser(updatedUser);
+      window.dispatchEvent(new Event('todo-auth-changed'));
+      toast.success(language === 'vi' ? 'Đã cập nhật ảnh đại diện.' : 'Profile picture updated.');
+    } catch (error) {
+      toast.error(error.response?.data?.message || (language === 'vi' ? 'Không thể cập nhật ảnh đại diện.' : 'Could not update profile picture.'));
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -115,8 +153,33 @@ const SettingsPage = () => {
         <header className='overflow-hidden rounded-3xl bg-gradient-to-br from-[#101a3a] via-[#172750] to-[#293c7b] p-5 text-white shadow-[0_24px_56px_rgba(15,23,42,0.24)] sm:rounded-3xl sm:p-7'>
           <div className='flex items-start gap-3 sm:gap-4'>
             <div className='flex min-w-0 flex-1 items-center gap-3 sm:gap-4'>
-              <div className='flex h-12 w-12 shrink-0 items-center justify-center rounded-3xl bg-gradient-to-br from-sky-300 to-violet-300 text-base font-bold text-[#111b3a] ring-4 ring-white/10 sm:h-14 sm:w-14 sm:text-lg' aria-hidden='true'>
-                {(savedName || currentUser?.name || currentUser?.email || '?').trim().slice(0, 2).toUpperCase()}
+              <div className='group relative h-14 w-14 shrink-0 sm:h-16 sm:w-16'>
+                <input
+                  ref={avatarInputRef}
+                  type='file'
+                  accept='image/jpeg,image/png,image/webp,image/gif'
+                  className='sr-only'
+                  onChange={handleAvatarChange}
+                  aria-label={language === 'vi' ? 'Thay đổi ảnh đại diện' : 'Change profile picture'}
+                />
+                <button
+                  type='button'
+                  onClick={() => avatarInputRef.current?.click()}
+                  disabled={isUploadingAvatar}
+                  title={language === 'vi' ? 'Thay đổi ảnh đại diện' : 'Change profile picture'}
+                  aria-label={language === 'vi' ? 'Thay đổi ảnh đại diện' : 'Change profile picture'}
+                  className='relative h-full w-full cursor-pointer overflow-hidden rounded-3xl bg-gradient-to-br from-sky-300 to-violet-300 text-base font-bold text-[#111b3a] ring-4 ring-white/10 transition disabled:cursor-wait sm:text-lg'
+                >
+                  {currentUser?.avatarUrl ? (
+                    <img src={currentUser.avatarUrl} alt='' className='h-full w-full object-cover' />
+                  ) : (
+                    <span>{(savedName || currentUser?.name || currentUser?.email || '?').trim().slice(0, 2).toUpperCase()}</span>
+                  )}
+                  <span className='absolute inset-0 flex items-center justify-center bg-slate-950/0 text-white opacity-0 transition group-hover:bg-slate-950/45 group-hover:opacity-100 group-focus-within:opacity-100'>
+                    <Camera className='h-5 w-5' />
+                  </span>
+                  {isUploadingAvatar ? <span className='absolute inset-0 flex items-center justify-center bg-slate-950/55 text-xs text-white'>...</span> : null}
+                </button>
               </div>
               <div className='min-w-0'>
                 <p className='text-xs font-semibold uppercase tracking-[0.16em] text-blue-200'>{t.profile}</p>
