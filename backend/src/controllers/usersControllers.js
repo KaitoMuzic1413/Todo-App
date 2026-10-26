@@ -4,6 +4,9 @@ import Task from '../models/Task.js';
 import Attachment from '../models/Attachment.js';
 import CalendarNote from '../models/CalendarNote.js';
 import NotificationRecipient from '../models/NotificationRecipient.js';
+import Notification from '../models/Notification.js';
+import FocusSession from '../models/FocusSession.js';
+import GamificationEvent from '../models/GamificationEvent.js';
 import { sendEmail } from '../utils/email.js';
 import { validatePreferenceUpdates } from '../utils/userPreferences.js';
 import { deliverNewAccountNotifications } from '../utils/onboardingNotifications.js';
@@ -244,5 +247,74 @@ export const getAuthenticatedCurrentUser = async (req, res) => {
   } catch (error) {
     console.error('Get authenticated user error:', error);
     return res.status(500).json({ message: 'Server error' });
+  }
+};
+
+
+/**
+ * Export the authenticated user's application data without credentials,
+ * password hashes, reset tokens, or other authentication secrets.
+ */
+export const exportCurrentUserData = async (req, res) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) return res.status(401).json({ message: 'Authentication required.' });
+
+    const [user, tasks, calendarNotes, attachments, focusSessions, gamificationEvents, recipients] = await Promise.all([
+      User.findById(userId).select('_id email name preferences premium createdAt updatedAt').lean(),
+      Task.find({ userId }).sort({ createdAt: 1 }).lean(),
+      CalendarNote.find({ userId }).sort({ dateKey: 1 }).lean(),
+      Attachment.find({ ownerId: userId })
+        .select('_id taskId originalName title description mimeType size pinned important isDeleted deletedAt createdAt updatedAt')
+        .sort({ createdAt: 1 }).lean(),
+      FocusSession.find({ userId }).sort({ createdAt: 1 }).lean(),
+      GamificationEvent.find({ userId }).sort({ createdAt: 1 }).lean(),
+      NotificationRecipient.find({ userId }).sort({ deliveredAt: 1 }).lean(),
+    ]);
+
+    if (!user) return res.status(404).json({ message: 'User not found.' });
+
+    const notificationsById = new Map(
+      (await Notification.find({
+        _id: { $in: recipients.map((recipient) => recipient.notificationId) },
+      }).select('_id title content type createdAt').lean())
+        .map((notification) => [String(notification._id), notification])
+    );
+
+    const notifications = recipients.flatMap((recipient) => {
+      const notification = notificationsById.get(String(recipient.notificationId));
+      if (!notification) return [];
+      return [{
+        ...notification,
+        isRead: recipient.isRead,
+        readAt: recipient.readAt,
+        deliveredAt: recipient.deliveredAt,
+      }];
+    });
+
+    const exportDate = new Date().toISOString().slice(0, 10);
+    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="todo-app-data-${exportDate}.json"`);
+
+    return res.status(200).json({
+      schemaVersion: 1,
+      exportedAt: new Date().toISOString(),
+      scope: {
+        includesAttachmentMetadata: true,
+        includesAttachmentFileContents: false,
+        includesDeletedItems: true,
+      },
+      user,
+      tasks,
+      calendarNotes,
+      attachments,
+      focusSessions,
+      gamificationEvents,
+      notifications,
+    });
+  } catch (error) {
+    console.error('Export user data error:', error);
+    return res.status(500).json({ message: 'Unable to export account data.' });
   }
 };
