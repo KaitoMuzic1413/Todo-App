@@ -4,7 +4,6 @@ import { ArrowRight, LogIn, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { loginWithEmail } from '@/lib/api';
 import AuthLayout from '@/components/AuthLayout';
 import PolicyConsentModal from '@/components/PolicyConsentModal';
-import LegalConsentModal from '@/components/LegalConsentModal';
 
 const SignInPage = () => {
   const navigate = useNavigate();
@@ -16,11 +15,6 @@ const SignInPage = () => {
   const [acceptedPolicies, setAcceptedPolicies] = useState(() => localStorage.getItem('todo-legal-accepted-version') === '2026-10-26');
   const [showPolicyModal, setShowPolicyModal] = useState(false);
 
-  const acceptPolicies = () => {
-    localStorage.setItem('todo-legal-accepted-version', '2026-10-26');
-    setAcceptedPolicies(true);
-    setShowPolicyModal(false);
-  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -155,7 +149,7 @@ const SignInPage = () => {
           </Link>
         </div>
       </div>
-      <LegalConsentModal open={showPolicyModal} onAccept={acceptPolicies} onDecline={() => setShowPolicyModal(false)} />
+      <PolicyConsentModal open={showPolicyModal} onDecline={() => setShowPolicyModal(false)} onAccept={() => { localStorage.setItem('todo-legal-accepted-version', '2026-10-26'); setAcceptedPolicies(true); setShowPolicyModal(false); window.setTimeout(() => document.getElementById('signin-form')?.requestSubmit(), 0); }} />
     </AuthLayout>
   );
 };
