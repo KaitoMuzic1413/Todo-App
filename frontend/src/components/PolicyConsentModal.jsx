@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLanguage } from '@/lib/i18n';
 import { Check, ShieldCheck, X } from 'lucide-react';
-import { policies } from '@/pages/LegalPoliciesPage';
+import { getLocalizedPolicies } from '@/pages/LegalPoliciesPage';
 
 const PolicyConsentModal = ({ open, onAccept, onDecline }) => {
-  const { language } = useLanguage();
+  const { language, setLanguage } = useLanguage();
   const isVietnamese = language === 'vi';
+  const policies = getLocalizedPolicies(language);
   const contentRef = useRef(null);
   const [reachedEnd, setReachedEnd] = useState(false);
 
@@ -45,10 +46,14 @@ const PolicyConsentModal = ({ open, onAccept, onDecline }) => {
             <h2 id='policy-consent-title' className='text-lg font-bold text-slate-900 dark:text-white sm:text-xl'>{isVietnamese ? 'Vui lòng đọc các chính sách' : 'Please review the policies'}</h2>
             <p className='mt-1 text-xs text-slate-500 dark:text-slate-400'>{isVietnamese ? 'Cuộn xuống hết nội dung để mở khóa nút Chấp nhận.' : 'Scroll to the end to enable Accept.'}</p>
           </div>
-          <button type='button' onClick={onDecline} aria-label='Đóng cửa sổ' className='flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'><X className='h-5 w-5' /></button>
+          <div className='flex shrink-0 items-center rounded-xl border border-slate-200 p-1 dark:border-slate-700' role='group' aria-label={isVietnamese ? 'Ngôn ngữ chính sách' : 'Policy language'}>
+            <button type='button' onClick={() => setLanguage('vi')} aria-pressed={isVietnamese} className={`rounded-lg px-2.5 py-1.5 text-xs font-semibold transition ${isVietnamese ? 'bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-200' : 'text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}`}>VI</button>
+            <button type='button' onClick={() => setLanguage('en')} aria-pressed={!isVietnamese} className={`rounded-lg px-2.5 py-1.5 text-xs font-semibold transition ${!isVietnamese ? 'bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-200' : 'text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}`}>EN</button>
+          </div>
+          <button type='button' onClick={onDecline} aria-label={isVietnamese ? 'Đóng cửa sổ' : 'Close dialog'} className='flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'><X className='h-5 w-5' /></button>
         </header>
 
-        <div ref={contentRef} onScroll={handleScroll} className='sidebar-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 sm:px-8 sm:py-7'>
+        <div data-policy-scroll-area ref={contentRef} onScroll={handleScroll} className='sidebar-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 sm:px-8 sm:py-7'>
           <p className='mb-8 rounded-2xl border border-violet-200 bg-violet-50 p-4 text-sm leading-6 text-violet-950 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-100'>{isVietnamese ? <>Khi chọn <strong>Chấp nhận</strong>, bạn xác nhận đã đọc và đồng ý với Chính sách quyền riêng tư, Điều khoản sử dụng và Chính sách Cookie &amp; lưu trữ của Kaito Todo.</> : <>By selecting <strong>Accept</strong>, you confirm that you have read and agree to Kaito Todo's Privacy Policy, Terms of Use, and Cookie &amp; Storage Policy.</>}</p>
           {Object.entries(policies).map(([slug, policy]) => (
             <section key={slug} className='mb-9 last:mb-0'>
