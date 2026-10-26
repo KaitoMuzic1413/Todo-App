@@ -13,7 +13,7 @@ const RELEASES_API_URL = isValidRepository
   ? `https://api.github.com/repos/${encodeURIComponent(repositoryOwner)}/${encodeURIComponent(repositoryName)}/releases?per_page=30`
   : null;
 
-const SUPPORTED_EXTENSIONS = new Set(['.exe', '.msi', '.appimage', '.deb']);
+const SUPPORTED_EXTENSIONS = new Set(['.exe', '.msi', '.appimage', '.deb', '.apk']);
 
 const getAssetExtension = (name = '') => {
   const normalizedName = name.toLowerCase();
