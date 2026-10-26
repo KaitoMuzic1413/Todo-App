@@ -2,7 +2,7 @@ import express from 'express';
 import verifyToken from '../middleware/authMiddleware.js';
 import requireAdmin from '../middleware/requireAdmin.js';
 import {
-  createNotification,
+  createNotification,\n  translateNotificationTexts,
   deleteAdminNotification,
   getNotification,
   getUnreadNotificationCount,
@@ -15,7 +15,7 @@ import {
 const router = express.Router();
 router.use(verifyToken);
 
-router.get('/', listNotifications);
+router.post('/translate', translateNotificationTexts);\nrouter.get('/', listNotifications);
 router.get('/unread-count', getUnreadNotificationCount);
 router.get('/admin', requireAdmin, listAdminNotifications);
 router.post('/admin', requireAdmin, createNotification);
