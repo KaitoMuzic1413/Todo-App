@@ -61,6 +61,7 @@ export const fetchUserPreferences = () => api.get('/users/preferences');
 
 export const saveUserPreferences = (preferences) => api.patch('/users/preferences', preferences);
 export const updateUserProfile = (name) => api.patch('/users/profile', { name });
+export const updateUserAvatar = (avatarUrl) => api.patch('/users/profile/avatar', { avatarUrl });
 export const fetchCurrentUser = () => api.get('/users/current');
 
 export const fetchNotifications = (filter = 'all') => api.get('/notifications', { params: { filter } });
