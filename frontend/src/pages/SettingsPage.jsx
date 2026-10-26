@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Settings2, Palette, Check, Globe, Moon, Sun, ShieldCheck, Pencil, X } from 'lucide-react';
+import { Settings2, Palette, Check, Globe, Moon, Sun, ShieldCheck, Pencil, X, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { LayoutShell } from '@/components/LayoutShell';
 import DesktopAppDownloads from '@/components/DesktopAppDownloads';
 import { Link } from 'react-router-dom';
-import { fetchCurrentUser, updateUserProfile } from '@/lib/api';
+import { exportCurrentUserData, fetchCurrentUser, updateUserProfile } from '@/lib/api';
 import { useLanguage } from '@/lib/i18n';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
 
@@ -32,6 +32,7 @@ const SettingsPage = () => {
   const [name, setName] = useState(() => currentUser?.name || '');
   const [isEditingName, setIsEditingName] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const currentPlatform = detectDownloadPlatform();
   const { preferences, hasLoadedPreferences, savePreferences } = useUserPreferences(currentUser?._id);
   const selectedAccent = hasLoadedPreferences ? preferences.accent : (localStorage.getItem('todo-accent') || 'violet');
@@ -77,6 +78,26 @@ const SettingsPage = () => {
       toast.error(error.response?.data?.message || t.nameUpdateFailed);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleExportData = async () => {
+    try {
+      setIsExporting(true);
+      const response = await exportCurrentUserData();
+      const downloadUrl = window.URL.createObjectURL(new Blob([response.data], { type: 'application/json' }));
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `todo-app-data-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      toast.success(language === 'vi' ? 'Đã xuất dữ liệu tài khoản.' : 'Account data exported.');
+    } catch (error) {
+      toast.error(error.response?.data?.message || (language === 'vi' ? 'Không thể xuất dữ liệu.' : 'Unable to export account data.'));
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -254,6 +275,32 @@ const SettingsPage = () => {
             </div>
           </section>
 
+          <section className='rounded-3xl border border-slate-200/80 bg-white/85 p-6 shadow-[0_16px_44px_rgba(15,23,42,0.08)] backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/75 lg:col-span-2'>
+            <div className='flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
+              <div className='flex items-start gap-3'>
+                <span className='flex h-10 w-10 shrink-0 items-center justify-center rounded-3xl bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-200'><Download className='h-5 w-5' /></span>
+                <div>
+                  <h2 className='text-lg font-semibold text-slate-900 dark:text-white'>{language === 'vi' ? 'Dữ liệu & quyền riêng tư' : 'Data & privacy'}</h2>
+                  <p className='mt-1 max-w-2xl text-sm text-slate-600 dark:text-slate-300'>
+                    {language === 'vi'
+                      ? 'Tải bản JSON gồm thông tin tài khoản, công việc, ghi chú lịch, thông báo, phiên tập trung, tiến độ và metadata tệp. Nội dung nhị phân của tệp đính kèm không nằm trong bản xuất này; hãy tải riêng các tệp trong Kho lưu trữ.'
+                      : 'Download a JSON copy of your account, tasks, calendar notes, notifications, focus sessions, progress, and file metadata. Binary attachment contents are not included; download those files separately from the archive.'}
+                  </p>
+                </div>
+              </div>
+              <button
+                type='button'
+                onClick={() => void handleExportData()}
+                disabled={isExporting}
+                className='inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-3xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-700 disabled:cursor-wait disabled:opacity-60'
+              >
+                <Download className='h-4 w-4' />
+                {isExporting
+                  ? (language === 'vi' ? 'Đang xuất…' : 'Exporting…')
+                  : (language === 'vi' ? 'Xuất dữ liệu' : 'Export data')}
+              </button>
+            </div>
+          </section>
           <DesktopAppDownloads className='lg:col-span-2' recommendedPlatform={currentPlatform} />
         </div>
       </div>
