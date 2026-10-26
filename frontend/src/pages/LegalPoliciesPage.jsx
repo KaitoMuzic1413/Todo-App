@@ -1,7 +1,7 @@
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, ShieldCheck, FileText, Cookie } from 'lucide-react';
 
-const policies = {
+export const policies = {
   privacy: {
     title: 'Chính sách quyền riêng tư',
     updated: '26/10/2026',
