@@ -15,6 +15,9 @@ const RELEASES_API_URL = isValidRepository
 
 const SUPPORTED_EXTENSIONS = new Set(['.exe', '.msi', '.appimage', '.deb']);
 
+let cachedReleaseData = null;
+let releaseRequest = null;
+
 const getAssetExtension = (name = '') => {
   const normalizedName = name.toLowerCase();
   return [...SUPPORTED_EXTENSIONS].find((extension) => normalizedName.endsWith(extension)) || null;
@@ -35,7 +38,7 @@ export const getDesktopAssets = (release) => (Array.isArray(release?.assets) ? r
   })
   .map((asset) => ({ ...asset, format: getAssetExtension(asset.name) }));
 
-export const fetchDesktopReleases = async ({ signal } = {}) => {
+const requestDesktopReleases = async ({ signal } = {}) => {
   if (!RELEASES_API_URL) {
     throw new Error('VITE_GITHUB_REPOSITORY must use the owner/repository format.');
   }
@@ -64,3 +67,19 @@ export const fetchDesktopReleases = async ({ signal } = {}) => {
 
   return { latestRelease };
 };
+
+export const fetchDesktopReleases = async ({ signal } = {}) => {
+  if (cachedReleaseData) return cachedReleaseData;
+  if (releaseRequest) return releaseRequest;
+
+  const request = requestDesktopReleases({ signal });
+  releaseRequest = request;
+  try {
+    cachedReleaseData = await request;
+    return cachedReleaseData;
+  } finally {
+    if (releaseRequest === request) releaseRequest = null;
+  }
+};
+
+export const prefetchDesktopReleases = () => fetchDesktopReleases().catch(() => null);
