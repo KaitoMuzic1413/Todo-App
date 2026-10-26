@@ -8,6 +8,7 @@ import { Link } from 'react-router-dom';
 import { fetchCurrentUser, updateUserAvatar, updateUserProfile } from '@/lib/api';
 import { useLanguage } from '@/lib/i18n';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
+import { detectedDownloadPlatform } from '@/lib/devicePlatform';
 
 const getStoredUser = () => {
   try {
@@ -15,15 +16,6 @@ const getStoredUser = () => {
   } catch {
     return null;
   }
-};
-
-const detectDownloadPlatform = () => {
-  const userAgent = window.navigator.userAgent || '';
-  const platform = window.navigator.userAgentData?.platform || window.navigator.platform || '';
-  if (/Android/i.test(userAgent) || /Android/i.test(platform)) return 'android';
-  if (/Windows|Win32|Win64/i.test(platform) || /Windows NT/i.test(userAgent)) return 'windows';
-  if (/Linux/i.test(platform) || (/Linux/i.test(userAgent) && !/Android/i.test(userAgent))) return 'linux';
-  return null;
 };
 
 const SettingsPage = () => {
@@ -36,7 +28,7 @@ const SettingsPage = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const avatarInputRef = useRef(null);
-  const currentPlatform = detectDownloadPlatform();
+  const currentPlatform = detectedDownloadPlatform;
   const { preferences, hasLoadedPreferences, savePreferences } = useUserPreferences(currentUser?._id);
   const selectedAccent = hasLoadedPreferences ? preferences.accent : (localStorage.getItem('todo-accent') || 'violet');
 
@@ -163,7 +155,7 @@ const SettingsPage = () => {
   return (
     <LayoutShell>
       <div className='space-y-6'>
-        <header className='overflow-hidden rounded-3xl bg-gradient-to-br from-[#101a3a] via-[#172750] to-[#293c7b] p-5 text-white shadow-[0_24px_56px_rgba(15,23,42,0.24)] sm:rounded-3xl sm:p-7'>
+        <header className='profile-theme-gradient overflow-hidden rounded-3xl p-5 text-white shadow-[0_24px_56px_rgba(15,23,42,0.24)] sm:rounded-3xl sm:p-7'>
           <div className='flex items-start gap-3 sm:gap-4'>
             <div className='flex min-w-0 flex-1 items-center gap-3 sm:gap-4'>
               <div className='group relative h-14 w-14 shrink-0 sm:h-16 sm:w-16'>
@@ -181,7 +173,7 @@ const SettingsPage = () => {
                   disabled={isUploadingAvatar}
                   title={language === 'vi' ? 'Thay đổi ảnh đại diện' : 'Change profile picture'}
                   aria-label={language === 'vi' ? 'Thay đổi ảnh đại diện' : 'Change profile picture'}
-                  className='relative h-full w-full cursor-pointer overflow-hidden rounded-3xl bg-gradient-to-br from-sky-300 to-violet-300 text-base font-bold text-[#111b3a] ring-4 ring-white/10 transition disabled:cursor-wait sm:text-lg'
+                  className='relative h-full w-full cursor-pointer overflow-hidden rounded-3xl bg-gradient-to-br from-violet-200 to-violet-500 text-base font-bold text-white ring-4 ring-white/20 transition disabled:cursor-wait sm:text-lg'
                 >
                   {currentUser?.avatarUrl ? (
                     <img src={currentUser.avatarUrl} alt='' className='h-full w-full object-cover' />
@@ -348,7 +340,7 @@ const SettingsPage = () => {
               <Link to='/policies/cookies' className='rounded-2xl border border-slate-200 p-4 text-sm font-semibold text-violet-700 hover:border-violet-300 hover:bg-violet-50 dark:border-slate-700 dark:text-violet-300 dark:hover:bg-violet-500/10'>Cookie & lưu trữ thiết bị</Link>
             </div>
           </section>
-          <DesktopAppDownloads className='lg:col-span-2' recommendedPlatform={currentPlatform} />
+          <DesktopAppDownloads className='lg:col-span-2' selectedPlatform={currentPlatform} recommendedPlatform={currentPlatform} />
         </div>
       </div>
     </LayoutShell>
