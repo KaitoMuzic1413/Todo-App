@@ -125,7 +125,13 @@ const SignInPage = () => {
             </Link>
           </div>
 
-          <p className='text-center text-xs leading-5 text-slate-500 dark:text-slate-400'>Chính sách quyền riêng tư, điều khoản sử dụng và chính sách cookie &amp; lưu trữ</p>
+          <p className='text-center text-xs leading-6 text-slate-500 dark:text-slate-400'>
+            <Link to='/policies/privacy' className='font-medium text-violet-600 underline underline-offset-2 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300'>Chính sách quyền riêng tư</Link>
+            {', '}
+            <Link to='/policies/terms' className='font-medium text-violet-600 underline underline-offset-2 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300'>điều khoản sử dụng</Link>
+            {' và '}
+            <Link to='/policies/cookies' className='font-medium text-violet-600 underline underline-offset-2 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300'>chính sách cookie &amp; lưu trữ</Link>
+          </p>
 
           {error ? <p className='text-sm text-rose-500'>{error}</p> : null}
 
