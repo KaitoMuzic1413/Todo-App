@@ -23,6 +23,7 @@ import AdminNotificationsPage from './pages/AdminNotificationsPage';
 import DueTaskReminderWatcher from './components/DueTaskReminderWatcher';
 import InstallAppNotice from './components/InstallAppNotice';
 import { fetchCurrentUser } from './lib/api';
+import { prefetchDesktopReleases } from './lib/desktopReleases';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -103,6 +104,10 @@ const RootRedirect = () => {
 
 function App() {
   const location = useLocation();
+
+  useEffect(() => {
+    void prefetchDesktopReleases();
+  }, []);
 
   useEffect(() => {
     if (!isTauri()) return undefined;
