@@ -64,7 +64,7 @@ export const updateUserProfile = (name) => api.patch('/users/profile', { name })
 export const updateUserAvatar = (avatarUrl) => api.patch('/users/profile/avatar', { avatarUrl });
 export const fetchCurrentUser = () => api.get('/users/current');
 
-export const fetchNotifications = (filter = 'all') => api.get('/notifications', { params: { filter } });
+export const fetchNotifications = (filter = 'all') => api.get('/notifications', { params: { filter } });\nexport const translateNotificationTexts = (texts, targetLanguage) => api.post('/notifications/translate', { texts, targetLanguage });
 export const fetchUnreadNotificationCount = () => api.get('/notifications/unread-count');
 export const fetchNotification = (notificationId) => api.get(`/notifications/${notificationId}`);
 export const markNotificationRead = (notificationId) => api.patch(`/notifications/${notificationId}/read`);
