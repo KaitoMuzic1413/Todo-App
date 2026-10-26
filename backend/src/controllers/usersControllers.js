@@ -4,6 +4,8 @@ import Task from '../models/Task.js';
 import Attachment from '../models/Attachment.js';
 import CalendarNote from '../models/CalendarNote.js';
 import NotificationRecipient from '../models/NotificationRecipient.js';
+import FocusSession from '../models/FocusSession.js';
+import GamificationEvent from '../models/GamificationEvent.js';
 import { sendEmail } from '../utils/email.js';
 import { validatePreferenceUpdates } from '../utils/userPreferences.js';
 import { deliverNewAccountNotifications } from '../utils/onboardingNotifications.js';
@@ -138,6 +140,8 @@ export const cleanupInactiveUsers = async () => {
       const taskResult = await Task.deleteMany({ userId: user._id });
       deletedTasks += taskResult.deletedCount || 0;
       await CalendarNote.deleteMany({ userId: user._id });
+      await FocusSession.deleteMany({ userId: user._id });
+      await GamificationEvent.deleteMany({ userId: user._id });
       const attachments = await Attachment.find({ ownerId: user._id }).select('fileId');
       if (mongoose.connection.db) {
         const bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, { bucketName: 'attachments' });
