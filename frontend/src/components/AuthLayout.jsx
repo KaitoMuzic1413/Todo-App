@@ -19,6 +19,15 @@ const AuthLayout = ({ children }) => {
     localStorage.setItem('todo-theme', darkMode ? 'dark' : 'light');
   }, [darkMode]);
 
+  useEffect(() => {
+    const previousAccent = document.documentElement.dataset.accent;
+    document.documentElement.dataset.accent = 'violet';
+    return () => {
+      if (previousAccent) document.documentElement.dataset.accent = previousAccent;
+      else delete document.documentElement.dataset.accent;
+    };
+  }, []);
+
   const openContact = () => {
     setIsOpen(false);
     navigate('/about');
