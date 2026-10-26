@@ -17,13 +17,13 @@ const SignInPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [acceptedPolicies, setAcceptedPolicies] = useState(() => localStorage.getItem('todo-legal-accepted-version') === '2026-10-26');
   const [showPolicyModal, setShowPolicyModal] = useState(false);
-  const isFormValid = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email.trim()) && password.length > 0;
+  const isFormValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) && password.length > 0;
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError('');
     const trimmedEmail = email.trim();
-    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(trimmedEmail) || !password) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail) || !password) {
       return;
     }
 
