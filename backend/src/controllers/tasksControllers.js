@@ -363,7 +363,7 @@ export const updateTask = async (req, res) => {
       nextData.completedAt = null;
     }
 
-    const updatedTask = await Task.findByIdAndUpdate(req.params.id, nextData, { returnDocument: 'after' });
+    const updatedTask = await Task.findByIdAndUpdate(req.params.id, nextData, { returnDocument: 'after', runValidators: true });
     if (nextStatus === 'complete' && task.status === 'active' && task.contentType !== 'note' && task.contentType !== 'list') {
       await revokeTaskCompletionXp({ userId, taskId: task._id });
     }
