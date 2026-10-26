@@ -248,7 +248,7 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
         <button
           type='button'
           onClick={() => setIsSidebarOpen(true)}
-          className='flex h-12 w-12 cursor-pointer items-center justify-center rounded-3xl border border-slate-200 bg-white/80 text-slate-700 shadow-md backdrop-blur-md transition hover:bg-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-500/25 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-200 dark:hover:bg-slate-900'
+          className='flex h-12 w-12 cursor-pointer items-center justify-center rounded-3xl border border-violet-300/70 bg-white/85 text-violet-700 shadow-md backdrop-blur-md transition hover:bg-violet-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-500/25 dark:border-violet-500/30 dark:bg-slate-900/85 dark:text-violet-200 dark:hover:bg-violet-500/10'
           aria-label={t.openNavigation || 'Open navigation'}
         >
           <Menu className='h-5 w-5 text-slate-700 dark:text-slate-200' />
@@ -288,8 +288,10 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
               style={{ x: sidebarX, touchAction: 'none' }}
             >
               <div className='flex shrink-0 items-center justify-between border-b border-slate-200/80 bg-white/60 p-4 dark:border-slate-800 dark:bg-slate-950/60'>
-                <div className='flex items-center gap-3 rounded-3xl bg-slate-100/80 px-3 py-3 shadow-sm dark:bg-slate-900'>
-                  <img src='/Logo.jpg' alt='Redhat logo' draggable={false} onDragStart={(event) => event.preventDefault()} className='h-12 w-12 select-none rounded-3xl object-cover shadow-sm [-webkit-touch-callout:none]' />
+                <div className='flex items-center gap-3 rounded-3xl border border-violet-200/80 bg-violet-50/70 px-3 py-3 shadow-sm dark:border-violet-500/20 dark:bg-violet-500/10'>
+                  <span className='rounded-2xl bg-gradient-to-br from-violet-400 via-violet-600 to-violet-800 p-[2px] shadow-md shadow-violet-500/20'>
+                    <img src='/Logo.jpg' alt='Redhat logo' draggable={false} onDragStart={(event) => event.preventDefault()} className='h-12 w-12 select-none rounded-[14px] border border-white/70 object-cover dark:border-slate-900 [-webkit-touch-callout:none]' />
+                  </span>
                   <div className='min-w-0'>
                     <p className='truncate text-xl font-bold tracking-tight text-slate-900 dark:text-white'>Redhat</p>
                     <p className='text-xs text-slate-500 dark:text-slate-400'>{t.productivityHub}</p>
@@ -299,7 +301,7 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
                 <button
                   type='button'
                   onClick={() => setIsSidebarOpen(false)}
-                  className='flex h-9 w-9 cursor-pointer items-center justify-center rounded-3xl border border-slate-200 bg-white text-slate-600 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 lg:hidden'
+                  className='flex h-9 w-9 cursor-pointer items-center justify-center rounded-3xl border border-violet-300/70 bg-white text-violet-700 shadow-sm transition hover:bg-violet-50 dark:border-violet-500/30 dark:bg-slate-900 dark:text-violet-200 dark:hover:bg-violet-500/10 lg:hidden'
                   aria-label='Close sidebar'
                 >
                   <X className='h-4 w-4' />
@@ -308,7 +310,7 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
                 <button
                   type='button'
                   onClick={() => setIsSidebarOpen(false)}
-                  className='hidden h-9 w-9 cursor-pointer items-center justify-center rounded-3xl border border-slate-200 bg-white text-slate-600 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 lg:flex'
+                  className='hidden h-9 w-9 cursor-pointer items-center justify-center rounded-3xl border border-violet-300/70 bg-white text-violet-700 shadow-sm transition hover:bg-violet-50 dark:border-violet-500/30 dark:bg-slate-900 dark:text-violet-200 dark:hover:bg-violet-500/10 lg:flex'
                   aria-label='Collapse sidebar'
                 >
                   <ChevronLeft className='h-4 w-4' />
