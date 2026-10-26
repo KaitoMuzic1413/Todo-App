@@ -108,7 +108,7 @@ export const login = async (req, res) => {
     await user.save();
 
     const token = jwt.sign(
-      { userId: user._id, sessionVersion: user.sessionVersion },
+      { userId: user._id, sessionVersion: user.sessionVersion ?? 0 },
       JWT_SECRET,
       { expiresIn: JWT_EXPIRES_IN }
     );
