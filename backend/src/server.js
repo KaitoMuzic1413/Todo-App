@@ -17,6 +17,11 @@ import notificationsRoute from './routes/notificationsRoutes.js';
 import { runDueTaskEmailReminders } from './utils/dueTaskReminders.js';
 import { runDueTaskNotifications } from './utils/dueTaskNotifications.js';
 
+if (process.env.NODE_ENV === 'production' &&
+    (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32)) {
+  throw new Error('JWT_SECRET must be configured with at least 32 characters in production.');
+}
+
 const PORT = process.env.PORT || 5001;
 const INACTIVE_ACCOUNT_CHECK_INTERVAL = 60 * 60 * 1000;
 
