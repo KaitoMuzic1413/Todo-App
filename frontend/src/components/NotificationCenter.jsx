@@ -158,7 +158,7 @@ const NotificationCenter = ({ userId }) => {
         type='button'
         onClick={openDrawer}
         aria-label={`${t.notifications}${unreadCount > 0 ? `, ${unreadCount} ${t.unreadNotifications.toLowerCase()}` : ''}`}
-        className='relative flex h-12 w-12 shrink-0 items-center justify-center rounded-3xl border border-slate-200 bg-white/80 text-slate-700 shadow-md backdrop-blur-md transition hover:bg-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-500/25 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-200 dark:hover:bg-slate-900'
+        className='relative flex h-12 w-12 shrink-0 items-center justify-center rounded-3xl border border-violet-300/70 bg-white/85 text-violet-700 shadow-md backdrop-blur-md transition hover:bg-violet-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-500/25 dark:border-violet-500/30 dark:bg-slate-900/85 dark:text-violet-200 dark:hover:bg-violet-500/10'
       >
         <Bell className='h-5 w-5' />
         {unreadCount > 0 ? (
@@ -193,18 +193,19 @@ const NotificationCenter = ({ userId }) => {
                   <h2 id='notification-drawer-title' className='text-lg font-bold text-slate-900 dark:text-white'>{t.notifications}</h2>
                   {unreadCount > 0 ? <p className='mt-0.5 text-xs text-slate-500 dark:text-slate-400'>{unreadCount} {t.unreadNotifications.toLowerCase()}</p> : null}
                 </div>
-                <button type='button' autoFocus onClick={() => { setDrawerOpen(false); focusNotificationButton(); }} aria-label={t.close} className='flex h-10 w-10 items-center justify-center rounded-3xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white'>
+                <button type='button' autoFocus onClick={() => { setDrawerOpen(false); focusNotificationButton(); }} aria-label={t.close} className='flex h-10 w-10 items-center justify-center rounded-3xl border border-violet-200/70 text-violet-700 transition hover:bg-violet-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:border-violet-500/20 dark:text-violet-200 dark:hover:bg-violet-500/10'>
                   <X className='h-5 w-5' />
                 </button>
               </header>
               <div className='shrink-0 border-b border-slate-100 px-5 py-3 dark:border-slate-800 sm:px-6'>
-                <div className='grid grid-cols-3 gap-1 rounded-3xl bg-slate-100 p-1 dark:bg-slate-900' role='tablist' aria-label={t.notifications}>
+                <div className='relative grid grid-cols-3 gap-1 rounded-3xl bg-slate-100 p-1 dark:bg-slate-900' role='tablist' aria-label={t.notifications}>
+                  <motion.span aria-hidden='true' layoutId='notification-filter-indicator' className='absolute bottom-1 top-1 rounded-3xl bg-white shadow-sm dark:bg-slate-800' initial={false} animate={{ left: filter === 'all' ? '4px' : filter === 'unread' ? 'calc(33.333% + 1px)' : 'calc(66.666% - 2px)', width: 'calc(33.333% - 2px)' }} transition={{ type: 'spring', stiffness: 420, damping: 34 }} />
                   {[
                     { key: 'all', label: t.allNotifications },
                     { key: 'unread', label: t.unreadNotifications },
                     { key: 'task', label: t.taskNotifications },
                   ].map(({ key, label }) => (
-                    <button key={key} type='button' role='tab' aria-selected={filter === key} onClick={() => setFilter(key)} className={`min-h-10 rounded-3xl px-1 text-xs font-semibold transition sm:px-2 sm:text-sm ${filter === key ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100'}`}>
+                    <button key={key} type='button' role='tab' aria-selected={filter === key} onClick={() => setFilter(key)} className={`relative z-10 min-h-10 rounded-3xl px-1 text-xs font-semibold transition-colors sm:px-2 sm:text-sm ${filter === key ? 'text-violet-700 dark:text-violet-100' : 'text-slate-500 hover:text-violet-700 dark:text-slate-400 dark:hover:text-violet-200'}`}>
                       {label}
                     </button>
                   ))}
