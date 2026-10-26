@@ -5,14 +5,14 @@ import { dateKey, getCalendarDays, getCalendarRange, getDayWarnings, groupTasksB
 test('week calendar starts on Monday and spans seven local dates', () => {
   const days = getCalendarDays('week', new Date(2026, 9, 10, 15));
   assert.equal(days.length, 7);
-  assert.equal(dateKey(days[0]), '2026-10-5');
+  assert.equal(dateKey(days[0]), '2026-10-05');
   assert.equal(dateKey(days[6]), '2026-10-11');
 });
 
 test('month calendar returns a six-week grid containing every date in the month', () => {
   const days = getCalendarDays('month', new Date(2026, 9, 10));
   assert.equal(days.length, 42);
-  assert.ok(days.some((date) => dateKey(date) === '2026-10-1'));
+  assert.ok(days.some((date) => dateKey(date) === '2026-10-01'));
   assert.equal(days[0].getDay(), 1);
 });
 
