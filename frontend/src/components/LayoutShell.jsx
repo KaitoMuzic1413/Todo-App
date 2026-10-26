@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, animate, motion, useMotionValue } from 'framer-motion';
-import { ChevronLeft, Archive, BarChart3, CalendarDays, ClipboardList, FileText, LogOut, Mail, Timer, X, Home, Trash2, Settings2, Menu } from 'lucide-react';
+import { ChevronLeft, Archive, BarChart3, CalendarDays, ClipboardList, FileText, LogOut, Mail, Timer, X, Home, Trash2, Menu } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
 import NotificationCenter from '@/components/NotificationCenter';
@@ -364,71 +364,29 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
                     );
                   })}
 
-                  {currentUser ? (
-                    <button
-                      type='button'
-                      onClick={() => handleNavClick('/settings')}
-                      className={`flex w-full cursor-pointer items-center justify-between rounded-3xl px-3 py-2.5 text-sm font-medium transition-colors ${location.pathname === '/settings' ? 'bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-200' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-900'}`}
-                    >
-                      <span className='flex items-center gap-2'><Settings2 className='h-4 w-4' />{t.settings}</span>
-                      <span className='text-xs text-slate-400'>→</span>
-                    </button>
-                  ) : null}
                 </nav>
               </div>
 
-              {!hideAccountPanel ? <div className='shrink-0 overflow-hidden border-t border-slate-200/80 bg-white/80 p-4 backdrop-blur-md dark:border-slate-800 dark:bg-slate-950/80' style={{ paddingBottom: 'max(2.5rem, calc(1rem + env(safe-area-inset-bottom)))' }}>
-                <AnimatePresence mode='wait'>
-                  {currentUser ? (
-                    <motion.div
-                      key='user-profile'
-                      initial={{ opacity: 0, y: 12, filter: 'blur(4px)' }}
-                      animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-                      exit={{ opacity: 0, y: -12, filter: 'blur(4px)' }}
-                      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                      className='rounded-3xl border border-emerald-200 bg-emerald-50/80 p-3 dark:border-emerald-900/70 dark:bg-emerald-500/10'
-                    >
-                      <div className='flex items-center justify-between gap-3'>
-                        <div className='flex min-w-0 items-center gap-3'>
-                          <div className='flex h-9 w-9 items-center justify-center rounded-3xl bg-emerald-500 text-sm font-semibold text-white'>
-                            {userInitial}
-                          </div>
-                          <div className='min-w-0 flex-1'>
-                            <p className='truncate text-sm font-medium text-slate-700 dark:text-slate-100'>{displayName}</p>
-                            <p className='text-xs text-emerald-700 dark:text-emerald-300'>{t.signedIn}</p>
-                          </div>
-                        </div>
+              {!hideAccountPanel && currentUser ? (
+                <div className='mt-auto flex shrink-0 justify-center px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3'>
+                  <button
+                    type='button'
+                    onClick={() => handleNavClick('/settings')}
+                    title={t.settings}
+                    aria-label={t.settings}
+                    className={`group flex h-12 w-12 cursor-pointer items-center justify-center overflow-hidden rounded-2xl transition hover:opacity-75 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-500/30 ${location.pathname === '/settings' ? 'ring-2 ring-violet-500/70' : ''}`}
+                  >
+                    {currentUser.avatarUrl ? (
+                      <img src={currentUser.avatarUrl} alt='' className='h-full w-full object-cover transition-opacity group-hover:opacity-60' />
+                    ) : (
+                      <span className='flex h-full w-full items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-500 text-sm font-bold text-white transition-opacity group-hover:opacity-60'>
+                        {userInitial}
+                      </span>
+                    )}
+                  </button>
+                </div>
+              ) : null}
 
-                        <button
-                          type='button'
-                          onClick={handleLogout}
-                          className='inline-flex cursor-pointer items-center gap-1 rounded-3xl border border-slate-200 bg-white px-2 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800'
-                        >
-                          <LogOut className='h-3.5 w-3.5' />
-                          {t.signOut}
-                        </button>
-                      </div>
-                    </motion.div>
-                  ) : (
-                    <motion.div
-                      key='login-form'
-                      initial={{ opacity: 0, y: 12, filter: 'blur(4px)' }}
-                      animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-                      exit={{ opacity: 0, y: -12, filter: 'blur(4px)' }}
-                      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                      className='space-y-3'
-                    >
-                      <button
-                        type='button'
-                        onClick={() => handleNavClick('/signin')}
-                        className='inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-3xl bg-gradient-to-r from-violet-500 to-indigo-500 px-3 py-2.5 text-sm font-semibold text-white shadow-md shadow-accent transition-transform disabled:opacity-60 '
-                      >
-                        {t.signIn}
-                      </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div> : null}
             </motion.aside>
           </>
         )}
