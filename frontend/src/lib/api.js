@@ -62,7 +62,6 @@ export const fetchUserPreferences = () => api.get('/users/preferences');
 export const saveUserPreferences = (preferences) => api.patch('/users/preferences', preferences);
 export const updateUserProfile = (name) => api.patch('/users/profile', { name });
 export const fetchCurrentUser = () => api.get('/users/current');
-export const exportCurrentUserData = () => api.get('/users/export', { responseType: 'blob' });
 
 export const fetchNotifications = (filter = 'all') => api.get('/notifications', { params: { filter } });
 export const fetchUnreadNotificationCount = () => api.get('/notifications/unread-count');
