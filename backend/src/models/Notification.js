@@ -15,9 +15,15 @@ const notificationSchema = new mongoose.Schema({
   requestId: { type: String, maxlength: 128 },
   requestFingerprint: { type: String, maxlength: 64 },
   seedKey: { type: String, maxlength: 100 },
+  status: { type: String, enum: ['draft', 'scheduled', 'processing', 'sent', 'archived'], default: 'sent', index: true },
+  scheduledAt: { type: Date, default: null },
+  archivedAt: { type: Date, default: null },
+  campaignKey: { type: String, maxlength: 100, default: null },
+  sourceNotificationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Notification', default: null },
 }, { timestamps: true });
 
 notificationSchema.index({ createdAt: -1 });
+notificationSchema.index({ status: 1, scheduledAt: 1 });
 notificationSchema.index({ requestId: 1 }, { unique: true, sparse: true });
 notificationSchema.index({ seedKey: 1 }, { unique: true, sparse: true });
 
