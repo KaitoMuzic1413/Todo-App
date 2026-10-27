@@ -161,12 +161,14 @@ const NotificationCenter = ({ userId, navigationOpen = false, onDrawerOpenChange
 
       const width = drawerWidth();
       const position = cancelled ? (start.wasOpen ? 0 : width) : drawerX.get();
-      const movedDistance = start.wasOpen ? position : width - position;
-      const shouldBeOpen = movedDistance >= width * 0.35;
+      const shouldBeOpen = cancelled
+        ? start.wasOpen
+        : start.wasOpen
+          ? position < width * 0.35
+          : width - position >= width * 0.35;
       setIsDraggingDrawer(false);
       setDrawerOpen(shouldBeOpen);
-      if (!shouldBeOpen) drawerX.set(width);
-      else drawerX.set(0);
+      drawerX.set(shouldBeOpen ? 0 : width);
     };
 
     const onTouchEnd = (event) => finishSwipe(event, false);
