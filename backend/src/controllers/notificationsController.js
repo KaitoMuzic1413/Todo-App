@@ -364,6 +364,7 @@ export const resendAdminNotification = async (req, res) => {
 };
 
 export const processScheduledNotifications = async () => {
+  await Notification.updateMany({ status: 'processing', updatedAt: { $lte: new Date(Date.now() - 5 * 60 * 1000) } }, { $set: { status: 'scheduled' } });
   const due = await Notification.find({ status: 'scheduled', scheduledAt: { $lte: new Date() } }).select('_id').limit(20).lean();
   for (const item of due) {
     const claimed = await Notification.findOneAndUpdate(
@@ -380,8 +381,13 @@ export const processScheduledNotifications = async () => {
         if (user) users = [user];
       }
       if (claimed.targetType !== 'new-users' && users.length) {
-        await NotificationRecipient.insertMany(users.map(({ _id: userId }) => ({
-          notificationId: claimed._id, userId, deliveredAt: new Date(),
+        const deliveredAt = new Date();
+        await NotificationRecipient.bulkWrite(users.map(({ _id: userId }) => ({
+          updateOne: {
+            filter: { notificationId: claimed._id, userId },
+            update: { $setOnInsert: { notificationId: claimed._id, userId, deliveredAt } },
+            upsert: true,
+          },
         })), { ordered: false });
       }
       await Notification.updateOne({ _id: claimed._id, status: 'processing' }, { $set: { status: 'sent' } });
