@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { Link, useParams } from 'react-router-dom';
+import { useLanguage } from '@/lib/i18n';
 import { ArrowLeft, ShieldCheck, FileText, Cookie } from 'lucide-react';
 
 export const policies = {
@@ -99,15 +100,16 @@ export const getLocalizedPolicies = (language) => language === 'en' ? englishPol
 
 const LegalPoliciesPage = () => {
   const { policySlug } = useParams();
-  const policy = policies[policySlug];
+  const { language, setLanguage, t } = useLanguage();
+  const policy = getLocalizedPolicies(language)[policySlug];
   const Icon = policy?.icon || FileText;
 
   if (!policy) {
     return (
       <main className='min-h-screen bg-slate-50 px-4 py-12 text-slate-900 dark:bg-slate-950 dark:text-white'>
         <div className='mx-auto max-w-3xl rounded-3xl border border-slate-200 bg-white p-8 dark:border-slate-800 dark:bg-slate-900'>
-          <h1 className='text-2xl font-bold'>Không tìm thấy chính sách</h1>
-          <Link to='/signin' className='mt-4 inline-flex text-violet-600 underline dark:text-violet-400'>Quay lại đăng nhập</Link>
+          <h1 className='text-2xl font-bold'>{language === 'vi' ? 'Không tìm thấy chính sách' : 'Policy not found'}</h1>
+          <Link to='/signin' className='mt-4 inline-flex text-violet-600 underline dark:text-violet-400'>{t.backToSignIn}</Link>
         </div>
       </main>
     );
@@ -116,13 +118,19 @@ const LegalPoliciesPage = () => {
   return (
     <main className='min-h-screen bg-[radial-gradient(circle_at_top,_rgba(139,92,246,0.12),transparent_36%),linear-gradient(135deg,#f8fafc,#eef2ff)] px-4 py-8 text-slate-900 dark:bg-[radial-gradient(circle_at_top,_rgba(139,92,246,0.12),transparent_36%),linear-gradient(135deg,#0f172a,#111827)] dark:text-slate-100 sm:px-6 sm:py-12'>
       <article className='mx-auto max-w-4xl rounded-3xl border border-slate-200/80 bg-white/95 p-6 shadow-xl shadow-slate-900/5 dark:border-slate-800 dark:bg-slate-900/95 sm:p-10'>
-        <Link to='/signin' className='inline-flex items-center gap-2 text-sm font-semibold text-violet-600 hover:underline dark:text-violet-400'><ArrowLeft className='h-4 w-4' /> Quay lại đăng nhập</Link>
+        <div className='flex flex-wrap items-center justify-between gap-3'>
+          <Link to='/signin' className='inline-flex items-center gap-2 text-sm font-semibold text-violet-600 hover:underline dark:text-violet-400'><ArrowLeft className='h-4 w-4' /> {t.backToSignIn}</Link>
+          <div className='relative grid grid-cols-2 rounded-3xl border border-slate-200 bg-slate-100 p-0.5 dark:border-slate-700 dark:bg-slate-950' role='group' aria-label={t.language}>
+            <span aria-hidden='true' className='absolute bottom-0.5 top-0.5 w-[calc(50%-2px)] rounded-3xl bg-violet-100 shadow-sm transition-transform duration-300 ease-out dark:bg-violet-500/20' style={{ transform: language === 'en' ? 'translateX(100%)' : 'translateX(0)' }} />
+            {['vi', 'en'].map((code) => <button key={code} type='button' onClick={() => setLanguage(code)} aria-pressed={language === code} className='relative z-10 rounded-3xl px-3 py-1.5 text-xs font-bold uppercase text-violet-700 dark:text-violet-100'>{code}</button>)}
+          </div>
+        </div>
         <div className='mt-7 flex items-start gap-4'>
           <span className='flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300'><Icon className='h-6 w-6' /></span>
           <div>
-            <p className='text-xs font-bold uppercase tracking-[0.16em] text-violet-600 dark:text-violet-300'>Kaito Todo · Chính sách công khai</p>
+            <p className='text-xs font-bold uppercase tracking-[0.16em] text-violet-600 dark:text-violet-300'>Kaito Todo · {t.publicPolicies}</p>
             <h1 className='mt-2 text-2xl font-bold tracking-tight sm:text-3xl'>{policy.title}</h1>
-            <p className='mt-2 text-xs text-slate-500 dark:text-slate-400'>Cập nhật lần cuối: {policy.updated}</p>
+            <p className='mt-2 text-xs text-slate-500 dark:text-slate-400'>{t.lastUpdated}: {policy.updated}</p>
           </div>
         </div>
         <p className='mt-7 rounded-2xl bg-slate-50 p-4 text-sm leading-7 text-slate-700 dark:bg-slate-800/70 dark:text-slate-200'>{policy.intro}</p>
@@ -135,13 +143,13 @@ const LegalPoliciesPage = () => {
           ))}
         </div>
         <div className='mt-10 border-t border-slate-200 pt-6 dark:border-slate-800'>
-          <h2 className='text-sm font-semibold'>Các chính sách khác</h2>
+          <h2 className='text-sm font-semibold'>{t.otherPolicies}</h2>
           <div className='mt-3 flex flex-wrap gap-3 text-sm'>
-            <Link to='/policies/privacy' className='text-violet-600 underline dark:text-violet-400'>Quyền riêng tư</Link>
-            <Link to='/policies/terms' className='text-violet-600 underline dark:text-violet-400'>Điều khoản sử dụng</Link>
-            <Link to='/policies/cookies' className='text-violet-600 underline dark:text-violet-400'>Cookie & lưu trữ</Link>
+            <Link to='/policies/privacy' className='text-violet-600 underline dark:text-violet-400'>{t.privacyPolicy}</Link>
+            <Link to='/policies/terms' className='text-violet-600 underline dark:text-violet-400'>{t.termsOfUse}</Link>
+            <Link to='/policies/cookies' className='text-violet-600 underline dark:text-violet-400'>{t.cookiePolicy}</Link>
           </div>
-          <p className='mt-6 text-xs leading-6 text-slate-500 dark:text-slate-400'>Đây là nội dung chính sách sản phẩm, không thay thế việc rà soát pháp lý theo cấu hình triển khai và quy định hiện hành.</p>
+          <p className='mt-6 text-xs leading-6 text-slate-500 dark:text-slate-400'>{t.policyDisclaimer}</p>
         </div>
       </article>
     </main>
