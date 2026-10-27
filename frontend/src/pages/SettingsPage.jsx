@@ -3,12 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { Settings2, Palette, Check, Globe, Moon, Sun, ShieldCheck, Pencil, X, Camera, LogOut } from 'lucide-react';
 import { toast } from 'sonner';
 import { LayoutShell } from '@/components/LayoutShell';
-import DesktopAppDownloads from '@/components/DesktopAppDownloads';
 import { Link } from 'react-router-dom';
 import { fetchCurrentUser, updateUserAvatar, updateUserProfile } from '@/lib/api';
 import { useLanguage } from '@/lib/i18n';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
-import { detectedDownloadPlatform } from '@/lib/devicePlatform';
 
 const getStoredUser = () => {
   try {
@@ -28,7 +26,6 @@ const SettingsPage = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const avatarInputRef = useRef(null);
-  const currentPlatform = detectedDownloadPlatform;
   const { preferences, hasLoadedPreferences, savePreferences } = useUserPreferences(currentUser?._id);
   const selectedAccent = hasLoadedPreferences ? preferences.accent : (localStorage.getItem('todo-accent') || 'violet');
 
@@ -340,7 +337,6 @@ const SettingsPage = () => {
               <Link to='/policies/cookies' className='rounded-2xl border border-slate-200 p-4 text-sm font-semibold text-violet-700 hover:border-violet-300 hover:bg-violet-50 dark:border-slate-700 dark:text-violet-300 dark:hover:bg-violet-500/10'>Cookie & lưu trữ thiết bị</Link>
             </div>
           </section>
-          <DesktopAppDownloads className='lg:col-span-2' selectedPlatform={currentPlatform} recommendedPlatform={currentPlatform} />
         </div>
       </div>
     </LayoutShell>
