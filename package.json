@@ -2,13 +2,15 @@
   "name": "todo-app",
   "version": "1.0.0",
   "main": "index.js",
+  "type": "module",
   "allowScripts": {
     "@parcel/watcher": true,
     "esbuild": true
   },
   "scripts": {
     "build": "npm --prefix backend ci && npm --prefix frontend ci && npm --prefix frontend run build",
-    "start": "npm run start --prefix backend"
+    "start": "npm run start --prefix backend",
+    "deploy:cloudflare": "npm run build && npx wrangler deploy"
   },
   "engines": {
     "node": ">=24.0.0 <25"

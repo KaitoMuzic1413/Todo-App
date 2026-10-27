@@ -12,10 +12,10 @@ const PolicyConsentModal = ({ open, onAccept, onDecline }) => {
 
   useEffect(() => {
     if (!open) return;
-    setReachedEnd(false);
     document.body.style.overflow = 'hidden';
 
     const frame = window.requestAnimationFrame(() => {
+      setReachedEnd(false);
       const element = contentRef.current;
       if (element && element.scrollHeight <= element.clientHeight + 8) {
         setReachedEnd(true);

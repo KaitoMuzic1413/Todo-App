@@ -1,9 +1,7 @@
 const DEFAULT_PRODUCTION_API = 'https://todo-app-1112.onrender.com/api';
-const configuredApiUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL;
-const defaultApiUrl = import.meta.env.MODE === 'development'
-  ? 'http://localhost:5001/api'
-  : DEFAULT_PRODUCTION_API;
-const candidateApiUrl = configuredApiUrl || defaultApiUrl;
+const SAME_ORIGIN_API = '/api';
+
+const configuredApiUrl = (import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || '').trim();
 
 const isLoopbackApi = (value) => {
   try {
@@ -14,8 +12,40 @@ const isLoopbackApi = (value) => {
   }
 };
 
-export const API_BASE_URL = import.meta.env.MODE !== 'development' && isLoopbackApi(candidateApiUrl)
-  ? DEFAULT_PRODUCTION_API
-  : candidateApiUrl;
+const isCloudflareHost = () => {
+  if (typeof window === 'undefined') return false;
+  const hostname = window.location.hostname.toLowerCase();
+  return hostname.endsWith('.workers.dev') || hostname.endsWith('.pages.dev');
+};
+
+const isNativeRuntime = () => {
+  if (typeof window === 'undefined') return false;
+  return Boolean(window.__TAURI_INTERNALS__)
+    || Boolean(window.Capacitor)
+    || window.location.protocol === 'tauri:'
+    || window.location.protocol === 'capacitor:';
+};
+
+const resolveApiBaseUrl = () => {
+  // An explicitly configured path (for example "/api") is always respected.
+  if (configuredApiUrl.startsWith('/')) return configuredApiUrl;
+
+  if (import.meta.env.MODE === 'development') {
+    return configuredApiUrl && !isLoopbackApi(configuredApiUrl)
+      ? configuredApiUrl
+      : 'http://localhost:5001/api';
+  }
+
+  // On Cloudflare Workers, the Worker proxies /api to the API server. Requests
+  // stay same-origin, so the browser never performs a cross-origin XHR.
+  if (isCloudflareHost()) return SAME_ORIGIN_API;
+
+  if (configuredApiUrl && !isLoopbackApi(configuredApiUrl)) return configuredApiUrl;
+  if (isNativeRuntime()) return DEFAULT_PRODUCTION_API;
+
+  return DEFAULT_PRODUCTION_API;
+};
+
+export const API_BASE_URL = resolveApiBaseUrl();
 
 export const API_ORIGIN = new URL(API_BASE_URL, window.location.origin).origin;

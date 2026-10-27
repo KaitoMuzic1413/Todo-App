@@ -17,7 +17,7 @@ import { Check, FileArchive, FileText, Image, Video, AudioLines, RotateCcw, Tras
 import TaskListPagination from '@/components/TaskListPagination';
 import DateTimeFilter from '@/components/DateTimeFilter';
 import { getCreatedAtRange, isDateInRange } from '@/lib/dateFilters';
-import { getAttachmentType, groupAttachmentsByType } from '@/lib/attachmentTypes';
+import { groupAttachmentsByType } from '@/lib/attachmentTypes';
 
 const PAGE_SIZE = 5;
 const typeLabel = (type, t) => ({ image: t.fileTypeImages, video: t.fileTypeVideos, audio: t.fileTypeAudio, document: t.fileTypeDocuments, other: t.fileTypeOther })[type];

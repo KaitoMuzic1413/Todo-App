@@ -70,8 +70,12 @@ export function useSwiftSidebar(initialOpen = false) {
 
   useEffect(() => {
     if (!isDragging) {
-      setSidebarOffset(isOpen ? 0 : -SIDEBAR_WIDTH);
+      const frame = window.requestAnimationFrame(() => {
+        setSidebarOffset(isOpen ? 0 : -SIDEBAR_WIDTH);
+      });
+      return () => window.cancelAnimationFrame(frame);
     }
+    return undefined;
   }, [isOpen, isDragging]);
 
   const backdropOpacity = Math.max(0, (SIDEBAR_WIDTH + sidebarOffset) / SIDEBAR_WIDTH);

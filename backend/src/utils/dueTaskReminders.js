@@ -49,7 +49,7 @@ export const runDueTaskEmailReminders = async (now = new Date()) => {
       const language = task.userId.preferences?.language === 'vi' ? 'vi' : 'en';
       const title = escapeHtml(task.title);
       const dueDate = escapeHtml(formatDueDate(task.dueAt, task.timeZone, language));
-      const frontendUrl = process.env.FRONTEND_URL || 'https://todo-app-kaito20.vercel.app';
+      const frontendUrl = process.env.FRONTEND_URL || 'https://todo-app.kaitomuzicvn.workers.dev';
       const subject = language === 'vi' ? `Nhắc hạn công việc: ${task.title}` : `Task due within 24 hours: ${task.title}`;
       const html = language === 'vi'
         ? `<div style="font-family:Arial,sans-serif;line-height:1.6;color:#1e293b"><h2>Công việc sắp đến hạn</h2><p><strong>${title}</strong></p><p>Hạn hoàn thành: ${dueDate}</p><p>Công việc sẽ đến hạn trong vòng 24 giờ tới.</p><p><a href="${frontendUrl}/calendar">Mở lịch</a></p></div>`

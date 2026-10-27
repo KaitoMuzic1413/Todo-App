@@ -193,7 +193,7 @@ const FocusPage = () => {
         completionCheckId.current = null;
       }
     });
-  }, [activeSession?._id, activeSession?.status, activeQuery.dataUpdatedAt, remainingSeconds, refreshActiveSession]);
+  }, [activeSession, activeQuery.dataUpdatedAt, remainingSeconds, refreshActiveSession]);
 
   useEffect(() => {
     if (!activeSession) return;
@@ -204,7 +204,7 @@ const FocusPage = () => {
 
     const key = `${activeSession._id}:${activeSession.endsAt}`;
     if (scheduledAlarmKey.current !== key) scheduleAlarm(activeSession);
-  }, [activeSession?._id, activeSession?.status, activeSession?.endsAt, activeSession?.mode, scheduleAlarm, cancelAlarm]);
+  }, [activeSession, scheduleAlarm, cancelAlarm]);
 
   useEffect(() => {
     const completedSession = activeQuery.data?.completedSession;

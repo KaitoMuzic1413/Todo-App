@@ -22,4 +22,4 @@ services:
       - key: SENDGRID_API_KEY
         sync: false
       - key: FRONTEND_URL
-        value: https://todo-app-kaito20.vercel.app
+        value: https://todo-app.kaitomuzicvn.workers.dev

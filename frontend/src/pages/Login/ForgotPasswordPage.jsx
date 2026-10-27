@@ -203,7 +203,7 @@ const ForgotPasswordPage = () => {
 
           {codeSent && !codeVerified ? (
             <div>
-              <button type='button' disabled={loading || resendSeconds > 0 || Date.now() < resendAvailableAt} onClick={handleResendCode} className='text-sm font-medium text-violet-600 hover:underline disabled:opacity-50 dark:text-violet-400'>
+              <button type='button' disabled={loading || resendSeconds > 0} onClick={handleResendCode} className='text-sm font-medium text-violet-600 hover:underline disabled:opacity-50 dark:text-violet-400'>
                 Resend verification code
               </button>
               {resendSeconds > 0 ? <p className='mt-1 text-xs text-slate-500 dark:text-slate-400'>{t.resendCodeIn.replace('{seconds}', String(resendSeconds))}</p> : null}

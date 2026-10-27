@@ -9,6 +9,19 @@ React/Vite stays the shared client. All clients call the existing Express API; t
 3. The manifest and service worker are in `public/`. The worker caches the app shell and same-origin Vite assets only. It never caches API requests or user data. Offline use displays a notice; sign-in and server-backed data changes still require a connection.
 4. Install is offered only when the browser emits its install prompt. On iOS, use the browser's Share → Add to Home Screen menu. In the installed PWA, Settings shows that the app is installed; when a new service worker is ready it shows **Update app**. To publish a PWA update, increase `frontend/package.json`'s `version` (or set a distinct `VITE_APP_VERSION`) and deploy the new build. The browser cannot reliably tell a normal tab that a separate PWA is installed, so installed status is shown when Settings is opened inside the installed app.
 
+## Cloudflare Workers
+
+The repository root includes `wrangler.jsonc` and `worker/index.js`. The Worker serves `frontend/dist` and proxies every `/api/*` request to the API server configured in `wrangler.jsonc` (`vars.API_ORIGIN`). Because the browser calls the Worker's own origin, no cross-origin XHR or CORS preflight is involved.
+
+```sh
+npm run build
+npx wrangler deploy
+```
+
+Use `npm run deploy:cloudflare` to run both steps. If the API moves, update `vars.API_ORIGIN` in `wrangler.jsonc` and redeploy. For a custom domain that is not `*.workers.dev`, build with `VITE_API_BASE_URL=/api` so the client also uses the Worker proxy. The Android and desktop builds keep using the absolute production API URL.
+
+The backend also accepts `*.workers.dev` browsers directly, plus any origin listed in `CORS_ORIGINS`; set `CORS_ORIGINS=*` on the API host if another static host must call it directly.
+
 ## Android
 
 Use Node 24, Android Studio 2025.2.1 or newer, and Android SDK 36. Capacitor 8 targets API 36, the current Play submission requirement for new apps and app updates. Before building, set `VITE_API_BASE_URL` to the HTTPS production API. Never point a phone build at `localhost` and never add secrets to Vite variables.
@@ -69,7 +82,7 @@ GitHub Actions builds both operating systems, fails if an expected installer or 
 
 - `VITE_API_BASE_URL` is public client configuration, not a secret. MongoDB credentials and JWT signing secrets belong only in backend environment configuration.
 - Existing sign-in stores its bearer token in WebView `localStorage`; Android backup is disabled. If the threat model requires OS-backed encrypted token storage, that requires an explicit native secure-storage migration across the app's existing storage use.
-- The backend currently reflects arbitrary CORS origins with credentials disabled and has a development fallback when `JWT_SECRET` is unset. Restrict production origins and set a strong `JWT_SECRET` in the backend deployment before release. These existing backend behaviors are not changed by the client packaging work.
+- The backend uses an origin allowlist (`FRONTEND_URL` plus optional `CORS_ORIGINS`), automatically accepts `*.workers.dev` and `*.pages.dev`, and runs with credentials disabled. Set `CORS_ORIGINS=*` only when any origin must call the API directly. Set a strong `JWT_SECRET` in the backend deployment before release.
 - PWA installability requires a production HTTPS deployment. A development server does not test service worker installation.
 
 ## Phát hành cho người dùng tải desktop

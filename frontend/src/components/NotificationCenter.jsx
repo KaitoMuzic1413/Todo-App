@@ -84,8 +84,13 @@ const NotificationCenter = ({ userId }) => {
   useEffect(() => {
     let active = true;
     if (language !== 'vi' || notifications.length === 0) {
-      setTranslatedNotifications({});
-      return () => { active = false; };
+      const resetTimer = window.setTimeout(() => {
+        if (active) setTranslatedNotifications({});
+      }, 0);
+      return () => {
+        active = false;
+        window.clearTimeout(resetTimer);
+      };
     }
     const texts = notifications.flatMap((item) => [item.title || '', item.content || '']);
     void translateTextsInBatches(texts, language).then((translations) => {
@@ -107,8 +112,13 @@ const NotificationCenter = ({ userId }) => {
   useEffect(() => {
     let active = true;
     if (language !== 'vi' || !detail) {
-      setTranslatedDetail(null);
-      return () => { active = false; };
+      const resetTimer = window.setTimeout(() => {
+        if (active) setTranslatedDetail(null);
+      }, 0);
+      return () => {
+        active = false;
+        window.clearTimeout(resetTimer);
+      };
     }
     void translateNotificationTexts([detail.title || '', detail.content || ''], language)
       .then(({ data }) => {

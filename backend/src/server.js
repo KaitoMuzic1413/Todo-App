@@ -32,14 +32,36 @@ const configuredOrigins = [
   ...(process.env.CORS_ORIGINS || '').split(','),
   'http://localhost:5173',
   'http://127.0.0.1:5173',
-].map((origin) => origin.trim()).filter(Boolean);
-const allowedOrigins = new Set(configuredOrigins);
+].map((origin) => origin.trim().replace(/\/+$/, '')).filter(Boolean);
+const allowAnyOrigin = configuredOrigins.includes('*') || process.env.CORS_ALLOW_ALL === 'true';
+const allowedOrigins = new Set(configuredOrigins.filter((origin) => origin !== '*'));
+
+const originMatchesPattern = (origin, pattern) => {
+  if (!pattern.includes('*')) return false;
+  const escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*');
+  return new RegExp(`^${escaped}$`, 'i').test(origin);
+};
+
+const isCloudflareDeployment = (origin) => {
+  try {
+    const { hostname } = new URL(origin);
+    return hostname.endsWith('.workers.dev') || hostname.endsWith('.pages.dev');
+  } catch {
+    return false;
+  }
+};
+
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true;
+  if (allowAnyOrigin || allowedOrigins.has(origin)) return true;
+  if (isCloudflareDeployment(origin)) return true;
+  return configuredOrigins.some((pattern) => originMatchesPattern(origin, pattern));
+};
 
 const corsOptions = {
   origin(origin, callback) {
     // Native clients and same-origin requests may not send an Origin header.
-    if (!origin || allowedOrigins.has(origin)) return callback(null, true);
-    return callback(null, false);
+    return callback(null, isAllowedOrigin(origin));
   },
   credentials: false,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],

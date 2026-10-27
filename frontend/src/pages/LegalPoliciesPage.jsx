@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, ShieldCheck, FileText, Cookie } from 'lucide-react';
 
