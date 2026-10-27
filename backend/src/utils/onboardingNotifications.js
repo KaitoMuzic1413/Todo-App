@@ -5,11 +5,13 @@ export const deliverNewAccountNotifications = async (user) => {
   if (!user?._id) return 0;
 
   try {
-    const [welcome, latestUpdate] = await Promise.all([
-      Notification.findOne({ type: 'welcome', targetType: 'new-users', status: { $in: ['sent', null] } }).sort({ createdAt: -1, _id: -1 }).select('_id').lean(),
-      Notification.findOne({ type: 'update', targetType: 'all', status: { $in: ['sent', null] } }).sort({ createdAt: -1, _id: -1 }).select('_id').lean(),
+    const [latestWelcome, latestUpdate] = await Promise.all([
+      Notification.findOne({ type: 'welcome', targetType: 'new-users' }).sort({ createdAt: -1, _id: -1 }).select('_id status').lean(),
+      Notification.findOne({ type: 'update', targetType: 'all' }).sort({ createdAt: -1, _id: -1 }).select('_id status').lean(),
     ]);
-    const notifications = [welcome, latestUpdate].filter(Boolean);
+    const welcome = latestWelcome && (!latestWelcome.status || latestWelcome.status === 'sent') ? latestWelcome : null;
+    const update = latestUpdate && (!latestUpdate.status || latestUpdate.status === 'sent') ? latestUpdate : null;
+    const notifications = [welcome, update].filter(Boolean);
     if (!notifications.length) return 0;
 
     const deliveredAt = new Date();
