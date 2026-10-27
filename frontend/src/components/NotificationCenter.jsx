@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, animate, motion, useMotionValue } from 'framer-motion';
 import { Bell, Check, LoaderCircle, X } from 'lucide-react';
 import {
   fetchNotification,
@@ -90,43 +90,99 @@ const NotificationCenter = ({ userId, navigationOpen = false, onDrawerOpenChange
   const drawerRef = useRef(null);
   const detailRef = useRef(null);
   const swipeStart = useRef(null);
+  const [isDraggingDrawer, setIsDraggingDrawer] = useState(false);
+  const drawerWidth = () => Math.min(320, window.innerWidth * 0.88);
+  const drawerX = useMotionValue(typeof window === 'undefined' ? 320 : Math.min(320, window.innerWidth * 0.88));
+  const drawerVisible = drawerOpen || isDraggingDrawer;
   const notificationSwipeStart = useRef(null);
   const suppressNotificationClick = useRef(false);
 
   useEffect(() => { onDrawerOpenChange(drawerOpen); }, [drawerOpen, onDrawerOpenChange]);
 
   useEffect(() => {
+    if (isDraggingDrawer) return undefined;
+    const controls = animate(drawerX, drawerOpen ? 0 : drawerWidth(), {
+      duration: 0.24,
+      ease: [0.2, 0.8, 0.2, 1],
+    });
+    return () => controls.stop();
+  }, [drawerOpen, isDraggingDrawer, drawerX]);
+
+  useEffect(() => {
     const onTouchStart = (event) => {
-      if (navigationOpen || drawerOpen || selectedId || !event.touches.length) {
+      if (navigationOpen || selectedId || !event.touches.length || event.touches.length !== 1) {
         swipeStart.current = null;
         return;
       }
       const touch = event.touches[0];
-      if (touch.clientX >= window.innerWidth - 32) {
-        swipeStart.current = { x: touch.clientX, y: touch.clientY };
-      } else {
+      const width = drawerWidth();
+      if (drawerOpen && touch.clientX < window.innerWidth - width - 12) {
         swipeStart.current = null;
+        return;
       }
+      swipeStart.current = {
+        x: touch.clientX,
+        y: touch.clientY,
+        startDrawerX: drawerOpen ? drawerX.get() : width,
+        horizontal: false,
+        wasOpen: drawerOpen,
+      };
     };
-    const onTouchEnd = (event) => {
-      if (!swipeStart.current || !event.changedTouches.length) return;
+
+    const onTouchMove = (event) => {
       const start = swipeStart.current;
-      swipeStart.current = null;
-      const touch = event.changedTouches[0];
+      if (!start || navigationOpen || selectedId || !event.touches.length) return;
+      const touch = event.touches[0];
       const dx = touch.clientX - start.x;
       const dy = touch.clientY - start.y;
-      if (!navigationOpen && !drawerOpen && !selectedId && dx < -55 && Math.abs(dx) > Math.abs(dy) * 1.2) {
-        setFilter('all');
-        setDrawerOpen(true);
+      const intendedDirection = start.wasOpen ? dx > 0 : dx < 0;
+
+      if (!start.horizontal) {
+        if (Math.abs(dy) > 8 && Math.abs(dy) > Math.abs(dx)) {
+          swipeStart.current = null;
+          return;
+        }
+        if (!intendedDirection || Math.abs(dx) < 8) return;
+        start.horizontal = true;
+        setIsDraggingDrawer(true);
+        if (!start.wasOpen) setFilter('all');
       }
+
+      if (event.cancelable) event.preventDefault();
+      const width = drawerWidth();
+      drawerX.set(Math.max(0, Math.min(width, start.startDrawerX + dx)));
     };
+
+    const finishSwipe = (event, cancelled = false) => {
+      const start = swipeStart.current;
+      swipeStart.current = null;
+      if (!start) return;
+      if (!start.horizontal) return;
+
+      const width = drawerWidth();
+      const position = cancelled ? (start.wasOpen ? 0 : width) : drawerX.get();
+      const movedDistance = start.wasOpen ? position : width - position;
+      const shouldBeOpen = movedDistance >= width * 0.35;
+      setIsDraggingDrawer(false);
+      setDrawerOpen(shouldBeOpen);
+      if (!shouldBeOpen) drawerX.set(width);
+      else drawerX.set(0);
+    };
+
+    const onTouchEnd = (event) => finishSwipe(event, false);
+    const onTouchCancel = (event) => finishSwipe(event, true);
+
     window.addEventListener('touchstart', onTouchStart, { passive: true });
+    window.addEventListener('touchmove', onTouchMove, { passive: false });
     window.addEventListener('touchend', onTouchEnd, { passive: true });
+    window.addEventListener('touchcancel', onTouchCancel, { passive: true });
     return () => {
       window.removeEventListener('touchstart', onTouchStart);
+      window.removeEventListener('touchmove', onTouchMove);
       window.removeEventListener('touchend', onTouchEnd);
+      window.removeEventListener('touchcancel', onTouchCancel);
     };
-  }, [navigationOpen, drawerOpen, selectedId]);
+  }, [navigationOpen, drawerOpen, selectedId, isDraggingDrawer, drawerX]);
 
   const focusNotificationButton = useCallback(() => {
     window.setTimeout(() => notificationButtonRef.current?.focus(), 0);
@@ -362,7 +418,7 @@ const NotificationCenter = ({ userId, navigationOpen = false, onDrawerOpenChange
       </button>
 
       <AnimatePresence>
-        {drawerOpen ? (
+        {drawerVisible ? (
           <>
             <motion.button
               type='button'
@@ -376,10 +432,11 @@ const NotificationCenter = ({ userId, navigationOpen = false, onDrawerOpenChange
               role='dialog'
               aria-modal='true'
               aria-labelledby='notification-drawer-title'
-              initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
-              transition={{ duration: 0.24, ease: [0.2, 0.8, 0.2, 1] }}
+              initial={false}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
               className='fixed inset-y-0 right-0 z-[61] flex w-[min(320px,88vw)] flex-col border-l border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-950'
-              style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
+              style={{ x: drawerX, paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
             >
               <header className='flex shrink-0 items-center justify-between gap-2 border-b border-slate-200 px-5 py-4 dark:border-slate-800 sm:px-6'>
                 <div className='min-w-0'>
