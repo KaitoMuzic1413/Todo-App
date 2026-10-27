@@ -129,6 +129,7 @@ const AdminNotificationsPage = () => {
   const handleCampaignAction = async (action, notification) => {
     try {
       if (action === 'archive') {
+        if (!window.confirm(t.archiveCampaignConfirm)) return;
         await archiveAdminNotification(notification.id);
         toast.success(t.campaignArchived);
       } else if (action === 'clone') {
