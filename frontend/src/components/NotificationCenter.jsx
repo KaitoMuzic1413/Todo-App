@@ -9,6 +9,7 @@ import {
   translateNotificationTexts,
 } from '@/lib/api';
 import { useLanguage } from '@/lib/i18n';
+import { hasNotificationHtml, sanitizeNotificationHtml } from '@/lib/notificationHtml';
 
 const formatDate = (value) => {
   if (!value) return '';
@@ -141,14 +142,14 @@ const NotificationCenter = ({ userId }) => {
         window.clearTimeout(resetTimer);
       };
     }
-    const texts = notifications.flatMap((item) => [item.title || '', item.content || '']);
+    const texts = notifications.flatMap((item) => [item.title || '', hasNotificationHtml(item.content) ? '' : (item.content || '')]);
     void translateTextsInBatches(texts, activeContentLanguage).then((translations) => {
       if (!active || !Array.isArray(translations)) return;
       const translated = {};
       notifications.forEach((item, index) => {
         translated[item.id] = {
           title: translations[index * 2] || item.title,
-          content: translations[index * 2 + 1] || item.content,
+          content: hasNotificationHtml(item.content) ? item.content : (translations[index * 2 + 1] || item.content),
         };
       });
       setTranslatedNotifications(translated);
@@ -169,12 +170,12 @@ const NotificationCenter = ({ userId }) => {
         window.clearTimeout(resetTimer);
       };
     }
-    void translateTextsInBatches([detail.title || '', detail.content || ''], activeContentLanguage)
+    void translateTextsInBatches([detail.title || '', hasNotificationHtml(detail.content) ? '' : (detail.content || '')], activeContentLanguage)
       .then((translations) => {
         if (active && Array.isArray(translations)) {
           setTranslatedDetail({
             title: translations[0] || detail.title,
-            content: translations[1] || detail.content,
+            content: hasNotificationHtml(detail.content) ? detail.content : (translations[1] || detail.content),
           });
         }
       })
@@ -355,7 +356,7 @@ const NotificationCenter = ({ userId }) => {
                             <span className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-3xl ${notification.isRead ? 'bg-slate-300 dark:bg-slate-700' : 'bg-violet-600 dark:bg-violet-300'}`} aria-hidden='true' />
                             <span className='min-w-0 flex-1'>
                               <span className={`block truncate text-sm ${notification.isRead ? 'font-medium' : 'font-bold'}`}>{translatedNotifications[notification.id]?.title || notification.title}</span>
-                              <span className='mt-1 block overflow-hidden text-ellipsis text-xs leading-5 text-slate-500 dark:text-slate-400' style={{ display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, overflow: 'hidden' }}>{translatedNotifications[notification.id]?.content || notification.content}</span>
+                              <span className='notification-rich-content mt-1 block overflow-hidden text-ellipsis text-xs leading-5 text-slate-500 dark:text-slate-400' style={{ display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, overflow: 'hidden' }} dangerouslySetInnerHTML={{ __html: sanitizeNotificationHtml(translatedNotifications[notification.id]?.content || notification.content) }} />
                               <span className='mt-2 block text-[11px] text-slate-400 dark:text-slate-500'>{formatDate(notification.createdAt || notification.deliveredAt)}</span>
                             </span>
                           </span>
@@ -418,7 +419,7 @@ const NotificationCenter = ({ userId }) => {
                     <button type='button' onClick={retryDetail} className='min-h-10 rounded-3xl border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800'>{t.retry}</button>
                   </div>
                 ) : (
-                  <p className='whitespace-pre-wrap break-words text-sm leading-7 text-slate-700 dark:text-slate-200'>{translatedDetail?.content || detail?.content}</p>
+                  <div className='notification-rich-content break-words text-sm leading-7 text-slate-700 dark:text-slate-200' dangerouslySetInnerHTML={{ __html: sanitizeNotificationHtml(translatedDetail?.content || detail?.content || '') }} />
                 )}
               </div>
             </motion.section>
