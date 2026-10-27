@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { LayoutShell } from '@/components/LayoutShell';
 import { deleteAdminNotification, fetchAdminNotifications, sendAdminNotification } from '@/lib/api';
 import { useLanguage } from '@/lib/i18n';
+import { sanitizeNotificationHtml } from '@/lib/notificationHtml';
 
 const createRequestId = () => (globalThis.crypto?.randomUUID?.()
   || `notification-${Date.now()}-${Math.random().toString(36).slice(2)}`);
@@ -130,7 +131,7 @@ const AdminNotificationsPage = () => {
                 <label htmlFor='notification-content' className='text-sm font-semibold text-slate-700 dark:text-slate-200'>{t.notificationContent}</label>
                 <span className='text-xs text-slate-400'>{content.length}/5000</span>
               </div>
-              <textarea id='notification-content' required maxLength={5000} rows={6} value={content} onChange={(event) => setContent(event.target.value)} className='min-h-36 w-full resize-y rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-base leading-6 text-slate-900 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:focus:ring-violet-900/30' />
+              <textarea id='notification-content' required maxLength={5000} rows={6} value={content} onChange={(event) => setContent(event.target.value)} placeholder={'Liên hệ tôi <a href="https://example.com/contact">click vào</a> để được hỗ trợ.'} className='min-h-36 w-full resize-y rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-base leading-6 text-slate-900 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:focus:ring-violet-900/30' />
             </div>
             <div className='grid gap-5 sm:grid-cols-2'>
               <div>
@@ -196,7 +197,7 @@ const AdminNotificationsPage = () => {
                       <h3 className='max-w-full break-words text-sm font-semibold text-slate-900 dark:text-white'>{notification.title}</h3>
                       <span className='rounded-3xl bg-violet-50 px-2.5 py-1 text-[11px] font-semibold text-violet-700 dark:bg-violet-500/10 dark:text-violet-200'>{typeLabels[notification.type] || notification.type}</span>
                     </div>
-                    <p className='mt-1 line-clamp-2 whitespace-pre-wrap text-xs leading-5 text-slate-500 dark:text-slate-400'>{notification.content}</p>
+                    <p className='mt-1 line-clamp-2 break-words text-xs leading-5 text-slate-500 dark:text-slate-400' dangerouslySetInnerHTML={{ __html: sanitizeNotificationHtml(notification.content) }} />
                     <p className='mt-2 text-[11px] text-slate-400 dark:text-slate-500'>{formatDate(notification.createdAt)} · {notification.targetType === 'all' ? t.allUsers : (notification.targetType === 'new-users' ? t.newAccounts : t.oneUser)}</p>
                   </div>
                   <div className='flex shrink-0 items-center gap-3 text-xs text-slate-500 dark:text-slate-400'>
@@ -222,7 +223,7 @@ const AdminNotificationsPage = () => {
             </header>
             <div className='min-h-0 flex-1 overflow-y-auto px-5 py-5 [overscroll-behavior:contain]'>
               <p className='text-xs text-slate-500 dark:text-slate-400'>{typeLabels[type]} · {type === 'welcome' ? t.newAccounts : (audienceType === 'all' ? t.allUsers : email)}</p>
-              <p className='mt-4 whitespace-pre-wrap break-words text-sm leading-7 text-slate-700 dark:text-slate-200'>{content || t.notificationContent}</p>
+              <div className='notification-rich-content mt-4 break-words text-sm leading-7 text-slate-700 dark:text-slate-200' dangerouslySetInnerHTML={{ __html: sanitizeNotificationHtml(content || t.notificationContent) }} />
             </div>
           </section>
         </div>
