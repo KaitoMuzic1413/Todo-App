@@ -4,6 +4,7 @@ import Notification from '../models/Notification.js';
 import NotificationRecipient from '../models/NotificationRecipient.js';
 import User from '../models/User.js';
 import { validateNotificationInput } from '../utils/notificationValidation.js';
+import { translateTexts } from '../utils/translateTexts.js';
 
 const notificationView = (notification, recipient) => ({
   id: String(notification._id),
@@ -24,25 +25,9 @@ export const translateNotificationTexts = async (req, res) => {
     return res.status(400).json({ message: 'Provide 1–40 text strings and a supported target language.' });
   }
 
-  if (targetLanguage === 'en') {
-    return res.status(200).json({ translations: texts });
-  }
-
   try {
-    const translations = await Promise.all(texts.map(async (text) => {
-      if (!text.trim()) return text;
-      const params = new URLSearchParams({ client: 'gtx', sl: 'auto', tl: targetLanguage, dt: 't', q: text });
-      const response = await fetch(`https://translate.googleapis.com/translate_a/single?${params}`, {
-        signal: AbortSignal.timeout(8000),
-      });
-      if (!response.ok) throw new Error('Translation provider unavailable');
-      const payload = await response.json();
-      const translated = Array.isArray(payload?.[0])
-        ? payload[0].map((segment) => segment?.[0] || '').join('')
-        : '';
-      return translated || text;
-    }));
-    return res.status(200).json({ translations });
+    const { translations, fallback } = await translateTexts(texts, targetLanguage);
+    return res.status(200).json({ translations, ...(fallback ? { fallback: true } : {}) });
   } catch (error) {
     console.error('Notification translation error:', error.message);
     return res.status(200).json({ translations: texts, fallback: true });

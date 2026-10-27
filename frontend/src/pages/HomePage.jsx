@@ -51,6 +51,7 @@ const HomePage = ({ contentType = 'task' }) => {
   const [timeFilter, setTimeFilter] = useState('all');
   const { preferences, savePreferences } = useUserPreferences(currentUser?._id);
   const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+  const tasksQueryKey = ['tasks', currentUser?._id, contentType];
 
   const gamificationQuery = useQuery({
     queryKey: ['gamification', currentUser?._id, timeZone],
@@ -88,14 +89,50 @@ const HomePage = ({ contentType = 'task' }) => {
     return () => window.removeEventListener('keydown', focusNewTask);
   }, []);
 
+  const toggleTaskMutation = useMutation({
+    mutationFn: (taskId) => toggleTaskStatus(taskId, currentUser._id),
+    onMutate: async (taskId) => {
+      await queryClient.cancelQueries({ queryKey: tasksQueryKey });
+      const previousTasks = queryClient.getQueryData(tasksQueryKey);
+
+      queryClient.setQueryData(tasksQueryKey, (currentTasks) =>
+        (Array.isArray(currentTasks) ? currentTasks : []).map((task) => {
+          if (task._id !== taskId) return task;
+          const nextStatus = task.status === 'complete' ? 'active' : 'complete';
+          return {
+            ...task,
+            status: nextStatus,
+            completedAt: nextStatus === 'complete' ? new Date().toISOString() : null,
+          };
+        })
+      );
+
+      return { previousTasks };
+    },
+    onError: (error, taskId, context) => {
+      if (context?.previousTasks) {
+        queryClient.setQueryData(tasksQueryKey, context.previousTasks);
+      }
+      toast.error(error.response?.data?.message || t.taskUpdateError);
+    },
+    onSuccess: (response) => {
+      if (response?.data?._id) {
+        queryClient.setQueryData(tasksQueryKey, (currentTasks) =>
+          (Array.isArray(currentTasks) ? currentTasks : []).map((task) => (task._id === response.data._id ? response.data : task))
+        );
+      }
+      queryClient.invalidateQueries({ queryKey: ['gamification', currentUser?._id] });
+    },
+  });
+
   const { data: tasks = [], isLoading } = useQuery({
-    queryKey: ['tasks', currentUser?._id, contentType],
+    queryKey: tasksQueryKey,
     queryFn: async () => {
       const response = await fetchTasks(currentUser._id, contentType);
       return response.data || [];
     },
     enabled: !!currentUser?._id,
-    refetchInterval: 3000,
+    refetchInterval: toggleTaskMutation.isPending ? false : 3000,
     refetchIntervalInBackground: true,
   });
 
@@ -106,14 +143,6 @@ const HomePage = ({ contentType = 'task' }) => {
       setCurrentPage(1);
     },
     onError: (error) => toast.error(error.response?.data?.message || t.taskCreateError),
-  });
-
-  const toggleTaskMutation = useMutation({
-    mutationFn: (taskId) => toggleTaskStatus(taskId, currentUser._id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks', currentUser?._id, contentType] });
-      queryClient.invalidateQueries({ queryKey: ['gamification', currentUser?._id] });
-    },
   });
 
   const deleteTaskMutation = useMutation({

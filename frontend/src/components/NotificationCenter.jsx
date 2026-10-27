@@ -17,21 +17,69 @@ const formatDate = (value) => {
   return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(date);
 };
 
-const translateTextsInBatches = async (texts, language) => {
-  const translations = [];
-  for (let start = 0; start < texts.length; start += 40) {
-    const batch = texts.slice(start, start + 40);
-    const { data } = await translateNotificationTexts(batch, language);
-    translations.push(...(Array.isArray(data.translations) ? data.translations : batch));
+const translationCache = new Map();
+const MAX_CACHED_TRANSLATIONS = 1000;
+
+const cacheKey = (language, text) => `${language}\u0000${text}`;
+
+const rememberTranslation = (key, value) => {
+  translationCache.set(key, value);
+  if (translationCache.size > MAX_CACHED_TRANSLATIONS) {
+    const oldestKey = translationCache.keys().next().value;
+    if (oldestKey) translationCache.delete(oldestKey);
   }
+};
+
+const translateTextsInBatches = async (texts, language) => {
+  const translations = new Array(texts.length);
+  const pending = [];
+
+  texts.forEach((text, index) => {
+    const key = cacheKey(language, text);
+    if (translationCache.has(key)) {
+      translations[index] = translationCache.get(key);
+    } else {
+      pending.push({ text, index, key });
+    }
+  });
+
+  for (let start = 0; start < pending.length; start += 40) {
+    const batch = pending.slice(start, start + 40);
+    const { data } = await translateNotificationTexts(batch.map(({ text }) => text), language);
+    const values = Array.isArray(data.translations) ? data.translations : batch.map(({ text }) => text);
+    const canCache = !data.fallback;
+    batch.forEach((item, index) => {
+      const value = values[index] || item.text;
+      translations[item.index] = value;
+      if (canCache) rememberTranslation(item.key, value);
+    });
+  }
+
   return translations;
 };
+
+const NotificationLanguageToggle = ({ value, onChange, label }) => (
+  <div className='flex shrink-0 items-center rounded-xl border border-slate-200 p-0.5 dark:border-slate-700' role='group' aria-label={label}>
+    {['vi', 'en'].map((code) => (
+      <button
+        key={code}
+        type='button'
+        onClick={() => onChange(code)}
+        aria-pressed={value === code}
+        className={`rounded-lg px-2 py-1 text-[11px] font-semibold uppercase transition ${value === code ? 'bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-200' : 'text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}`}
+      >
+        {code}
+      </button>
+    ))}
+  </div>
+);
 
 const NotificationCenter = ({ userId }) => {
   const { t, language } = useLanguage();
   const [unreadCount, setUnreadCount] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [filter, setFilter] = useState('all');
+  const [contentLanguage, setContentLanguage] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [translatedNotifications, setTranslatedNotifications] = useState({});
   const [translatedDetail, setTranslatedDetail] = useState(null);
@@ -41,6 +89,7 @@ const NotificationCenter = ({ userId }) => {
   const [detail, setDetail] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState('');
+  const activeContentLanguage = contentLanguage || language;
   const notificationButtonRef = useRef(null);
   const drawerRef = useRef(null);
   const detailRef = useRef(null);
@@ -83,7 +132,7 @@ const NotificationCenter = ({ userId }) => {
 
   useEffect(() => {
     let active = true;
-    if (language !== 'vi' || notifications.length === 0) {
+    if (notifications.length === 0) {
       const resetTimer = window.setTimeout(() => {
         if (active) setTranslatedNotifications({});
       }, 0);
@@ -93,7 +142,7 @@ const NotificationCenter = ({ userId }) => {
       };
     }
     const texts = notifications.flatMap((item) => [item.title || '', item.content || '']);
-    void translateTextsInBatches(texts, language).then((translations) => {
+    void translateTextsInBatches(texts, activeContentLanguage).then((translations) => {
       if (!active || !Array.isArray(translations)) return;
       const translated = {};
       notifications.forEach((item, index) => {
@@ -107,11 +156,11 @@ const NotificationCenter = ({ userId }) => {
       if (active) setTranslatedNotifications({});
     });
     return () => { active = false; };
-  }, [language, notifications]);
+  }, [activeContentLanguage, notifications]);
 
   useEffect(() => {
     let active = true;
-    if (language !== 'vi' || !detail) {
+    if (!detail) {
       const resetTimer = window.setTimeout(() => {
         if (active) setTranslatedDetail(null);
       }, 0);
@@ -120,18 +169,18 @@ const NotificationCenter = ({ userId }) => {
         window.clearTimeout(resetTimer);
       };
     }
-    void translateNotificationTexts([detail.title || '', detail.content || ''], language)
-      .then(({ data }) => {
-        if (active && Array.isArray(data.translations)) {
+    void translateTextsInBatches([detail.title || '', detail.content || ''], activeContentLanguage)
+      .then((translations) => {
+        if (active && Array.isArray(translations)) {
           setTranslatedDetail({
-            title: data.translations[0] || detail.title,
-            content: data.translations[1] || detail.content,
+            title: translations[0] || detail.title,
+            content: translations[1] || detail.content,
           });
         }
       })
       .catch(() => { if (active) setTranslatedDetail(null); });
     return () => { active = false; };
-  }, [detail, language]);
+  }, [detail, activeContentLanguage]);
 
   useEffect(() => {
     if (!drawerOpen || !userId) return undefined;
@@ -190,6 +239,7 @@ const NotificationCenter = ({ userId }) => {
     setDrawerOpen(false);
     setSelectedId(notificationId);
     setDetail(null);
+    setTranslatedDetail(null);
     setDetailError('');
     setDetailLoading(true);
     try {
@@ -253,14 +303,17 @@ const NotificationCenter = ({ userId }) => {
               className='fixed inset-y-0 right-0 z-[61] flex w-[min(320px,88vw)] flex-col border-l border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-950'
               style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
             >
-              <header className='flex shrink-0 items-center justify-between border-b border-slate-200 px-5 py-4 dark:border-slate-800 sm:px-6'>
-                <div>
-                  <h2 id='notification-drawer-title' className='text-lg font-bold text-slate-900 dark:text-white'>{t.notifications}</h2>
-                  {unreadCount > 0 ? <p className='mt-0.5 text-xs text-slate-500 dark:text-slate-400'>{unreadCount} {t.unreadNotifications.toLowerCase()}</p> : null}
+              <header className='flex shrink-0 items-center justify-between gap-2 border-b border-slate-200 px-5 py-4 dark:border-slate-800 sm:px-6'>
+                <div className='min-w-0'>
+                  <h2 id='notification-drawer-title' className='truncate text-lg font-bold text-slate-900 dark:text-white'>{t.notifications}</h2>
+                  {unreadCount > 0 ? <p className='mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400'>{unreadCount} {t.unreadNotifications.toLowerCase()}</p> : null}
                 </div>
-                <button type='button' autoFocus onClick={() => { setDrawerOpen(false); focusNotificationButton(); }} aria-label={t.close} className='flex h-10 w-10 items-center justify-center rounded-3xl border border-violet-200/70 text-violet-700 transition hover:bg-violet-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:border-violet-500/20 dark:text-violet-200 dark:hover:bg-violet-500/10'>
-                  <X className='h-5 w-5' />
-                </button>
+                <div className='flex shrink-0 items-center gap-2'>
+                  <NotificationLanguageToggle value={activeContentLanguage} onChange={setContentLanguage} label={t.notificationLanguage} />
+                  <button type='button' autoFocus onClick={() => { setDrawerOpen(false); focusNotificationButton(); }} aria-label={t.close} className='flex h-10 w-10 items-center justify-center rounded-3xl border border-violet-200/70 text-violet-700 transition hover:bg-violet-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:border-violet-500/20 dark:text-violet-200 dark:hover:bg-violet-500/10'>
+                    <X className='h-5 w-5' />
+                  </button>
+                </div>
               </header>
               <div className='shrink-0 border-b border-slate-100 px-5 py-3 dark:border-slate-800 sm:px-6'>
                 <div className='relative grid grid-cols-3 gap-1 rounded-3xl bg-slate-100 p-1 dark:bg-slate-900' role='tablist' aria-label={t.notifications}>
@@ -349,9 +402,12 @@ const NotificationCenter = ({ userId }) => {
                   </h2>
                   {detail?.createdAt ? <p className='mt-1 text-xs text-slate-500 dark:text-slate-400'>{t.sentAt}: {formatDate(detail.createdAt)}</p> : null}
                 </div>
-                <button type='button' autoFocus onClick={() => { setSelectedId(null); setDetail(null); focusNotificationButton(); }} aria-label={t.close} className='flex h-10 w-10 shrink-0 items-center justify-center rounded-3xl border border-violet-200/70 text-violet-700 transition hover:bg-violet-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:border-violet-500/20 dark:text-violet-200 dark:hover:bg-violet-500/10'>
-                  <X className='h-5 w-5' />
-                </button>
+                <div className='flex shrink-0 items-center gap-2'>
+                  <NotificationLanguageToggle value={activeContentLanguage} onChange={setContentLanguage} label={t.notificationLanguage} />
+                  <button type='button' autoFocus onClick={() => { setSelectedId(null); setDetail(null); focusNotificationButton(); }} aria-label={t.close} className='flex h-10 w-10 shrink-0 items-center justify-center rounded-3xl border border-violet-200/70 text-violet-700 transition hover:bg-violet-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:border-violet-500/20 dark:text-violet-200 dark:hover:bg-violet-500/10'>
+                    <X className='h-5 w-5' />
+                  </button>
+                </div>
               </header>
               <div className='min-h-0 flex-1 overflow-y-auto px-5 py-5 [overscroll-behavior:contain] sm:px-6 sm:py-6' style={{ touchAction: 'pan-y' }}>
                 {detailLoading ? (

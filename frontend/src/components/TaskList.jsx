@@ -239,7 +239,7 @@ const TaskList = ({
                             type='button'
                             onClick={() => onToggle?.(task._id)}
                             disabled={editingTaskId !== null}
-                            className={`flex h-9 w-9 shrink-0 ${editingTaskId !== null ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} items-center justify-center rounded-3xl bg-white text-slate-400 shadow-sm transition-transform dark:bg-slate-900`}
+                            className={`flex h-9 w-9 shrink-0 ${editingTaskId !== null ? 'cursor-not-allowed opacity-60' : 'cursor-pointer active:scale-90'} items-center justify-center rounded-3xl bg-white text-slate-400 shadow-sm transition-transform dark:bg-slate-900`}
                             aria-label={done ? 'Mark task as active' : 'Mark task as complete'}
                           >
                             {done ? (
