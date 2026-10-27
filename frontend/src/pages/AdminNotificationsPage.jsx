@@ -9,6 +9,11 @@ import { sanitizeNotificationHtml } from '@/lib/notificationHtml';
 const createRequestId = () => (globalThis.crypto?.randomUUID?.()
   || `notification-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 
+const toLocalDateTimeInput = (date) => {
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return local.toISOString().slice(0, 16);
+};
+
 const formatDate = (value) => {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? '' : new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(date);
@@ -220,7 +225,7 @@ const AdminNotificationsPage = () => {
             ) : null}
             <div>
               <label htmlFor='campaign-schedule' className='mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-200'>{t.scheduleSendTime}</label>
-              <input id='campaign-schedule' type='datetime-local' value={scheduledAt} onChange={(event) => setScheduledAt(event.target.value)} min={new Date(Date.now() + 60_000).toISOString().slice(0, 16)} className='min-h-12 w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 text-base text-slate-900 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:focus:ring-violet-900/30' />
+              <input id='campaign-schedule' type='datetime-local' value={scheduledAt} onChange={(event) => setScheduledAt(event.target.value)} min={toLocalDateTimeInput(new Date(Date.now() + 60_000))} className='min-h-12 w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 text-base text-slate-900 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:focus:ring-violet-900/30' />
             </div>
             <div className='flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:flex-wrap sm:justify-end dark:border-slate-800'>
               <button type='button' disabled={!title.trim() || !content.trim()} onClick={() => setIsPreviewOpen(true)} className='min-h-12 rounded-3xl border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800'>{t.preview}</button>
