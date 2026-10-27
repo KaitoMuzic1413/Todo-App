@@ -208,6 +208,8 @@ export const createNotification = async (req, res) => {
     }
 
     const action = ['draft', 'schedule', 'send'].includes(req.body.action) ? req.body.action : 'send';
+    const campaignTarget = value.targetType === 'user' ? await User.findOne({ email: value.targetEmail }).select('_id').lean() : null;
+    if (value.targetType === 'user' && !campaignTarget) return res.status(404).json({ message: 'Recipient account was not found.' });
     if (action === 'schedule') {
       const scheduledAt = new Date(req.body.scheduledAt);
       if (!req.body.scheduledAt || Number.isNaN(scheduledAt.getTime()) || scheduledAt.getTime() < Date.now() + 60_000) {
@@ -215,7 +217,7 @@ export const createNotification = async (req, res) => {
       }
       const scheduled = await Notification.create({
         title: value.title, content: value.content, type: value.type, createdBy: req.user.userId,
-        targetType: value.targetType, targetId: null, requestId, requestFingerprint,
+        targetType: value.targetType, targetId: campaignTarget?._id || null, requestId, requestFingerprint,
         status: 'scheduled', scheduledAt, campaignKey: req.body.campaignKey || null,
       });
       return res.status(201).json({ notification: { id: String(scheduled._id), status: 'scheduled', scheduledAt } });
@@ -223,7 +225,7 @@ export const createNotification = async (req, res) => {
     if (action === 'draft') {
       const draft = await Notification.create({
         title: value.title, content: value.content, type: value.type, createdBy: req.user.userId,
-        targetType: value.targetType, targetId: null, requestId, requestFingerprint,
+        targetType: value.targetType, targetId: campaignTarget?._id || null, requestId, requestFingerprint,
         status: 'draft', campaignKey: req.body.campaignKey || null,
       });
       return res.status(201).json({ notification: { id: String(draft._id), status: 'draft' } });
