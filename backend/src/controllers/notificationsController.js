@@ -152,6 +152,11 @@ export const listAdminNotifications = async (req, res) => {
         targetType: notification.targetType,
         targetId: notification.targetId ? String(notification.targetId) : null,
         createdAt: notification.createdAt,
+        status: notification.status || 'sent',
+        scheduledAt: notification.scheduledAt || null,
+        archivedAt: notification.archivedAt || null,
+        campaignKey: notification.campaignKey || null,
+        sourceNotificationId: notification.sourceNotificationId ? String(notification.sourceNotificationId) : null,
         recipients: stat?.recipients || 0,
         read: stat?.read || 0,
       };
@@ -202,6 +207,28 @@ export const createNotification = async (req, res) => {
       return res.status(200).json({ notification: { id: String(duplicate._id) }, duplicate: true });
     }
 
+    const action = ['draft', 'schedule', 'send'].includes(req.body.action) ? req.body.action : 'send';
+    if (action === 'schedule') {
+      const scheduledAt = new Date(req.body.scheduledAt);
+      if (!req.body.scheduledAt || Number.isNaN(scheduledAt.getTime()) || scheduledAt.getTime() < Date.now() + 60_000) {
+        return res.status(400).json({ message: 'Choose a scheduled time at least one minute in the future.' });
+      }
+      const scheduled = await Notification.create({
+        title: value.title, content: value.content, type: value.type, createdBy: req.user.userId,
+        targetType: value.targetType, targetId: null, requestId, requestFingerprint,
+        status: 'scheduled', scheduledAt, campaignKey: req.body.campaignKey || null,
+      });
+      return res.status(201).json({ notification: { id: String(scheduled._id), status: 'scheduled', scheduledAt } });
+    }
+    if (action === 'draft') {
+      const draft = await Notification.create({
+        title: value.title, content: value.content, type: value.type, createdBy: req.user.userId,
+        targetType: value.targetType, targetId: null, requestId, requestFingerprint,
+        status: 'draft', campaignKey: req.body.campaignKey || null,
+      });
+      return res.status(201).json({ notification: { id: String(draft._id), status: 'draft' } });
+    }
+
     let users = [];
     let targetId = null;
     if (value.targetType === 'all') {
@@ -225,6 +252,8 @@ export const createNotification = async (req, res) => {
       targetId,
       requestId,
       requestFingerprint,
+      status: 'sent',
+      campaignKey: req.body.campaignKey || null,
     });
 
     if (users.length) {
@@ -254,5 +283,109 @@ export const createNotification = async (req, res) => {
     }
     console.error('Create notification error:', error);
     return res.status(500).json({ message: 'Unable to send notification.' });
+  }
+};
+
+
+export const archiveAdminNotification = async (req, res) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) return res.status(404).json({ message: 'Notification not found.' });
+    const notification = await Notification.findByIdAndUpdate(
+      req.params.id,
+      { $set: { status: 'archived', archivedAt: new Date() } },
+      { new: true }
+    ).select('_id status archivedAt');
+    if (!notification) return res.status(404).json({ message: 'Notification not found.' });
+    return res.status(200).json({ archived: true, status: notification.status, archivedAt: notification.archivedAt });
+  } catch (error) {
+    console.error('Archive admin notification error:', error);
+    return res.status(500).json({ message: 'Unable to archive this campaign.' });
+  }
+};
+
+export const cloneAdminNotification = async (req, res) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) return res.status(404).json({ message: 'Notification not found.' });
+    const source = await Notification.findById(req.params.id).lean();
+    if (!source) return res.status(404).json({ message: 'Notification not found.' });
+    const clone = await Notification.create({
+      title: source.title, content: source.content, type: source.type, createdBy: req.user.userId,
+      targetType: source.targetType, targetId: source.targetId || null, status: 'draft',
+      campaignKey: source.campaignKey || null, sourceNotificationId: source._id,
+    });
+    return res.status(201).json({ notification: { id: String(clone._id), status: 'draft' } });
+  } catch (error) {
+    console.error('Clone admin notification error:', error);
+    return res.status(500).json({ message: 'Unable to duplicate this campaign.' });
+  }
+};
+
+export const resendAdminNotification = async (req, res) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) return res.status(404).json({ message: 'Notification not found.' });
+    const source = await Notification.findById(req.params.id).lean();
+    if (!source) return res.status(404).json({ message: 'Notification not found.' });
+    const requestId = req.get('Idempotency-Key')?.trim();
+    if (!requestId || requestId.length > 128) return res.status(400).json({ message: 'A valid idempotency key is required.' });
+
+    let users = [];
+    let targetId = null;
+    if (source.targetType === 'all') users = await User.find().select('_id').lean();
+    else if (source.targetType === 'user' && source.targetId) {
+      const user = await User.findById(source.targetId).select('_id').lean();
+      if (user) { users = [user]; targetId = user._id; }
+    }
+    if (source.targetType !== 'new-users' && !users.length) return res.status(400).json({ message: 'There are no valid recipients for this campaign.' });
+
+    const copy = await Notification.create({
+      title: source.title, content: source.content, type: source.type, createdBy: req.user.userId,
+      targetType: source.targetType, targetId, requestId,
+      requestFingerprint: createHash('sha256').update(JSON.stringify({ source: String(source._id), requestId })).digest('hex'),
+      status: 'sent', campaignKey: source.campaignKey || null, sourceNotificationId: source._id,
+    });
+    if (users.length) {
+      try {
+        await NotificationRecipient.insertMany(users.map(({ _id: userId }) => ({
+          notificationId: copy._id, userId, deliveredAt: copy.createdAt,
+        })));
+      } catch (error) {
+        await NotificationRecipient.deleteMany({ notificationId: copy._id });
+        await Notification.deleteOne({ _id: copy._id });
+        throw error;
+      }
+    }
+    return res.status(201).json({ notification: { id: String(copy._id), status: 'sent', recipients: users.length, queuedForNewUsers: source.targetType === 'new-users' } });
+  } catch (error) {
+    console.error('Resend admin notification error:', error);
+    return res.status(500).json({ message: 'Unable to resend this campaign.' });
+  }
+};
+
+export const processScheduledNotifications = async () => {
+  const due = await Notification.find({ status: 'scheduled', scheduledAt: { $lte: new Date() } }).select('_id').limit(20).lean();
+  for (const item of due) {
+    const claimed = await Notification.findOneAndUpdate(
+      { _id: item._id, status: 'scheduled', scheduledAt: { $lte: new Date() } },
+      { $set: { status: 'processing' } }, { new: true }
+    );
+    if (!claimed) continue;
+    try {
+      let users = [];
+      let targetId = claimed.targetId || null;
+      if (claimed.targetType === 'all') users = await User.find().select('_id').lean();
+      else if (claimed.targetType === 'user' && targetId) {
+        const user = await User.findById(targetId).select('_id').lean();
+        if (user) users = [user];
+      }
+      if (claimed.targetType !== 'new-users' && users.length) {
+        await NotificationRecipient.insertMany(users.map(({ _id: userId }) => ({
+          notificationId: claimed._id, userId, deliveredAt: new Date(),
+        })), { ordered: false });
+      }
+      await Notification.updateOne({ _id: claimed._id, status: 'processing' }, { $set: { status: 'sent' } });
+    } catch (error) {
+      console.error('Scheduled notification delivery error:', error);
+      await Notification.updateOne({ _id: claimed._id, status: 'processing' }, { $set: { status: 'scheduled' } });
+    }
   }
 };
