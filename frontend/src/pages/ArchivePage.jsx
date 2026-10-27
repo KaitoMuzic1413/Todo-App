@@ -416,7 +416,7 @@ const ArchivePage = () => {
                         </button>
                       </div>
                     </div>
-                    <div className='flex w-full min-w-0 flex-wrap items-center justify-start gap-2 border-t border-slate-200/70 pt-3 dark:border-slate-700/70'>
+                    <div className='flex w-full min-w-0 flex-wrap items-center justify-start gap-2 self-start border-t border-slate-200/70 pt-3 dark:border-slate-700/70'>
                       <button type='button' onClick={(event) => { event.stopPropagation(); setEditing(attachment); setDraft({ content: titleOf(attachment), caption: attachment.description || '' }); }} aria-label={t.editFile} title={t.editFile} className='rounded-3xl border border-slate-200 p-2 text-slate-500 hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800'>
                         <Pencil className='h-4 w-4' />
                       </button>
