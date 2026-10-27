@@ -42,16 +42,27 @@ export const sanitizeNotificationHtml = (value = '') => {
 
       const clean = document.createElement(tag.toLowerCase());
       if (tag === 'A') {
-        const rawHref = child.getAttribute('href') || '';
+        const rawHref = (child.getAttribute('href') || '').trim();
         try {
-          const url = new URL(rawHref, window.location.origin);
-          if (ALLOWED_PROTOCOLS.has(url.protocol)) {
-            clean.setAttribute('href', url.href);
+          // Keep same-app paths relative so /about works on localhost, production
+          // domains, and Capacitor Android without hardcoding any host.
+          if (rawHref.startsWith('/') && !rawHref.startsWith('//')) {
+            clean.setAttribute('href', rawHref);
             clean.setAttribute('target', '_self');
             clean.setAttribute('rel', 'nofollow');
             clean.style.color = '#7c3aed';
             clean.style.textDecoration = 'underline';
             clean.style.textUnderlineOffset = '3px';
+          } else {
+            const url = new URL(rawHref, window.location.origin);
+            if (ALLOWED_PROTOCOLS.has(url.protocol)) {
+              clean.setAttribute('href', url.href);
+              clean.setAttribute('target', '_self');
+              clean.setAttribute('rel', 'nofollow');
+              clean.style.color = '#7c3aed';
+              clean.style.textDecoration = 'underline';
+              clean.style.textUnderlineOffset = '3px';
+            }
           }
         } catch {
           // Invalid links remain non-clickable text.
