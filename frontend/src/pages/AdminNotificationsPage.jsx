@@ -117,6 +117,7 @@ const AdminNotificationsPage = () => {
         await cloneAdminNotification(notification.id);
         toast.success(t.campaignCloned);
       } else if (action === 'resend') {
+        if (!window.confirm(t.resendCampaignConfirm)) return;
         await resendAdminNotification(notification.id, createRequestId());
         toast.success(t.campaignResent);
       }
