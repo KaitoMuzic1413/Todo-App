@@ -72,6 +72,9 @@ export const markNotificationRead = (notificationId) => api.patch(`/notification
 export const markAllNotificationsRead = () => api.patch('/notifications/read-all');
 export const fetchAdminNotifications = () => api.get('/notifications/admin');
 export const deleteAdminNotification = (notificationId) => api.delete(`/notifications/admin/${notificationId}`);
+export const archiveAdminNotification = (notificationId) => api.patch(`/notifications/admin/${notificationId}/archive`);
+export const cloneAdminNotification = (notificationId) => api.post(`/notifications/admin/${notificationId}/clone`);
+export const resendAdminNotification = (notificationId, requestId) => api.post(`/notifications/admin/${notificationId}/resend`, {}, { headers: { 'Idempotency-Key': requestId } });
 export const sendAdminNotification = (payload, requestId) => api.post('/notifications/admin', payload, {
   headers: { 'Idempotency-Key': requestId },
 });
