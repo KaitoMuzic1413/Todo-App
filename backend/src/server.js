@@ -2,6 +2,7 @@ import "dotenv/config";
 import cors from "cors";
 import express from "express";
 import { connectDB } from "./config/db.js";
+import { processScheduledNotifications } from "./controllers/notificationsController.js";
 import { cleanupExpiredTrashTasks } from "./controllers/tasksControllers.js";
 import { cleanupInactiveUsers } from "./controllers/usersControllers.js";
 import authRoute from "./routes/authRoutes.js";
@@ -133,6 +134,8 @@ if (!process.env.VERCEL) {
     setInterval(runDueTaskEmailReminders, 60 * 1000);
     runDueTaskNotifications();
     setInterval(runDueTaskNotifications, 60 * 1000);
+    processScheduledNotifications().catch((error) => console.error('[Scheduled Notifications Error]:', error));
+    setInterval(() => processScheduledNotifications().catch((error) => console.error('[Scheduled Notifications Error]:', error)), 30 * 1000);
   };
 
   app.listen(PORT, async () => {
