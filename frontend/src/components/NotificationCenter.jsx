@@ -387,7 +387,7 @@ const NotificationCenter = ({ userId, navigationOpen = false, onDrawerOpenChange
                   {unreadCount > 0 ? <p className='mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400'>{unreadCount} {t.unreadNotifications.toLowerCase()}</p> : null}
                 </div>
                 <div className='flex shrink-0 items-center gap-2'>
-                  <NotificationLanguageToggle value={activeContentLanguage} onChange={(code) => { setContentLanguage(code); setLanguage(code); }} label={t.notificationLanguage} />
+                  <NotificationLanguageToggle value={activeContentLanguage} onChange={setContentLanguage} label={t.notificationLanguage} />
                   <button type='button' autoFocus onClick={() => { setDrawerOpen(false); focusNotificationButton(); }} aria-label={t.close} className='flex h-10 w-10 items-center justify-center rounded-3xl border border-violet-200/70 text-violet-700 transition hover:bg-violet-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:border-violet-500/20 dark:text-violet-200 dark:hover:bg-violet-500/10'>
                     <X className='h-5 w-5' />
                   </button>

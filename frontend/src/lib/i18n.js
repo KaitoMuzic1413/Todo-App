@@ -324,7 +324,7 @@ export const translations = {
     period: 'Time period',
 
     uploadArchiveTitle: 'Upload Archive Files',
-    uploadArchiveSubtitle: 'Support images, audio and personal documents. Videos cannot be uploaded.',
+    uploadArchiveSubtitle: 'Images, audio and documents only. Maximum file size: 10 MB. Video uploads are not supported.',
     videoUploadNotSupported: 'Video files cannot be uploaded to the archive.',
     chooseFile: 'Choose file',
     loadingArchive: 'Loading archive data...',
@@ -382,7 +382,6 @@ export const translations = {
     termsOfUse: 'Terms of Use',
     cookiePolicy: 'Cookies & Device Storage',
     swipeToRead: 'Swipe left to mark as read',
-    notificationReadError: 'Could not mark this notification as read. Please try again.',
     backToSignIn: 'Back to sign in',
     publicPolicies: 'Public policies',
     lastUpdated: 'Last updated',
@@ -713,7 +712,7 @@ export const translations = {
     period: 'Khoảng thời gian',
 
     uploadArchiveTitle: 'Tải lên tệp lưu trữ',
-    uploadArchiveSubtitle: 'Hỗ trợ ảnh, âm thanh và tài liệu cá nhân. Không thể tải video lên kho tệp.',
+    uploadArchiveSubtitle: 'Chỉ hỗ trợ hình ảnh, âm thanh và tài liệu. Dung lượng tối đa 10 MB. Không hỗ trợ tải video lên.',
     videoUploadNotSupported: 'Không thể tải video lên kho tệp.',
     chooseFile: 'Chọn tệp tải lên',
     loadingArchive: 'Đang tải dữ liệu lưu trữ...',
@@ -771,7 +770,6 @@ export const translations = {
     termsOfUse: 'Điều khoản sử dụng',
     cookiePolicy: 'Cookie & lưu trữ thiết bị',
     swipeToRead: 'Vuốt sang trái để đánh dấu đã đọc',
-    notificationReadError: 'Không thể đánh dấu thông báo đã đọc. Vui lòng thử lại.',
     backToSignIn: 'Quay lại đăng nhập',
     publicPolicies: 'Chính sách công khai',
     lastUpdated: 'Cập nhật lần cuối',
