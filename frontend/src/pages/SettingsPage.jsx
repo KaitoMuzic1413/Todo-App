@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Settings2, Palette, Check, Globe, Moon, Sun, ShieldCheck, Pencil, X, Camera, LogOut } from 'lucide-react';
 import { toast } from 'sonner';
@@ -314,12 +315,13 @@ const SettingsPage = () => {
               </div>
               <div>
                 <p className='mb-2 text-sm font-medium text-slate-700 dark:text-slate-200'>{t.language}</p>
-                <div className='grid grid-cols-2 gap-2'>
+                <div className='relative grid grid-cols-2 gap-1 rounded-3xl border border-slate-200 bg-slate-100 p-1 dark:border-slate-700 dark:bg-slate-950'>
+                  <motion.span aria-hidden='true' className='absolute bottom-1 top-1 w-[calc(50%-4px)] rounded-3xl bg-violet-100 shadow-sm dark:bg-violet-500/20' initial={false} animate={{ x: language === 'vi' ? 0 : '100%' }} transition={{ type: 'spring', stiffness: 420, damping: 32 }} />
                   {[
-                    { key: 'en', label: t.english },
-                    { key: 'vi', label: t.vietnamese },
+                    { key: 'vi', label: 'VI' },
+                    { key: 'en', label: 'EN' },
                   ].map(({ key, label }) => (
-                    <button key={key} type='button' aria-pressed={language === key} onClick={() => void selectLanguage(key)} className={`rounded-3xl border px-3 py-3 text-sm font-medium transition-colors ${language === key ? 'border-violet-400 bg-violet-50 text-violet-700 dark:border-violet-500 dark:bg-violet-500/10 dark:text-violet-200' : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300 dark:border-slate-700 dark:bg-slate-950/40 dark:text-slate-300 dark:hover:border-slate-600'}`}>
+                    <button key={key} type='button' aria-pressed={language === key} onClick={() => void selectLanguage(key)} className={`relative z-10 rounded-3xl px-3 py-3 text-sm font-bold transition-colors ${language === key ? 'text-violet-700 dark:text-violet-100' : 'text-slate-500 hover:text-violet-700 dark:text-slate-300 dark:hover:text-violet-200'}`}>
                       {label}
                     </button>
                   ))}
@@ -329,12 +331,12 @@ const SettingsPage = () => {
           </section>
 
           <section className='lg:col-span-2 rounded-3xl border border-slate-200/80 bg-white/85 p-6 shadow-[0_16px_44px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-slate-900/75'>
-            <h2 className='text-lg font-semibold text-slate-900 dark:text-white'>Chính sách & điều khoản</h2>
-            <p className='mt-2 text-sm text-slate-600 dark:text-slate-300'>Đọc các chính sách công khai của Kaito Todo.</p>
+            <h2 className='text-lg font-semibold text-slate-900 dark:text-white'>{t.legalPolicies}</h2>
+            <p className='mt-2 text-sm text-slate-600 dark:text-slate-300'>{t.legalPoliciesDescription}</p>
             <div className='mt-4 grid gap-3 sm:grid-cols-3'>
-              <Link to='/policies/privacy' className='rounded-2xl border border-slate-200 p-4 text-sm font-semibold text-violet-700 hover:border-violet-300 hover:bg-violet-50 dark:border-slate-700 dark:text-violet-300 dark:hover:bg-violet-500/10'>Chính sách quyền riêng tư</Link>
-              <Link to='/policies/terms' className='rounded-2xl border border-slate-200 p-4 text-sm font-semibold text-violet-700 hover:border-violet-300 hover:bg-violet-50 dark:border-slate-700 dark:text-violet-300 dark:hover:bg-violet-500/10'>Điều khoản sử dụng</Link>
-              <Link to='/policies/cookies' className='rounded-2xl border border-slate-200 p-4 text-sm font-semibold text-violet-700 hover:border-violet-300 hover:bg-violet-50 dark:border-slate-700 dark:text-violet-300 dark:hover:bg-violet-500/10'>Cookie & lưu trữ thiết bị</Link>
+              <Link to='/policies/privacy' className='rounded-3xl border border-slate-200 p-4 text-sm font-semibold text-violet-700 transition hover:-translate-y-0.5 hover:border-violet-300 hover:bg-violet-50 dark:border-slate-700 dark:text-violet-300 dark:hover:bg-violet-500/10'>{t.privacyPolicy}</Link>
+              <Link to='/policies/terms' className='rounded-3xl border border-slate-200 p-4 text-sm font-semibold text-violet-700 transition hover:-translate-y-0.5 hover:border-violet-300 hover:bg-violet-50 dark:border-slate-700 dark:text-violet-300 dark:hover:bg-violet-500/10'>{t.termsOfUse}</Link>
+              <Link to='/policies/cookies' className='rounded-3xl border border-slate-200 p-4 text-sm font-semibold text-violet-700 transition hover:-translate-y-0.5 hover:border-violet-300 hover:bg-violet-50 dark:border-slate-700 dark:text-violet-300 dark:hover:bg-violet-500/10'>{t.cookiePolicy}</Link>
             </div>
           </section>
         </div>
