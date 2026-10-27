@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BellRing, LoaderCircle, Send, Trash2, X } from 'lucide-react';
+import { Archive, BellRing, Clock3, Copy, LoaderCircle, RotateCcw, Send, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { LayoutShell } from '@/components/LayoutShell';
-import { deleteAdminNotification, fetchAdminNotifications, sendAdminNotification } from '@/lib/api';
+import { archiveAdminNotification, cloneAdminNotification, deleteAdminNotification, fetchAdminNotifications, resendAdminNotification, sendAdminNotification } from '@/lib/api';
 import { useLanguage } from '@/lib/i18n';
 import { sanitizeNotificationHtml } from '@/lib/notificationHtml';
 
@@ -20,6 +20,7 @@ const AdminNotificationsPage = () => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [type, setType] = useState('system');
+  const [scheduledAt, setScheduledAt] = useState('');
   const [audienceType, setAudienceType] = useState('all');
   const [email, setEmail] = useState('');
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
@@ -61,17 +62,25 @@ const AdminNotificationsPage = () => {
     event.preventDefault();
     setIsSending(true);
     try {
+      const action = event.nativeEvent.submitter?.value || 'send';
+      if (action === 'schedule' && (!scheduledAt || new Date(scheduledAt).getTime() < Date.now() + 60_000)) {
+        toast.error(t.scheduleTimeError);
+        return;
+      }
       await sendAdminNotification({
         title,
         content,
         type,
+        action,
+        ...(action === 'schedule' ? { scheduledAt: new Date(scheduledAt).toISOString() } : {}),
         audience: type === 'welcome'
           ? { type: 'new-users' }
           : (audienceType === 'all' ? { type: 'all' } : { type: 'user', email }),
       }, requestId.current);
-      toast.success(type === 'welcome' ? t.welcomeQueued : t.notificationSent);
+      toast.success(action === 'draft' ? t.campaignDraftSaved : action === 'schedule' ? t.campaignScheduled : (type === 'welcome' ? t.welcomeQueued : t.notificationSent));
       setTitle('');
       setContent('');
+      setScheduledAt('');
       requestId.current = createRequestId();
       setIsPreviewOpen(false);
       await loadHistory();
@@ -96,6 +105,24 @@ const AdminNotificationsPage = () => {
       toast.error(error.response?.data?.message || t.notificationDeleteError);
     } finally {
       setDeletingNotificationId('');
+    }
+  };
+
+  const handleCampaignAction = async (action, notification) => {
+    try {
+      if (action === 'archive') {
+        await archiveAdminNotification(notification.id);
+        toast.success(t.campaignArchived);
+      } else if (action === 'clone') {
+        await cloneAdminNotification(notification.id);
+        toast.success(t.campaignCloned);
+      } else if (action === 'resend') {
+        await resendAdminNotification(notification.id, createRequestId());
+        toast.success(t.campaignResent);
+      }
+      await loadHistory();
+    } catch (error) {
+      toast.error(error.response?.data?.message || t.campaignActionError);
     }
   };
 
@@ -167,9 +194,15 @@ const AdminNotificationsPage = () => {
                 <input id='recipient-email' type='email' required maxLength={254} value={email} onChange={(event) => setEmail(event.target.value)} className='min-h-12 w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 text-base text-slate-900 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:focus:ring-violet-900/30' />
               </div>
             ) : null}
-            <div className='flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end dark:border-slate-800'>
+            <div>
+              <label htmlFor='campaign-schedule' className='mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-200'>{t.scheduleSendTime}</label>
+              <input id='campaign-schedule' type='datetime-local' value={scheduledAt} onChange={(event) => setScheduledAt(event.target.value)} min={new Date(Date.now() + 60_000).toISOString().slice(0, 16)} className='min-h-12 w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 text-base text-slate-900 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:focus:ring-violet-900/30' />
+            </div>
+            <div className='flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:flex-wrap sm:justify-end dark:border-slate-800'>
               <button type='button' disabled={!title.trim() || !content.trim()} onClick={() => setIsPreviewOpen(true)} className='min-h-12 rounded-3xl border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800'>{t.preview}</button>
-              <button type='submit' disabled={isSending || !title.trim() || !content.trim() || (type !== 'welcome' && audienceType === 'user' && !email.trim())} className='inline-flex min-h-12 items-center justify-center gap-2 rounded-3xl bg-gradient-to-r from-violet-600 to-indigo-600 px-6 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:from-violet-500 hover:to-indigo-500 disabled:cursor-not-allowed disabled:opacity-45'>
+              <button type='submit' value='draft' disabled={isSending || !title.trim() || !content.trim()} className='min-h-12 rounded-3xl border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-45 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800'>{t.saveDraft}</button>
+              <button type='submit' value='schedule' disabled={isSending || !title.trim() || !content.trim() || !scheduledAt} className='inline-flex min-h-12 items-center justify-center gap-2 rounded-3xl border border-violet-200 px-5 text-sm font-semibold text-violet-700 transition hover:bg-violet-50 disabled:opacity-45 dark:border-violet-500/30 dark:text-violet-200 dark:hover:bg-violet-500/10'><Clock3 className='h-4 w-4' />{t.scheduleCampaign}</button>
+              <button type='submit' value='send' disabled={isSending || !title.trim() || !content.trim() || (type !== 'welcome' && audienceType === 'user' && !email.trim())} className='inline-flex min-h-12 items-center justify-center gap-2 rounded-3xl bg-gradient-to-r from-violet-600 to-indigo-600 px-6 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:from-violet-500 hover:to-indigo-500 disabled:cursor-not-allowed disabled:opacity-45'>
                 {isSending ? <LoaderCircle className='h-4 w-4 animate-spin' /> : <Send className='h-4 w-4' />}
                 {isSending ? t.sending : t.send}
               </button>
@@ -196,13 +229,17 @@ const AdminNotificationsPage = () => {
                     <div className='flex flex-wrap items-center gap-2'>
                       <h3 className='max-w-full break-words text-sm font-semibold text-slate-900 dark:text-white'>{notification.title}</h3>
                       <span className='rounded-3xl bg-violet-50 px-2.5 py-1 text-[11px] font-semibold text-violet-700 dark:bg-violet-500/10 dark:text-violet-200'>{typeLabels[notification.type] || notification.type}</span>
+                      <span className={`rounded-3xl px-2.5 py-1 text-[11px] font-semibold ${notification.status === 'sent' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300' : notification.status === 'scheduled' ? 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300' : notification.status === 'archived' ? 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300' : 'bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300'}`}>{t[`campaignStatus_${notification.status || 'sent'}`] || notification.status || t.campaignStatus_sent}</span>
                     </div>
                     <p className='mt-1 line-clamp-2 break-words text-xs leading-5 text-slate-500 dark:text-slate-400' dangerouslySetInnerHTML={{ __html: sanitizeNotificationHtml(notification.content) }} />
-                    <p className='mt-2 text-[11px] text-slate-400 dark:text-slate-500'>{formatDate(notification.createdAt)} · {notification.targetType === 'all' ? t.allUsers : (notification.targetType === 'new-users' ? t.newAccounts : t.oneUser)}</p>
+                    <p className='mt-2 text-[11px] text-slate-400 dark:text-slate-500'>{formatDate(notification.scheduledAt || notification.createdAt)} · {notification.targetType === 'all' ? t.allUsers : (notification.targetType === 'new-users' ? t.newAccounts : t.oneUser)}{notification.status === 'scheduled' ? ` · ${t.scheduledFor}` : ''}</p>
                   </div>
-                  <div className='flex shrink-0 items-center gap-3 text-xs text-slate-500 dark:text-slate-400'>
+                  <div className='flex shrink-0 flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400'>
                     <span>{notification.recipients} {t.recipients.toLowerCase()}</span>
                     <span className='rounded-3xl bg-emerald-50 px-2.5 py-1.5 font-semibold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300'>{notification.read}/{notification.recipients} {t.readCount.toLowerCase()}</span>
+                    <button type='button' aria-label={t.cloneCampaign} title={t.cloneCampaign} onClick={() => void handleCampaignAction('clone', notification)} className='flex h-10 w-10 items-center justify-center rounded-3xl text-violet-600 transition hover:bg-violet-50 dark:text-violet-300 dark:hover:bg-violet-500/10'><Copy className='h-4 w-4' /></button>
+                    {notification.status === 'sent' || notification.status === 'archived' ? <button type='button' aria-label={t.resendCampaign} title={t.resendCampaign} onClick={() => void handleCampaignAction('resend', notification)} className='flex h-10 w-10 items-center justify-center rounded-3xl text-indigo-600 transition hover:bg-indigo-50 dark:text-indigo-300 dark:hover:bg-indigo-500/10'><RotateCcw className='h-4 w-4' /></button> : null}
+                    {notification.status !== 'archived' ? <button type='button' aria-label={t.archiveCampaign} title={t.archiveCampaign} onClick={() => void handleCampaignAction('archive', notification)} className='flex h-10 w-10 items-center justify-center rounded-3xl text-slate-500 transition hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'><Archive className='h-4 w-4' /></button> : null}
                     <button type='button' aria-label={t.deleteNotification} title={t.deleteNotification} disabled={Boolean(deletingNotificationId)} onClick={() => setNotificationToDelete(notification)} className='flex h-10 w-10 items-center justify-center rounded-3xl text-slate-500 transition hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-50 dark:text-slate-400 dark:hover:bg-rose-500/10 dark:hover:text-rose-300'>
                       <Trash2 className='h-4 w-4' />
                     </button>
