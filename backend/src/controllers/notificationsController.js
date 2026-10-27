@@ -142,6 +142,9 @@ export const listAdminNotifications = async (req, res) => {
       { $group: { _id: '$notificationId', recipients: { $sum: 1 }, read: { $sum: { $cond: ['$isRead', 1, 0] } } } },
     ]);
     const byId = new Map(stats.map((item) => [String(item._id), item]));
+    const targetIds = notifications.map(({ targetId }) => targetId).filter(Boolean);
+    const targetUsers = await User.find({ _id: { $in: targetIds } }).select('_id email').lean();
+    const emailById = new Map(targetUsers.map((user) => [String(user._id), user.email]));
     return res.status(200).json({ notifications: notifications.map((notification) => {
       const stat = byId.get(String(notification._id));
       return {
@@ -151,6 +154,7 @@ export const listAdminNotifications = async (req, res) => {
         type: notification.type,
         targetType: notification.targetType,
         targetId: notification.targetId ? String(notification.targetId) : null,
+        targetEmail: notification.targetId ? (emailById.get(String(notification.targetId)) || '') : '',
         createdAt: notification.createdAt,
         status: notification.status || 'sent',
         scheduledAt: notification.scheduledAt || null,
@@ -395,5 +399,26 @@ export const processScheduledNotifications = async () => {
       console.error('Scheduled notification delivery error:', error);
       await Notification.updateOne({ _id: claimed._id, status: 'processing' }, { $set: { status: 'scheduled' } });
     }
+  }
+};
+
+
+export const updateAdminNotification = async (req, res) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) return res.status(404).json({ message: 'Campaign not found.' });
+    const title = typeof req.body.title === 'string' ? req.body.title.trim() : '';
+    const content = typeof req.body.content === 'string' ? req.body.content.trim() : '';
+    if (!title || title.length > 120) return res.status(400).json({ message: 'Title must contain 1 to 120 characters.' });
+    if (!content || content.length > 5000) return res.status(400).json({ message: 'Content must contain 1 to 5000 characters.' });
+    const campaign = await Notification.findOneAndUpdate(
+      { _id: req.params.id, status: 'draft' },
+      { $set: { title, content } },
+      { new: true, runValidators: true }
+    ).select('_id status title content');
+    if (!campaign) return res.status(409).json({ message: 'Only draft campaigns can be edited.' });
+    return res.status(200).json({ notification: { id: String(campaign._id), status: campaign.status } });
+  } catch (error) {
+    console.error('Update admin campaign error:', error);
+    return res.status(500).json({ message: 'Unable to update this draft.' });
   }
 };
