@@ -131,7 +131,7 @@ const AdminNotificationsPage = () => {
                 <label htmlFor='notification-content' className='text-sm font-semibold text-slate-700 dark:text-slate-200'>{t.notificationContent}</label>
                 <span className='text-xs text-slate-400'>{content.length}/5000</span>
               </div>
-              <textarea id='notification-content' required maxLength={5000} rows={6} value={content} onChange={(event) => setContent(event.target.value)} className='min-h-36 w-full resize-y rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-base leading-6 text-slate-900 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:focus:ring-violet-900/30' />
+              <textarea id='notification-content' required maxLength={5000} rows={6} value={content} onChange={(event) => setContent(event.target.value)} placeholder={'Liên hệ tôi <a href="https://example.com/contact">click vào</a> để được hỗ trợ.'} className='min-h-36 w-full resize-y rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-base leading-6 text-slate-900 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:focus:ring-violet-900/30' />
             </div>
             <div className='grid gap-5 sm:grid-cols-2'>
               <div>
