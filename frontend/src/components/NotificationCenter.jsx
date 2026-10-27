@@ -75,7 +75,7 @@ const NotificationLanguageToggle = ({ value, onChange, label }) => (
   </div>
 );
 
-const NotificationCenter = ({ userId }) => {
+const NotificationCenter = ({ userId, navigationOpen = false, onDrawerOpenChange = () => {} }) => {
   const { t, language } = useLanguage();
   const [unreadCount, setUnreadCount] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -94,6 +94,42 @@ const NotificationCenter = ({ userId }) => {
   const notificationButtonRef = useRef(null);
   const drawerRef = useRef(null);
   const detailRef = useRef(null);
+  const swipeStart = useRef(null);
+
+  useEffect(() => { onDrawerOpenChange(drawerOpen); }, [drawerOpen, onDrawerOpenChange]);
+
+  useEffect(() => {
+    const onTouchStart = (event) => {
+      if (navigationOpen || drawerOpen || selectedId || !event.touches.length) {
+        swipeStart.current = null;
+        return;
+      }
+      const touch = event.touches[0];
+      if (touch.clientX >= window.innerWidth - 32) {
+        swipeStart.current = { x: touch.clientX, y: touch.clientY };
+      } else {
+        swipeStart.current = null;
+      }
+    };
+    const onTouchEnd = (event) => {
+      if (!swipeStart.current || !event.changedTouches.length) return;
+      const start = swipeStart.current;
+      swipeStart.current = null;
+      const touch = event.changedTouches[0];
+      const dx = touch.clientX - start.x;
+      const dy = touch.clientY - start.y;
+      if (!navigationOpen && !drawerOpen && !selectedId && dx < -55 && Math.abs(dx) > Math.abs(dy) * 1.2) {
+        setFilter('all');
+        setDrawerOpen(true);
+      }
+    };
+    window.addEventListener('touchstart', onTouchStart, { passive: true });
+    window.addEventListener('touchend', onTouchEnd, { passive: true });
+    return () => {
+      window.removeEventListener('touchstart', onTouchStart);
+      window.removeEventListener('touchend', onTouchEnd);
+    };
+  }, [navigationOpen, drawerOpen, selectedId]);
 
   const focusNotificationButton = useCallback(() => {
     window.setTimeout(() => notificationButtonRef.current?.focus(), 0);
@@ -273,8 +309,10 @@ const NotificationCenter = ({ userId }) => {
         ref={notificationButtonRef}
         type='button'
         onClick={openDrawer}
+        disabled={navigationOpen}
+        aria-disabled={navigationOpen}
         aria-label={`${t.notifications}${unreadCount > 0 ? `, ${unreadCount} ${t.unreadNotifications.toLowerCase()}` : ''}`}
-        className='relative flex h-12 w-12 shrink-0 items-center justify-center rounded-3xl border border-violet-300/70 bg-white/85 text-violet-700 shadow-md backdrop-blur-md transition hover:bg-violet-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-500/25 dark:border-violet-500/30 dark:bg-slate-900/85 dark:text-violet-200 dark:hover:bg-violet-500/10'
+        className={`relative flex h-12 w-12 shrink-0 items-center justify-center rounded-3xl border border-violet-300/70 bg-white/85 text-violet-700 shadow-md backdrop-blur-md transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-500/25 dark:border-violet-500/30 dark:bg-slate-900/85 dark:text-violet-200 ${navigationOpen ? 'cursor-not-allowed opacity-40' : 'hover:bg-violet-50 dark:hover:bg-violet-500/10'}`}
       >
         <Bell className='h-5 w-5' />
         {unreadCount > 0 ? (
