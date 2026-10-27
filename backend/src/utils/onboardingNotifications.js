@@ -6,8 +6,8 @@ export const deliverNewAccountNotifications = async (user) => {
 
   try {
     const [welcome, latestUpdate] = await Promise.all([
-      Notification.findOne({ type: 'welcome', targetType: 'new-users' }).sort({ createdAt: -1, _id: -1 }).select('_id').lean(),
-      Notification.findOne({ type: 'update', targetType: 'all' }).sort({ createdAt: -1, _id: -1 }).select('_id').lean(),
+      Notification.findOne({ type: 'welcome', targetType: 'new-users', status: { $in: ['sent', null] } }).sort({ createdAt: -1, _id: -1 }).select('_id').lean(),
+      Notification.findOne({ type: 'update', targetType: 'all', status: { $in: ['sent', null] } }).sort({ createdAt: -1, _id: -1 }).select('_id').lean(),
     ]);
     const notifications = [welcome, latestUpdate].filter(Boolean);
     if (!notifications.length) return 0;
