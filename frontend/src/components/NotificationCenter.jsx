@@ -295,7 +295,7 @@ const NotificationCenter = ({ userId, navigationOpen = false, onDrawerOpenChange
     setUnreadCount((count) => (typeof count === 'number' ? Math.max(0, count - 1) : count));
     try {
       await markNotificationRead(start.id);
-      await Promise.all([refreshCount().catch(() => {}), refreshList('unread').catch(() => {})]);
+      await refreshCount().catch(() => {});
     } catch {
       setNotifications((items) => items.some((item) => item.id === start.id) ? items : [previous, ...items]);
       await refreshCount().catch(() => {});
