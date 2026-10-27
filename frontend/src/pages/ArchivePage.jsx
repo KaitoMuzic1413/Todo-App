@@ -396,18 +396,18 @@ const ArchivePage = () => {
                   <article
                     key={attachment._id}
                     onClick={() => handlePreview(attachment)}
-                    className={`box-border w-full min-w-0 max-w-full cursor-pointer overflow-hidden rounded-3xl border p-3 shadow-md transition-shadow duration-300 hover:border-violet-300 hover:shadow-lg sm:p-4 dark:hover:border-violet-700 ${attachment.pinned ? 'border-violet-300 bg-violet-50/50 dark:border-violet-900 dark:bg-violet-950/20' : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-950/50'}`}
+                    className={`box-border flex w-full min-w-0 max-w-full items-start justify-between gap-3 overflow-hidden rounded-3xl border p-3 shadow-sm transition-all duration-300 hover:border-violet-300 hover:shadow-md sm:gap-4 sm:p-4 dark:hover:border-violet-700 ${attachment.pinned ? 'border-violet-300 bg-violet-50/50 dark:border-violet-900 dark:bg-violet-950/20' : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-950/50'}`}
                   >
-                    <div className='flex w-full min-w-0 items-start gap-2 sm:gap-3'>
+                    <div className='flex min-w-0 flex-1 items-start gap-3'>
                       <div className='rounded-3xl bg-white p-2.5 text-violet-500 shadow-sm dark:bg-slate-900'>
                         <IconOf kind={kind} />
                       </div>
                       <div className='min-w-0 flex-1'>
-                        <p className='max-w-full whitespace-normal break-words [overflow-wrap:anywhere] text-sm font-semibold text-slate-800 dark:text-slate-100'>{titleOf(attachment)}</p>
+                        <p className='max-w-full whitespace-normal break-words [overflow-wrap:anywhere] text-sm font-medium text-slate-800 dark:text-slate-100'>{titleOf(attachment)}</p>
                         <p className='mt-1 max-w-full whitespace-normal break-words [overflow-wrap:anywhere] text-xs text-slate-400'>{attachment.description || attachment.originalName}</p>
                         <p className='mt-2 max-w-full whitespace-normal break-words [overflow-wrap:anywhere] text-xs leading-relaxed text-slate-400'>{t.uploadedLabel} {formatUploadedAt(attachment.createdAt, language)} · {formatSize(attachment.size)} · {kind === 'document' || kind === 'other' ? t.document : t.tapToView}{attachment.taskId ? ` · ${t.linkedTask}` : ''}</p>
                       </div>
-                      <div className='flex shrink-0 gap-1'>
+                      <div className='flex shrink-0 flex-col gap-2 sm:flex-row sm:gap-1'>
                         <button type='button' onClick={(event) => { event.stopPropagation(); toggleAttachment(attachment, 'pinned'); }} className={attachment.pinned ? 'text-violet-600' : 'text-slate-400 hover:text-slate-600'} aria-label={t.pinFile} title={t.pinFile}>
                           <Pin className='h-4 w-4' />
                         </button>
