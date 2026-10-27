@@ -329,7 +329,7 @@ const ArchivePage = () => {
 
   return (
     <LayoutShell>
-      <div className='w-full min-w-0 max-w-full space-y-6 overflow-x-clip'>
+      <div className='box-border w-full min-w-0 max-w-full space-y-6 overflow-x-hidden px-0'>
         <Header />
 
         <section className='min-w-0 rounded-3xl border border-slate-200/80 bg-white/80 p-3 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-sm sm:p-5 dark:border-slate-800 dark:bg-slate-900/70'>
@@ -378,8 +378,8 @@ const ArchivePage = () => {
             {t.loadingArchive}
           </div>
         ) : (
-          <div className='space-y-4'>
-            <div className='grid gap-3 sm:grid-cols-1'>
+          <div className='w-full min-w-0 max-w-full space-y-4'>
+            <div className='grid w-full min-w-0 max-w-full grid-cols-1 gap-3'>
               {visibleAttachments.length === 0 && (
                 <div className='rounded-3xl border border-slate-200 bg-white/80 p-6 text-center text-sm text-slate-500 shadow-md dark:border-slate-800 dark:bg-slate-900/70'>
                   {t.noFilesInCategory}
@@ -387,7 +387,7 @@ const ArchivePage = () => {
               )}
 
               {visibleGroups.map(([groupType, groupItems]) => (
-                <section key={groupType} className='space-y-3'>
+                <section key={groupType} className='w-full min-w-0 max-w-full space-y-3'>
                   {showTypeHeadings && <h2 className='flex items-center gap-2 px-1 text-sm font-semibold text-slate-600 dark:text-slate-300'><IconOf kind={groupType} />{typeLabel(groupType, t)} <span className='text-xs font-normal text-slate-400'>({groupItems.length})</span></h2>}
                   {groupItems.map((attachment) => {
                     const kind = kindOf(attachment);
@@ -396,7 +396,7 @@ const ArchivePage = () => {
                   <article
                     key={attachment._id}
                     onClick={() => handlePreview(attachment)}
-                    className={`cursor-pointer rounded-3xl border p-4 shadow-md transition-shadow duration-300 hover:border-violet-300 hover:shadow-lg dark:hover:border-violet-700 ${attachment.pinned ? 'border-violet-300 bg-violet-50/50 dark:border-violet-900 dark:bg-violet-950/20' : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-950/50'}`}
+                    className={`box-border w-full min-w-0 max-w-full cursor-pointer overflow-hidden rounded-3xl border p-3 shadow-md transition-shadow duration-300 hover:border-violet-300 hover:shadow-lg sm:p-4 dark:hover:border-violet-700 ${attachment.pinned ? 'border-violet-300 bg-violet-50/50 dark:border-violet-900 dark:bg-violet-950/20' : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-950/50'}`}
                   >
                     <div className='flex min-w-0 items-start gap-2 sm:gap-3'>
                       <div className='rounded-3xl bg-white p-2.5 text-violet-500 shadow-sm dark:bg-slate-900'>

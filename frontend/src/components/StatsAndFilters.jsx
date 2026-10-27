@@ -82,12 +82,12 @@ const StatsAndFilters = ({ tasks = [], onFilterChange, activeFilter = 'all', cus
   };
 
   return (
-    <div className='space-y-4 rounded-3xl border border-slate-200/80 bg-white/80 p-4 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/70'>
-      <div className={`grid grid-cols-2 gap-2 sm:gap-3 ${stats.length === 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-4'}`}>
+    <div className='box-border w-full min-w-0 max-w-full space-y-4 overflow-hidden rounded-3xl border border-slate-200/80 bg-white/80 p-3 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-sm sm:p-4 dark:border-slate-800 dark:bg-slate-900/70'>
+      <div className={`grid min-w-0 grid-cols-2 gap-2 sm:gap-3 ${stats.length === 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-4'}`}>
         {stats.map(({ label, value, tone }) => (
           <div
             key={label}
-            className='rounded-3xl border border-slate-200 bg-slate-50 p-2 dark:border-slate-700 dark:bg-slate-950/50 sm:p-2.5'
+            className='min-w-0 rounded-3xl border border-slate-200 bg-slate-50 p-2 dark:border-slate-700 dark:bg-slate-950/50 sm:p-2.5'
           >
             <div className='flex items-center gap-2.5 sm:gap-3'>
               <div
@@ -123,7 +123,7 @@ const StatsAndFilters = ({ tasks = [], onFilterChange, activeFilter = 'all', cus
         ))}
       </div>
 
-      <div className='relative grid w-full rounded-3xl border border-slate-200/70 bg-slate-100/90 p-1.5 shadow-inner dark:border-slate-700/70 dark:bg-slate-950/70' style={{ gridTemplateColumns: `repeat(${filters.length}, minmax(0, 1fr))` }}>
+      <div className='relative grid w-full min-w-0 max-w-full rounded-3xl border border-slate-200/70 bg-slate-100/90 p-1.5 shadow-inner dark:border-slate-700/70 dark:bg-slate-950/70' style={{ gridTemplateColumns: `repeat(${filters.length}, minmax(0, 1fr))` }}>
         <div
           className='pointer-events-none absolute inset-y-1.5 rounded-3xl bg-violet-600 shadow-accent-indicator transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]'
           style={activeTrackStyle}
