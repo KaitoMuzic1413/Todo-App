@@ -40,6 +40,7 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
   ));
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isNotificationDrawerOpen, setIsNotificationDrawerOpen] = useState(false);
   const navigationTimer = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
   const sidebarX = useMotionValue(-getSidebarWidth());
@@ -137,6 +138,11 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
       const touchX = event.touches[0].clientX;
       const touchY = event.touches[0].clientY;
 
+      // Navigation drawer gestures are disabled while notifications are open.
+      if (isNotificationDrawerOpen) {
+        isEligibleSwipe.current = false;
+        return;
+      }
       // Accept horizontal gestures that begin anywhere in the app, not only at the screen edge.
       isEligibleSwipe.current = true;
       isHorizontalSwipe.current = false;
@@ -215,7 +221,7 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
       shell.removeEventListener('touchend', handleTouchEnd);
       shell.removeEventListener('touchcancel', handleTouchEnd);
     };
-  }, [isSidebarOpen, sidebarX]);
+  }, [isSidebarOpen, isNotificationDrawerOpen, sidebarX]);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', effectiveDarkMode);
@@ -243,9 +249,11 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
       <div className={`fixed left-0 top-0 z-40 m-3 flex items-center gap-2 transition-opacity duration-[240ms] ease-[cubic-bezier(0.2,0.8,0.2,1)] ${isSidebarOpen ? 'pointer-events-none opacity-0' : 'opacity-100'}`} style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <button
           type='button'
-          onClick={() => setIsSidebarOpen(true)}
-          className='flex h-12 w-12 cursor-pointer items-center justify-center rounded-3xl border border-violet-300/70 bg-white/85 text-violet-700 shadow-md backdrop-blur-md transition hover:bg-violet-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-500/25 dark:border-violet-500/30 dark:bg-slate-900/85 dark:text-violet-200 dark:hover:bg-violet-500/10'
+          onClick={() => { if (!isNotificationDrawerOpen) setIsSidebarOpen(true); }}
+          className={`flex h-12 w-12 items-center justify-center rounded-3xl border border-violet-300/70 bg-white/85 text-violet-700 shadow-md backdrop-blur-md transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-500/25 dark:border-violet-500/30 dark:bg-slate-900/85 dark:text-violet-200 ${isNotificationDrawerOpen ? 'cursor-not-allowed opacity-40' : 'cursor-pointer hover:bg-violet-50 dark:hover:bg-violet-500/10'}`}
           aria-label={t.openNavigation || 'Open navigation'}
+          disabled={isNotificationDrawerOpen}
+          aria-disabled={isNotificationDrawerOpen}
         >
           <Menu className='h-5 w-5 text-slate-700 dark:text-slate-200' />
         </button>
@@ -255,7 +263,7 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
           className={`fixed right-0 top-0 m-3 transition-opacity duration-[240ms] ease-[cubic-bezier(0.2,0.8,0.2,1)] ${isSidebarOpen ? 'z-40 opacity-45 hover:opacity-100 focus-within:opacity-100 max-lg:pointer-events-none max-lg:invisible' : 'visible z-40 opacity-100'}`}
           style={{ paddingTop: 'env(safe-area-inset-top)' }}
         >
-          <NotificationCenter userId={currentUser._id} />
+          <NotificationCenter userId={currentUser._id} navigationOpen={isSidebarOpen} onDrawerOpenChange={setIsNotificationDrawerOpen} />
         </div>
       ) : null}
 
