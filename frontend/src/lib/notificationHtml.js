@@ -1,7 +1,11 @@
 const ALLOWED_TAGS = new Set(['A', 'B', 'STRONG', 'I', 'EM', 'U', 'BR', 'P', 'UL', 'OL', 'LI', 'BLOCKQUOTE', 'CODE']);
 const ALLOWED_PROTOCOLS = new Set(['http:', 'https:']);
 
-export const hasNotificationHtml = (value = '') => /<\/?[a-z][^>]*>|&lt;\/?[a-z][^&]*&gt;/i.test(value);
+const HTML_TAG_PATTERN = /<\/?[a-z][^>]*>/i;
+const ESCAPED_HTML_TAG_PATTERN = /&lt;\/?[a-z][^&]*&gt;/i;
+
+export const hasNotificationHtml = (value = '') =>
+  typeof value === 'string' && (HTML_TAG_PATTERN.test(value) || ESCAPED_HTML_TAG_PATTERN.test(value));
 
 export const sanitizeNotificationHtml = (value = '') => {
   if (typeof value !== 'string' || typeof window === 'undefined' || !hasNotificationHtml(value)) {
@@ -9,15 +13,16 @@ export const sanitizeNotificationHtml = (value = '') => {
   }
 
   const parseHtml = (html) => new DOMParser().parseFromString(html, 'text/html');
-  let parsed = parseHtml(value);
+  let source = value;
+  let parsed = parseHtml(source);
 
-  // Some clients/APIs may HTML-escape the content before storing it. Decode one layer
-  // only when the whole payload is text, then sanitize it through the same allowlist.
-  if (
-    parsed.body.children.length === 0 &&
-    /<\/?[a-z][^>]*>/i.test(parsed.body.textContent || '')
-  ) {
-    parsed = parseHtml(parsed.body.textContent || '');
+  // Decode HTML-escaped markup from API/storage layers, up to two layers.
+  // Every decoded result is still sanitized through the strict tag/URL allowlist below.
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const bodyText = parsed.body.textContent || '';
+    if (parsed.body.children.length !== 0 || !HTML_TAG_PATTERN.test(bodyText)) break;
+    source = bodyText;
+    parsed = parseHtml(source);
   }
 
   const cleanNode = (node) => {
@@ -28,6 +33,7 @@ export const sanitizeNotificationHtml = (value = '') => {
         continue;
       }
       if (child.nodeType !== Node.ELEMENT_NODE) continue;
+
       const tag = child.tagName.toUpperCase();
       if (!ALLOWED_TAGS.has(tag)) {
         fragment.appendChild(cleanNode(child));
@@ -41,7 +47,6 @@ export const sanitizeNotificationHtml = (value = '') => {
           const url = new URL(rawHref, window.location.origin);
           if (ALLOWED_PROTOCOLS.has(url.protocol)) {
             clean.setAttribute('href', url.href);
-            // Navigate in the current tab, including on mobile browsers.
             clean.setAttribute('target', '_self');
             clean.setAttribute('rel', 'nofollow');
             clean.style.color = '#7c3aed';
@@ -49,7 +54,7 @@ export const sanitizeNotificationHtml = (value = '') => {
             clean.style.textUnderlineOffset = '3px';
           }
         } catch {
-          // Invalid links are rendered as plain text.
+          // Invalid links remain non-clickable text.
         }
       }
       clean.appendChild(cleanNode(child));
