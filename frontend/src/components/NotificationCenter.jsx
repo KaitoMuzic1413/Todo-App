@@ -308,7 +308,7 @@ const NotificationCenter = ({ userId, navigationOpen = false, onDrawerOpenChange
       <button
         ref={notificationButtonRef}
         type='button'
-        onClick={openDrawer}
+        onClick={() => { if (!navigationOpen) openDrawer(); }}
         disabled={navigationOpen}
         aria-disabled={navigationOpen}
         aria-label={`${t.notifications}${unreadCount > 0 ? `, ${unreadCount} ${t.unreadNotifications.toLowerCase()}` : ''}`}
