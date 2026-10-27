@@ -198,8 +198,9 @@ export const createNotification = async (req, res) => {
   if (!requestId || requestId.length > 128) {
     return res.status(400).json({ message: 'A valid idempotency key is required.' });
   }
+  const requestedAction = ['draft', 'schedule', 'send'].includes(req.body.action) ? req.body.action : 'send';
   const requestFingerprint = createHash('sha256')
-    .update(JSON.stringify({ ...value, createdBy: String(req.user.userId) }))
+    .update(JSON.stringify({ ...value, action: requestedAction, scheduledAt: requestedAction === 'schedule' ? req.body.scheduledAt : null, createdBy: String(req.user.userId) }))
     .digest('hex');
 
   try {
@@ -211,7 +212,7 @@ export const createNotification = async (req, res) => {
       return res.status(200).json({ notification: { id: String(duplicate._id) }, duplicate: true });
     }
 
-    const action = ['draft', 'schedule', 'send'].includes(req.body.action) ? req.body.action : 'send';
+    const action = requestedAction;
     const campaignTarget = value.targetType === 'user' ? await User.findOne({ email: value.targetEmail }).select('_id').lean() : null;
     if (value.targetType === 'user' && !campaignTarget) return res.status(404).json({ message: 'Recipient account was not found.' });
     if (action === 'schedule') {
