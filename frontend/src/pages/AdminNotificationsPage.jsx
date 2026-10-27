@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Archive, BellRing, Clock3, Copy, LoaderCircle, RotateCcw, Send, Trash2, X } from 'lucide-react';
+import { Archive, BellRing, Clock3, Copy, Edit3, LoaderCircle, RotateCcw, Send, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { LayoutShell } from '@/components/LayoutShell';
-import { archiveAdminNotification, cloneAdminNotification, deleteAdminNotification, fetchAdminNotifications, resendAdminNotification, sendAdminNotification } from '@/lib/api';
+import { archiveAdminNotification, cloneAdminNotification, deleteAdminNotification, fetchAdminNotifications, resendAdminNotification, sendAdminNotification, updateAdminNotification } from '@/lib/api';
 import { useLanguage } from '@/lib/i18n';
 import { sanitizeNotificationHtml } from '@/lib/notificationHtml';
 
@@ -21,6 +21,7 @@ const AdminNotificationsPage = () => {
   const [content, setContent] = useState('');
   const [type, setType] = useState('system');
   const [scheduledAt, setScheduledAt] = useState('');
+  const [editingCampaignId, setEditingCampaignId] = useState('');
   const [audienceType, setAudienceType] = useState('all');
   const [email, setEmail] = useState('');
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
@@ -67,6 +68,14 @@ const AdminNotificationsPage = () => {
         toast.error(t.scheduleTimeError);
         return;
       }
+      if (editingCampaignId && action === 'draft') {
+        await updateAdminNotification(editingCampaignId, { title, content });
+        toast.success(t.campaignDraftUpdated);
+        setTitle(''); setContent(''); setScheduledAt(''); setEditingCampaignId('');
+        requestId.current = createRequestId();
+        await loadHistory();
+        return;
+      }
       await sendAdminNotification({
         title,
         content,
@@ -77,6 +86,10 @@ const AdminNotificationsPage = () => {
           ? { type: 'new-users' }
           : (audienceType === 'all' ? { type: 'all' } : { type: 'user', email }),
       }, requestId.current);
+      if (editingCampaignId) {
+        await archiveAdminNotification(editingCampaignId);
+        setEditingCampaignId('');
+      }
       toast.success(action === 'draft' ? t.campaignDraftSaved : action === 'schedule' ? t.campaignScheduled : (type === 'welcome' ? t.welcomeQueued : t.notificationSent));
       setTitle('');
       setContent('');
@@ -116,6 +129,16 @@ const AdminNotificationsPage = () => {
       } else if (action === 'clone') {
         await cloneAdminNotification(notification.id);
         toast.success(t.campaignCloned);
+      } else if (action === 'edit') {
+        setEditingCampaignId(notification.id);
+        setTitle(notification.title);
+        setContent(notification.content);
+        setType(notification.type);
+        setAudienceType(notification.targetType === 'user' ? 'user' : 'all');
+        setEmail(notification.targetEmail || '');
+        setScheduledAt('');
+        setIsPreviewOpen(false);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       } else if (action === 'resend') {
         if (!window.confirm(t.resendCampaignConfirm)) return;
         await resendAdminNotification(notification.id, createRequestId());
@@ -148,7 +171,7 @@ const AdminNotificationsPage = () => {
         </header>
 
         <section className='rounded-3xl border border-slate-200/80 bg-white/90 p-5 shadow-sm sm:rounded-3xl sm:p-7 dark:border-slate-800 dark:bg-slate-900/80'>
-          <h2 className='text-lg font-bold text-slate-900 dark:text-white'>{t.sendNotifications}</h2>
+          <h2 className='text-lg font-bold text-slate-900 dark:text-white'>{editingCampaignId ? t.editDraftTitle : t.sendNotifications}</h2>
           <form onSubmit={(event) => void handleSubmit(event)} className='mt-5 space-y-5'>
             <div>
               <label htmlFor='notification-title' className='mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-200'>{t.notificationTitle}</label>
@@ -201,7 +224,7 @@ const AdminNotificationsPage = () => {
             </div>
             <div className='flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:flex-wrap sm:justify-end dark:border-slate-800'>
               <button type='button' disabled={!title.trim() || !content.trim()} onClick={() => setIsPreviewOpen(true)} className='min-h-12 rounded-3xl border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800'>{t.preview}</button>
-              <button type='submit' value='draft' disabled={isSending || !title.trim() || !content.trim()} className='min-h-12 rounded-3xl border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-45 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800'>{t.saveDraft}</button>
+              <button type='submit' value='draft' disabled={isSending || !title.trim() || !content.trim()} className='min-h-12 rounded-3xl border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-45 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800'>{editingCampaignId ? t.updateDraft : t.saveDraft}</button>
               <button type='submit' value='schedule' disabled={isSending || !title.trim() || !content.trim() || !scheduledAt} className='inline-flex min-h-12 items-center justify-center gap-2 rounded-3xl border border-violet-200 px-5 text-sm font-semibold text-violet-700 transition hover:bg-violet-50 disabled:opacity-45 dark:border-violet-500/30 dark:text-violet-200 dark:hover:bg-violet-500/10'><Clock3 className='h-4 w-4' />{t.scheduleCampaign}</button>
               <button type='submit' value='send' disabled={isSending || !title.trim() || !content.trim() || (type !== 'welcome' && audienceType === 'user' && !email.trim())} className='inline-flex min-h-12 items-center justify-center gap-2 rounded-3xl bg-gradient-to-r from-violet-600 to-indigo-600 px-6 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:from-violet-500 hover:to-indigo-500 disabled:cursor-not-allowed disabled:opacity-45'>
                 {isSending ? <LoaderCircle className='h-4 w-4 animate-spin' /> : <Send className='h-4 w-4' />}
@@ -239,6 +262,7 @@ const AdminNotificationsPage = () => {
                     <span>{notification.recipients} {t.recipients.toLowerCase()}</span>
                     <span className='rounded-3xl bg-emerald-50 px-2.5 py-1.5 font-semibold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300'>{notification.read}/{notification.recipients} {t.readCount.toLowerCase()}</span>
                     <button type='button' aria-label={t.cloneCampaign} title={t.cloneCampaign} onClick={() => void handleCampaignAction('clone', notification)} className='flex h-10 w-10 items-center justify-center rounded-3xl text-violet-600 transition hover:bg-violet-50 dark:text-violet-300 dark:hover:bg-violet-500/10'><Copy className='h-4 w-4' /></button>
+                    {notification.status === 'draft' ? <button type='button' aria-label={t.editDraft} title={t.editDraft} onClick={() => void handleCampaignAction('edit', notification)} className='flex h-10 w-10 items-center justify-center rounded-3xl text-indigo-600 transition hover:bg-indigo-50 dark:text-indigo-300 dark:hover:bg-indigo-500/10'><Edit3 className='h-4 w-4' /></button> : null}
                     {notification.status === 'sent' || notification.status === 'archived' ? <button type='button' aria-label={t.resendCampaign} title={t.resendCampaign} onClick={() => void handleCampaignAction('resend', notification)} className='flex h-10 w-10 items-center justify-center rounded-3xl text-indigo-600 transition hover:bg-indigo-50 dark:text-indigo-300 dark:hover:bg-indigo-500/10'><RotateCcw className='h-4 w-4' /></button> : null}
                     {notification.status !== 'archived' ? <button type='button' aria-label={t.archiveCampaign} title={t.archiveCampaign} onClick={() => void handleCampaignAction('archive', notification)} className='flex h-10 w-10 items-center justify-center rounded-3xl text-slate-500 transition hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'><Archive className='h-4 w-4' /></button> : null}
                     <button type='button' aria-label={t.deleteNotification} title={t.deleteNotification} disabled={Boolean(deletingNotificationId)} onClick={() => setNotificationToDelete(notification)} className='flex h-10 w-10 items-center justify-center rounded-3xl text-slate-500 transition hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-50 dark:text-slate-400 dark:hover:bg-rose-500/10 dark:hover:text-rose-300'>
