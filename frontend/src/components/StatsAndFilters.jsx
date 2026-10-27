@@ -114,7 +114,7 @@ const StatsAndFilters = ({ tasks = [], onFilterChange, activeFilter = 'all', cus
 
               <div className='min-w-0'>
                 <AnimatedNumber value={value} />
-                <p className='truncate text-xs text-slate-500 dark:text-slate-300 sm:text-xs'>
+                <p className='whitespace-normal break-words text-xs leading-tight text-slate-500 dark:text-slate-300 sm:text-xs'>
                   {label}
                 </p>
               </div>

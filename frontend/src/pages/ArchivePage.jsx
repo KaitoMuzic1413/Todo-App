@@ -333,12 +333,12 @@ const ArchivePage = () => {
         <Header />
 
         <section className='min-w-0 rounded-3xl border border-slate-200/80 bg-white/80 p-3 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-sm sm:p-5 dark:border-slate-800 dark:bg-slate-900/70'>
-          <div className='flex min-w-0 flex-wrap items-center justify-between gap-3'>
-            <div>
+          <div className='flex w-full min-w-0 flex-wrap items-start justify-between gap-3'>
+            <div className='w-full min-w-0 flex-1 break-words sm:w-auto'>
               <h3 className='text-lg font-semibold text-slate-900 dark:text-white'>{t.uploadArchiveTitle}</h3>
               <p className='mt-1 max-w-full break-words text-sm text-slate-500 dark:text-slate-400'>{t.uploadArchiveSubtitle}</p>
             </div>
-            <label className={`inline-flex items-center gap-2 rounded-3xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white transition-all ${uploading ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-violet-500'}`}>
+            <label className={`inline-flex max-w-full shrink-0 items-center justify-center gap-2 self-start whitespace-normal rounded-3xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white transition-all ${uploading ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-violet-500'}`}>
               <Upload className='h-4 w-4' /> {t.chooseFile}
               <input
                 type='file'
@@ -398,14 +398,14 @@ const ArchivePage = () => {
                     onClick={() => handlePreview(attachment)}
                     className={`box-border w-full min-w-0 max-w-full cursor-pointer overflow-hidden rounded-3xl border p-3 shadow-md transition-shadow duration-300 hover:border-violet-300 hover:shadow-lg sm:p-4 dark:hover:border-violet-700 ${attachment.pinned ? 'border-violet-300 bg-violet-50/50 dark:border-violet-900 dark:bg-violet-950/20' : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-950/50'}`}
                   >
-                    <div className='flex min-w-0 items-start gap-2 sm:gap-3'>
+                    <div className='flex w-full min-w-0 items-start gap-2 sm:gap-3'>
                       <div className='rounded-3xl bg-white p-2.5 text-violet-500 shadow-sm dark:bg-slate-900'>
                         <IconOf kind={kind} />
                       </div>
                       <div className='min-w-0 flex-1'>
-                        <p className='truncate text-sm font-semibold text-slate-800 dark:text-slate-100'>{titleOf(attachment)}</p>
-                        <p className='mt-1 truncate text-xs text-slate-400'>{attachment.description || attachment.originalName}</p>
-                        <p className='mt-2 text-xs text-slate-400'>{t.uploadedLabel} {formatUploadedAt(attachment.createdAt, language)} · {formatSize(attachment.size)} · {kind === 'document' || kind === 'other' ? t.document : t.tapToView}{attachment.taskId ? ` · ${t.linkedTask}` : ''}</p>
+                        <p className='max-w-full whitespace-normal break-words [overflow-wrap:anywhere] text-sm font-semibold text-slate-800 dark:text-slate-100'>{titleOf(attachment)}</p>
+                        <p className='mt-1 max-w-full whitespace-normal break-words [overflow-wrap:anywhere] text-xs text-slate-400'>{attachment.description || attachment.originalName}</p>
+                        <p className='mt-2 max-w-full whitespace-normal break-words [overflow-wrap:anywhere] text-xs leading-relaxed text-slate-400'>{t.uploadedLabel} {formatUploadedAt(attachment.createdAt, language)} · {formatSize(attachment.size)} · {kind === 'document' || kind === 'other' ? t.document : t.tapToView}{attachment.taskId ? ` · ${t.linkedTask}` : ''}</p>
                       </div>
                       <div className='flex shrink-0 gap-1'>
                         <button type='button' onClick={(event) => { event.stopPropagation(); toggleAttachment(attachment, 'pinned'); }} className={attachment.pinned ? 'text-violet-600' : 'text-slate-400 hover:text-slate-600'} aria-label={t.pinFile} title={t.pinFile}>
