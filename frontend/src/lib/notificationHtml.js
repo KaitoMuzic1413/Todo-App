@@ -32,6 +32,9 @@ export const sanitizeNotificationHtml = (value = '') => {
             clean.setAttribute('href', url.href);
             clean.setAttribute('target', '_blank');
             clean.setAttribute('rel', 'noopener noreferrer nofollow');
+            clean.style.color = '#7c3aed';
+            clean.style.textDecoration = 'underline';
+            clean.style.textUnderlineOffset = '3px';
           }
         } catch {
           // Invalid links are rendered as plain text.
