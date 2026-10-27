@@ -60,15 +60,10 @@ const translateTextsInBatches = async (texts, language) => {
 };
 
 const NotificationLanguageToggle = ({ value, onChange, label }) => (
-  <div className='flex shrink-0 items-center rounded-xl border border-slate-200 p-0.5 dark:border-slate-700' role='group' aria-label={label}>
+  <div className='relative grid shrink-0 grid-cols-2 rounded-3xl border border-slate-200 bg-slate-100 p-0.5 dark:border-slate-700 dark:bg-slate-900' role='group' aria-label={label}>
+    <motion.span aria-hidden='true' className='absolute bottom-0.5 top-0.5 w-[calc(50%-2px)] rounded-3xl bg-violet-100 shadow-sm dark:bg-violet-500/20' initial={false} animate={{ x: value === 'vi' ? 0 : '100%' }} transition={{ type: 'spring', stiffness: 420, damping: 32 }} />
     {['vi', 'en'].map((code) => (
-      <button
-        key={code}
-        type='button'
-        onClick={() => onChange(code)}
-        aria-pressed={value === code}
-        className={`rounded-lg px-2 py-1 text-[11px] font-semibold uppercase transition ${value === code ? 'bg-violet-100 text-violet-700 dark:bg-violet-500/20 dark:text-violet-200' : 'text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}`}
-      >
+      <button key={code} type='button' onClick={() => onChange(code)} aria-pressed={value === code} className={`relative z-10 min-w-8 rounded-3xl px-2.5 py-1 text-[11px] font-bold uppercase transition-colors ${value === code ? 'text-violet-700 dark:text-violet-100' : 'text-slate-500 hover:text-violet-700 dark:text-slate-300 dark:hover:text-violet-200'}`}>
         {code}
       </button>
     ))}
@@ -95,6 +90,8 @@ const NotificationCenter = ({ userId, navigationOpen = false, onDrawerOpenChange
   const drawerRef = useRef(null);
   const detailRef = useRef(null);
   const swipeStart = useRef(null);
+  const notificationSwipeStart = useRef(null);
+  const suppressNotificationClick = useRef(false);
 
   useEffect(() => { onDrawerOpenChange(drawerOpen); }, [drawerOpen, onDrawerOpenChange]);
 
@@ -272,6 +269,48 @@ const NotificationCenter = ({ userId, navigationOpen = false, onDrawerOpenChange
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [drawerOpen, focusNotificationButton, selectedId]);
 
+  const handleNotificationTouchStart = (event, notification) => {
+    if (filter !== 'unread' || notification.isRead || event.touches.length !== 1) {
+      notificationSwipeStart.current = null;
+      return;
+    }
+    const touch = event.touches[0];
+    notificationSwipeStart.current = { id: notification.id, x: touch.clientX, y: touch.clientY };
+  };
+
+  const handleNotificationTouchEnd = async (event) => {
+    const start = notificationSwipeStart.current;
+    notificationSwipeStart.current = null;
+    if (!start || !event.changedTouches.length || filter !== 'unread') return;
+    const touch = event.changedTouches[0];
+    const dx = touch.clientX - start.x;
+    const dy = touch.clientY - start.y;
+    if (dx > -60 || Math.abs(dx) < Math.abs(dy) * 1.25) return;
+
+    suppressNotificationClick.current = true;
+    window.setTimeout(() => { suppressNotificationClick.current = false; }, 350);
+    const previous = notifications.find((item) => item.id === start.id);
+    if (!previous || previous.isRead) return;
+    setNotifications((items) => items.filter((item) => item.id !== start.id));
+    setUnreadCount((count) => (typeof count === 'number' ? Math.max(0, count - 1) : count));
+    try {
+      await markNotificationRead(start.id);
+      await Promise.all([refreshCount().catch(() => {}), refreshList('unread').catch(() => {})]);
+    } catch {
+      setNotifications((items) => items.some((item) => item.id === start.id) ? items : [previous, ...items]);
+      await refreshCount().catch(() => {});
+      setListError(t.notificationReadError);
+    }
+  };
+
+  const handleNotificationClick = (notificationId) => {
+    if (suppressNotificationClick.current) {
+      suppressNotificationClick.current = false;
+      return;
+    }
+    void openNotification(notificationId);
+  };
+
   const openNotification = async (notificationId) => {
     setDrawerOpen(false);
     setSelectedId(notificationId);
@@ -348,7 +387,7 @@ const NotificationCenter = ({ userId, navigationOpen = false, onDrawerOpenChange
                   {unreadCount > 0 ? <p className='mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400'>{unreadCount} {t.unreadNotifications.toLowerCase()}</p> : null}
                 </div>
                 <div className='flex shrink-0 items-center gap-2'>
-                  <NotificationLanguageToggle value={activeContentLanguage} onChange={setContentLanguage} label={t.notificationLanguage} />
+                  <NotificationLanguageToggle value={activeContentLanguage} onChange={(code) => { setContentLanguage(code); setLanguage(code); }} label={t.notificationLanguage} />
                   <button type='button' autoFocus onClick={() => { setDrawerOpen(false); focusNotificationButton(); }} aria-label={t.close} className='flex h-10 w-10 items-center justify-center rounded-3xl border border-violet-200/70 text-violet-700 transition hover:bg-violet-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 dark:border-violet-500/20 dark:text-violet-200 dark:hover:bg-violet-500/10'>
                     <X className='h-5 w-5' />
                   </button>
@@ -383,24 +422,30 @@ const NotificationCenter = ({ userId, navigationOpen = false, onDrawerOpenChange
                   </div>
                 ) : (
                   <ul className='space-y-2'>
-                    {notifications.map((notification) => (
-                      <li key={notification.id}>
-                        <button
-                          type='button'
-                          onClick={() => void openNotification(notification.id)}
-                          className={`w-full rounded-2xl border p-3 text-left transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${notification.isRead ? 'border-slate-100 bg-white text-slate-600 hover:border-slate-200 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400 dark:hover:border-slate-700' : 'border-violet-100 bg-violet-50/80 text-slate-900 hover:border-violet-200 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-slate-100 dark:hover:border-violet-500/40'}`}
-                        >
-                          <span className='flex items-start gap-3'>
-                            <span className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-3xl ${notification.isRead ? 'bg-slate-300 dark:bg-slate-700' : 'bg-violet-600 dark:bg-violet-300'}`} aria-hidden='true' />
-                            <span className='min-w-0 flex-1'>
-                              <span className={`block truncate text-sm ${notification.isRead ? 'font-medium' : 'font-bold'}`}>{translatedNotifications[notification.id]?.title || notification.title}</span>
-                              <span className='notification-rich-content mt-1 block overflow-hidden text-ellipsis text-xs leading-5 text-slate-500 dark:text-slate-400' style={{ display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, overflow: 'hidden' }} dangerouslySetInnerHTML={{ __html: sanitizeNotificationHtml(translatedNotifications[notification.id]?.content || notification.content) }} />
-                              <span className='mt-2 block text-[11px] text-slate-400 dark:text-slate-500'>{formatDate(notification.createdAt || notification.deliveredAt)}</span>
+                    <AnimatePresence initial={false}>
+                      {notifications.map((notification) => (
+                        <motion.li key={notification.id} layout initial={{ opacity: 0, x: 0 }} exit={{ opacity: 0, x: -36, height: 0, marginBottom: 0, transition: { duration: 0.22, ease: 'easeOut' } }} transition={{ layout: { duration: 0.22, ease: 'easeOut' } }} className='overflow-hidden'>
+                          <button
+                            type='button'
+                            onTouchStart={(event) => handleNotificationTouchStart(event, notification)}
+                            onTouchEnd={(event) => void handleNotificationTouchEnd(event)}
+                            onClick={() => handleNotificationClick(notification.id)}
+                            aria-label={filter === 'unread' && !notification.isRead ? `${translatedNotifications[notification.id]?.title || notification.title}. ${t.swipeToRead}` : (translatedNotifications[notification.id]?.title || notification.title)}
+                            className={`w-full rounded-2xl border p-3 text-left transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${notification.isRead ? 'border-slate-100 bg-white text-slate-600 hover:border-slate-200 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400 dark:hover:border-slate-700' : 'border-violet-100 bg-violet-50/80 text-slate-900 hover:border-violet-200 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-slate-100 dark:hover:border-violet-500/40'}`}
+                          >
+                            <span className='flex items-start gap-3'>
+                              <span className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-3xl ${notification.isRead ? 'bg-slate-300 dark:bg-slate-700' : 'bg-violet-600 dark:bg-violet-300'}`} aria-hidden='true' />
+                              <span className='min-w-0 flex-1'>
+                                <span className={`block truncate text-sm ${notification.isRead ? 'font-medium' : 'font-bold'}`}>{translatedNotifications[notification.id]?.title || notification.title}</span>
+                                <span className='notification-rich-content mt-1 block overflow-hidden text-ellipsis text-xs leading-5 text-slate-500 dark:text-slate-400' style={{ display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, overflow: 'hidden' }} dangerouslySetInnerHTML={{ __html: sanitizeNotificationHtml(translatedNotifications[notification.id]?.content || notification.content) }} />
+                                <span className='mt-2 block text-[11px] text-slate-400 dark:text-slate-500'>{formatDate(notification.createdAt || notification.deliveredAt)}</span>
+                                {filter === 'unread' && !notification.isRead ? <span className='mt-1 block text-[10px] font-medium text-violet-600 dark:text-violet-300'>{t.swipeToRead}</span> : null}
+                              </span>
                             </span>
-                          </span>
-                        </button>
-                      </li>
-                    ))}
+                          </button>
+                        </motion.li>
+                      ))}
+                    </AnimatePresence>
                   </ul>
                 )}
               </div>
