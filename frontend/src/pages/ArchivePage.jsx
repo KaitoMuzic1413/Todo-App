@@ -396,10 +396,10 @@ const ArchivePage = () => {
                   <article
                     key={attachment._id}
                     onClick={() => handlePreview(attachment)}
-                    className={`box-border flex w-full min-w-0 max-w-full items-start justify-between gap-3 overflow-hidden rounded-3xl border p-3 shadow-sm transition-all duration-300 hover:border-violet-300 hover:shadow-md sm:gap-4 sm:p-4 dark:hover:border-violet-700 ${attachment.pinned ? 'border-violet-300 bg-violet-50/50 dark:border-violet-900 dark:bg-violet-950/20' : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-950/50'}`}
+                    className={`box-border flex w-full min-w-0 max-w-full flex-col gap-3 overflow-hidden rounded-3xl border p-3 shadow-sm transition-all duration-300 hover:border-violet-300 hover:shadow-md sm:gap-4 sm:p-4 dark:hover:border-violet-700 ${attachment.pinned ? 'border-violet-300 bg-violet-50/50 dark:border-violet-900 dark:bg-violet-950/20' : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-950/50'}`}
                   >
-                    <div className='flex min-w-0 flex-1 items-start gap-3'>
-                      <div className='rounded-3xl bg-white p-2.5 text-violet-500 shadow-sm dark:bg-slate-900'>
+                    <div className='flex w-full min-w-0 items-start gap-3'>
+                      <div className='shrink-0 rounded-3xl bg-white p-2.5 text-violet-500 shadow-sm dark:bg-slate-900'>
                         <IconOf kind={kind} />
                       </div>
                       <div className='min-w-0 flex-1'>
@@ -416,7 +416,7 @@ const ArchivePage = () => {
                         </button>
                       </div>
                     </div>
-                    <div className='mt-3 flex flex-wrap justify-end gap-2'>
+                    <div className='flex w-full min-w-0 flex-wrap items-center justify-start gap-2 border-t border-slate-200/70 pt-3 dark:border-slate-700/70'>
                       <button type='button' onClick={(event) => { event.stopPropagation(); setEditing(attachment); setDraft({ content: titleOf(attachment), caption: attachment.description || '' }); }} aria-label={t.editFile} title={t.editFile} className='rounded-3xl border border-slate-200 p-2 text-slate-500 hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800'>
                         <Pencil className='h-4 w-4' />
                       </button>
