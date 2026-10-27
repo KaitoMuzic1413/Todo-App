@@ -6,6 +6,7 @@ import {
   archiveAdminNotification,
   cloneAdminNotification,
   resendAdminNotification,
+  updateAdminNotification,
   translateNotificationTexts,
   deleteAdminNotification,
   getNotification,
@@ -25,6 +26,7 @@ router.get('/unread-count', getUnreadNotificationCount);
 router.get('/admin', requireAdmin, listAdminNotifications);
 router.post('/admin', requireAdmin, createNotification);
 router.post('/admin/:id/clone', requireAdmin, cloneAdminNotification);
+router.patch('/admin/:id', requireAdmin, updateAdminNotification);
 router.post('/admin/:id/resend', requireAdmin, resendAdminNotification);
 router.patch('/admin/:id/archive', requireAdmin, archiveAdminNotification);
 router.delete('/admin/:id', requireAdmin, deleteAdminNotification);
