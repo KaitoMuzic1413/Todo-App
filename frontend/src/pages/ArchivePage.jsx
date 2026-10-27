@@ -179,7 +179,14 @@ const ArchivePage = () => {
       setCurrentPage(1);
       await loadAttachments();
     } catch (error) {
-      setMessage(error?.response?.data?.message || t.uploadFailed);
+      const serverMessage = String(error?.response?.data?.message || '').toLowerCase();
+      if (serverMessage.includes('video')) {
+        setMessage(t.videoUploadNotSupported);
+      } else if (serverMessage.includes('10 mb') || serverMessage.includes('file too large') || serverMessage.includes('file size')) {
+        setMessage(t.fileTooLarge);
+      } else {
+        setMessage(t.uploadFailed);
+      }
     } finally {
       setUploading(false);
     }
