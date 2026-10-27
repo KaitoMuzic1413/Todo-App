@@ -15,7 +15,7 @@ export const sanitizeNotificationHtml = (value = '') => {
   // only when the whole payload is text, then sanitize it through the same allowlist.
   if (
     parsed.body.children.length === 0 &&
-    /&lt;\/?[a-z][^&]*&gt;/i.test(parsed.body.textContent || '')
+    /<\/?[a-z][^>]*>/i.test(parsed.body.textContent || '')
   ) {
     parsed = parseHtml(parsed.body.textContent || '');
   }
