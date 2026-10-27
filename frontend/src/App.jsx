@@ -3,10 +3,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Route, Routes, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { Toaster } from 'sonner';
-import { isTauri } from '@tauri-apps/api/core';
 import { PageTransition } from './components/PageTransition';
 import AboutPage from './pages/AboutPage';
-import DownloadPage from './pages/DownloadPage';
 import HomePages from './pages/HomePage';
 import SignUpPage from './pages/Login/SignUpPage';
 import SignInPage from './pages/Login/SignInPage';
@@ -22,7 +20,6 @@ import SettingsPage from './pages/SettingsPage';
 import LegalPoliciesPage from './pages/LegalPoliciesPage';
 import AdminNotificationsPage from './pages/AdminNotificationsPage';
 import DueTaskReminderWatcher from './components/DueTaskReminderWatcher';
-import InstallAppNotice from './components/InstallAppNotice';
 import { fetchCurrentUser } from './lib/api';
 
 const LEGAL_ACCEPTANCE_VERSION = '2026-10-26';
@@ -113,27 +110,6 @@ function App() {
   const location = useLocation();
 
   useEffect(() => {
-    if (!isTauri()) return undefined;
-
-    const checkForDesktopUpdate = async () => {
-      try {
-        const { check } = await import('@tauri-apps/plugin-updater');
-        const update = await check();
-        if (!update) return;
-
-        await update.downloadAndInstall();
-        const { relaunch } = await import('@tauri-apps/plugin-process');
-        await relaunch();
-      } catch (error) {
-        console.warn('Could not check for or install a desktop update:', error);
-      }
-    };
-
-    const timer = window.setTimeout(checkForDesktopUpdate, 5000);
-    return () => window.clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
     const blockDevToolsShortcuts = (event) => {
       const key = event.key.toLowerCase();
       const isDevToolsShortcut = event.key === 'F12'
@@ -158,7 +134,6 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <InstallAppNotice />
       <DueTaskReminderWatcher />
       <AnimatePresence mode='wait'>
       <PageTransition key={location.pathname}>
@@ -170,7 +145,6 @@ function App() {
         <Route path='/forgot-password' element={<ForgotPasswordPage />} />
         <Route path='/reset-password' element={<ResetPasswordPage />} />
         <Route path='/about' element={<AboutPage />} />
-        <Route path='/download' element={<DownloadPage />} />
         <Route path='/policies/:policySlug' element={<LegalPoliciesPage />} />
 
         <Route element={<ProtectedRoute />}>
