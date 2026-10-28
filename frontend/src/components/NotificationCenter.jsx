@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, animate, motion, useMotionValue } from 'framer-motion';
 import { Bell, Check, LoaderCircle, X } from 'lucide-react';
 import {
   fetchNotification,
@@ -92,41 +92,84 @@ const NotificationCenter = ({ userId, navigationOpen = false, onDrawerOpenChange
   const swipeStart = useRef(null);
   const notificationSwipeStart = useRef(null);
   const suppressNotificationClick = useRef(false);
+  const [isDraggingDrawer, setIsDraggingDrawer] = useState(false);
+  const drawerX = useMotionValue(typeof window === 'undefined' ? 320 : Math.min(320, window.innerWidth * 0.88));
+  const getDrawerWidth = () => Math.min(320, window.innerWidth * 0.88);
 
   useEffect(() => { onDrawerOpenChange(drawerOpen); }, [drawerOpen, onDrawerOpenChange]);
 
   useEffect(() => {
+    if (isDraggingDrawer) return undefined;
+    const controls = animate(drawerX, drawerOpen ? 0 : getDrawerWidth(), {
+      duration: 0.24,
+      ease: [0.2, 0.8, 0.2, 1],
+    });
+    return () => controls.stop();
+  }, [drawerOpen, isDraggingDrawer, drawerX]);
+
+  useEffect(() => {
     const onTouchStart = (event) => {
-      if (navigationOpen || drawerOpen || selectedId || !event.touches.length) {
+      if (navigationOpen || drawerOpen || isDraggingDrawer || selectedId || !event.touches.length) {
         swipeStart.current = null;
         return;
       }
       const touch = event.touches[0];
-      if (touch.clientX >= window.innerWidth - 32) {
-        swipeStart.current = { x: touch.clientX, y: touch.clientY };
-      } else {
-        swipeStart.current = null;
+      // Start anywhere in the app; a leftward horizontal drag pulls the drawer out.
+      swipeStart.current = { x: touch.clientX, y: touch.clientY, horizontal: false };
+    };
+    const onTouchMove = (event) => {
+      const start = swipeStart.current;
+      if (!start || navigationOpen || drawerOpen || selectedId || !event.touches.length) return;
+      const touch = event.touches[0];
+      const dx = touch.clientX - start.x;
+      const dy = touch.clientY - start.y;
+      if (!start.horizontal) {
+        if (Math.abs(dy) > 8 && Math.abs(dy) > Math.abs(dx)) {
+          swipeStart.current = null;
+          return;
+        }
+        if (dx > -8) return;
+        start.horizontal = true;
+        setIsDraggingDrawer(true);
+        setFilter('all');
       }
+      if (event.cancelable) event.preventDefault();
+      drawerX.set(Math.max(0, Math.min(getDrawerWidth(), getDrawerWidth() + dx)));
     };
     const onTouchEnd = (event) => {
-      if (!swipeStart.current || !event.changedTouches.length) return;
       const start = swipeStart.current;
+      if (!start) return;
       swipeStart.current = null;
+      if (!start.horizontal || !event.changedTouches.length) return;
       const touch = event.changedTouches[0];
       const dx = touch.clientX - start.x;
       const dy = touch.clientY - start.y;
-      if (!navigationOpen && !drawerOpen && !selectedId && dx < -55 && Math.abs(dx) > Math.abs(dy) * 1.2) {
-        setFilter('all');
-        setDrawerOpen(true);
+      const width = getDrawerWidth();
+      const openedDistance = width - drawerX.get();
+      const shouldOpen = Math.abs(dx) > Math.abs(dy) * 1.2 && openedDistance >= width * 0.35;
+      setIsDraggingDrawer(false);
+      setDrawerOpen(shouldOpen);
+    };
+    const onTouchCancel = () => {
+      if (!swipeStart.current?.horizontal) {
+        swipeStart.current = null;
+        return;
       }
+      swipeStart.current = null;
+      setIsDraggingDrawer(false);
+      setDrawerOpen(false);
     };
     window.addEventListener('touchstart', onTouchStart, { passive: true });
+    window.addEventListener('touchmove', onTouchMove, { passive: false });
     window.addEventListener('touchend', onTouchEnd, { passive: true });
+    window.addEventListener('touchcancel', onTouchCancel, { passive: true });
     return () => {
       window.removeEventListener('touchstart', onTouchStart);
+      window.removeEventListener('touchmove', onTouchMove);
       window.removeEventListener('touchend', onTouchEnd);
+      window.removeEventListener('touchcancel', onTouchCancel);
     };
-  }, [navigationOpen, drawerOpen, selectedId]);
+  }, [navigationOpen, drawerOpen, isDraggingDrawer, selectedId, drawerX]);
 
   const focusNotificationButton = useCallback(() => {
     window.setTimeout(() => notificationButtonRef.current?.focus(), 0);
@@ -362,7 +405,7 @@ const NotificationCenter = ({ userId, navigationOpen = false, onDrawerOpenChange
       </button>
 
       <AnimatePresence>
-        {drawerOpen ? (
+        {(drawerOpen || isDraggingDrawer) ? (
           <>
             <motion.button
               type='button'
@@ -376,10 +419,11 @@ const NotificationCenter = ({ userId, navigationOpen = false, onDrawerOpenChange
               role='dialog'
               aria-modal='true'
               aria-labelledby='notification-drawer-title'
-              initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
-              transition={{ duration: 0.24, ease: [0.2, 0.8, 0.2, 1] }}
+              initial={false}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
               className='fixed inset-y-0 right-0 z-[61] flex w-[min(320px,88vw)] flex-col border-l border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-950'
-              style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
+              style={{ x: drawerX, paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
             >
               <header className='flex shrink-0 items-center justify-between gap-2 border-b border-slate-200 px-5 py-4 dark:border-slate-800 sm:px-6'>
                 <div className='min-w-0'>
