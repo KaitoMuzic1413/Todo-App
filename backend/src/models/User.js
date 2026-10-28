@@ -38,7 +38,26 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    emailVerified: {
+      type: Boolean,
+      default: true,
+    },
+    emailVerificationTokenHash: {
+      type: String,
+      default: null,
+    },
+    emailVerificationExpires: {
+      type: Date,
+      default: null,
+    },
+    emailVerificationSentAt: {
+      type: Date,
+      default: null,
+    },
     premium: {
+      isPremium: { type: Boolean, default: false },
+      plan: { type: String, enum: ['free', 'premium'], default: 'free' },
+      activatedAt: { type: Date, default: null },
       extraQuota: { type: Number, default: 0 },
       expiresAt: { type: Date, default: null },
       unlimitedUntil: { type: Date, default: null },

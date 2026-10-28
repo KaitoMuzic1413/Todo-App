@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import { createHash } from 'node:crypto';
 import Notification from '../models/Notification.js';
 import NotificationRecipient from '../models/NotificationRecipient.js';
+import { sendPushToUsers } from '../utils/webPush.js';
 import User from '../models/User.js';
 import { validateNotificationInput } from '../utils/notificationValidation.js';
 import { translateTexts } from '../utils/translateTexts.js';
@@ -234,6 +235,15 @@ export const createNotification = async (req, res) => {
           userId,
           deliveredAt: notification.createdAt,
         })), { ordered: true });
+
+        void sendPushToUsers(users.map(({ _id: userId }) => userId), {
+          title: notification.title,
+          body: notification.content,
+          url: '/notifications',
+          tag: `notification-${notification._id}`,
+        }).catch((pushError) => {
+          console.error('Push notification fan-out failed:', pushError);
+        });
       } catch (deliveryError) {
         await NotificationRecipient.deleteMany({ notificationId: notification._id });
         await Notification.deleteOne({ _id: notification._id });

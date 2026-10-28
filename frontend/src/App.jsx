@@ -10,6 +10,9 @@ import SignUpPage from './pages/Login/SignUpPage';
 import SignInPage from './pages/Login/SignInPage';
 import ForgotPasswordPage from './pages/Login/ForgotPasswordPage';
 import ResetPasswordPage from './pages/Login/ResetPasswordPage';
+import VerifyEmailPage from './pages/Login/VerifyEmailPage';
+import PremiumPage from './pages/PremiumPage';
+import InviteCreatePage from './pages/InviteCreatePage';
 import NotFound from './pages/NotFound';
 import TrashPage from './pages/TrashPage';
 import ArchivePage from './pages/ArchivePage';
@@ -20,6 +23,9 @@ import SettingsPage from './pages/SettingsPage';
 import LegalPoliciesPage from './pages/LegalPoliciesPage';
 import AdminNotificationsPage from './pages/AdminNotificationsPage';
 import DueTaskReminderWatcher from './components/DueTaskReminderWatcher';
+import OfflineStatus from './components/OfflineStatus';
+import PushOptInBanner from './components/PushOptInBanner';
+import PushSubscriptionSync from './components/PushSubscriptionSync';
 import { fetchCurrentUser } from './lib/api';
 
 const LEGAL_ACCEPTANCE_VERSION = '2026-10-26';
@@ -57,7 +63,7 @@ const ProtectedRoute = () => {
   return <Outlet />;
 };
 
-const AdminRoute = () => {
+const AdminRoute = ({ children }) => {
   const [access, setAccess] = useState('checking');
 
   useEffect(() => {
@@ -96,7 +102,7 @@ const AdminRoute = () => {
     return <div className='min-h-[40vh]' role='status' aria-label='Checking access' />;
   }
 
-  return access === 'allowed' ? <AdminNotificationsPage /> : <Navigate to='/settings' replace />;
+  return access === 'allowed' ? children : <Navigate to='/settings' replace />;
 };
 
 const RootRedirect = () => {
@@ -135,6 +141,9 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <DueTaskReminderWatcher />
+      <PushSubscriptionSync />
+      <OfflineStatus />
+      <PushOptInBanner />
       <AnimatePresence mode='wait'>
       <PageTransition key={location.pathname}>
       <Routes location={location}>
@@ -144,6 +153,7 @@ function App() {
         <Route path='/signup' element={<SignUpPage />} />
         <Route path='/forgot-password' element={<ForgotPasswordPage />} />
         <Route path='/reset-password' element={<ResetPasswordPage />} />
+        <Route path='/verify-email' element={<VerifyEmailPage />} />
         <Route path='/about' element={<AboutPage />} />
         <Route path='/policies/:policySlug' element={<LegalPoliciesPage />} />
 
@@ -157,7 +167,9 @@ function App() {
           <Route path='/archive' element={<ArchivePage />} />
           <Route path='/trash' element={<TrashPage />} />
           <Route path='/settings' element={<SettingsPage />} />
-          <Route path='/admin/notifications' element={<AdminRoute />} />
+          <Route path='/premium' element={<PremiumPage />} />
+          <Route path='/admin/notifications' element={<AdminRoute><AdminNotificationsPage /></AdminRoute>} />
+          <Route path='/invite/create' element={<AdminRoute><InviteCreatePage /></AdminRoute>} />
         </Route>
 
         <Route path='/404' element={<NotFound />} />

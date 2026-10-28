@@ -61,8 +61,14 @@ const SignInPage = () => {
 
       completeLogin(res);
     } catch (requestError) {
+      const data = requestError?.response?.data;
+      if (data?.code === 'EMAIL_NOT_VERIFIED') {
+        sessionStorage.setItem('todo-auth-email', trimmedEmail);
+        navigate(`/verify-email?email=${encodeURIComponent(trimmedEmail)}`);
+        return;
+      }
       setError(
-        requestError?.response?.data?.message || 'Invalid email or password.'
+        data?.message || 'Invalid email or password.'
       );
     } finally {
       setIsSubmitting(false);

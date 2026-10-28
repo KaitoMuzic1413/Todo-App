@@ -52,7 +52,16 @@ const SignUpPage = () => {
 
     try {
       setIsSubmitting(true);
-      await registerWithEmail(trimmedEmail, password, name.trim());
+      const response = await registerWithEmail(trimmedEmail, password, name.trim());
+
+      if (response.data?.verificationRequired) {
+        sessionStorage.setItem('todo-auth-email', trimmedEmail);
+        setSuccessMessage('Account created! Check your email to verify your address.');
+        setTimeout(() => {
+          navigate(`/verify-email?email=${encodeURIComponent(trimmedEmail)}`);
+        }, 1200);
+        return;
+      }
 
       setSuccessMessage('Account created successfully! Redirecting to Sign In...');
 
