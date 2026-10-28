@@ -138,6 +138,10 @@ export const flushOfflineOperations = async (userId) => {
           if (created?._id && temporaryId) {
             idMap.set(temporaryId, created._id);
             cacheReplacedTaskId(userId, contentType, temporaryId, created);
+            remaining.forEach((queued) => {
+              if (queued.taskId === temporaryId) queued.taskId = created._id;
+              if (queued.payload?.parentTaskId === temporaryId) queued.payload.parentTaskId = created._id;
+            });
           }
         } else if (operation.type === 'toggle') {
           if (!taskId?.startsWith('offline-')) {

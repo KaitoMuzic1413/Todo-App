@@ -14,11 +14,18 @@ export const isPushSupported = () => (
   && 'Notification' in window
 );
 
+const SERVICE_WORKER_READY_TIMEOUT = 5000;
+
 const getRegistration = async () => {
   if (!('serviceWorker' in navigator)) return null;
   const existing = await navigator.serviceWorker.getRegistration();
   if (existing) return existing;
-  return navigator.serviceWorker.ready;
+  return Promise.race([
+    navigator.serviceWorker.ready,
+    new Promise((resolve) => {
+      window.setTimeout(() => resolve(null), SERVICE_WORKER_READY_TIMEOUT);
+    }),
+  ]);
 };
 
 export const getPushState = async () => {
