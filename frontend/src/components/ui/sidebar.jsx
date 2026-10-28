@@ -65,7 +65,7 @@ export function AppSidebar({ ...props }) {
           </SidebarMenuItem>
 
           <SidebarSeparator className="my-2" />
-          {user?.email === "kaitomuzicvn@gmail.com" && (
+          {user?.isAdmin && (
             <SidebarMenuItem>
               <SidebarMenuButton 
                 asChild 

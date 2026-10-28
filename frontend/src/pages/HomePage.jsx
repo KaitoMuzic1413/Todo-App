@@ -16,8 +16,25 @@ import { getCreatedAtRange, isDateInRange } from '@/lib/dateFilters';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
 import { useLanguage } from '@/lib/i18n';
 import { sortTasks } from '@/lib/sortTasks';
+import {
+  cacheCreatedTask,
+  cacheDeletedTask,
+  cacheUpdatedTask,
+  createOfflineTask,
+  enqueueOfflineOperation,
+  readCachedTasks,
+  writeCachedTasks,
+} from '@/lib/offlineQueue';
+import { insertTaskTree, removeTaskTree } from '@/lib/offlineTaskTree';
 
 const PAGE_SIZE = 5;
+
+const isOfflineNow = () => typeof navigator !== 'undefined' && navigator.onLine === false;
+
+const flattenTasks = (tasks) => (Array.isArray(tasks) ? tasks : []).flatMap((task) => [
+  task,
+  ...flattenTasks(task.subtasks),
+]);
 
 const getStoredUser = () => {
   if (typeof window === 'undefined') return null;
@@ -90,7 +107,33 @@ const HomePage = ({ contentType = 'task' }) => {
   }, []);
 
   const toggleTaskMutation = useMutation({
-    mutationFn: (taskId) => toggleTaskStatus(taskId, currentUser._id),
+    mutationFn: async (taskId) => {
+      const existing = flattenTasks(queryClient.getQueryData(tasksQueryKey)).find((task) => task._id === taskId);
+      const nextStatus = existing?.status === 'complete' ? 'active' : 'complete';
+      const offlineResult = {
+        __offline: true,
+        data: {
+          ...(existing || { _id: taskId }),
+          status: nextStatus,
+          completedAt: nextStatus === 'complete' ? new Date().toISOString() : null,
+        },
+      };
+
+      if (isOfflineNow() || taskId.startsWith('offline-')) {
+        enqueueOfflineOperation(currentUser._id, { type: 'toggle', taskId, contentType });
+        cacheUpdatedTask(currentUser._id, contentType, offlineResult.data);
+        return offlineResult;
+      }
+
+      try {
+        return await toggleTaskStatus(taskId, currentUser._id);
+      } catch (error) {
+        if (error.response) throw error;
+        enqueueOfflineOperation(currentUser._id, { type: 'toggle', taskId, contentType });
+        cacheUpdatedTask(currentUser._id, contentType, offlineResult.data);
+        return offlineResult;
+      }
+    },
     onMutate: async (taskId) => {
       await queryClient.cancelQueries({ queryKey: tasksQueryKey });
       const previousTasks = queryClient.getQueryData(tasksQueryKey);
@@ -117,19 +160,30 @@ const HomePage = ({ contentType = 'task' }) => {
     },
     onSuccess: (response) => {
       if (response?.data?._id) {
+        cacheUpdatedTask(currentUser._id, contentType, response.data);
         queryClient.setQueryData(tasksQueryKey, (currentTasks) =>
           (Array.isArray(currentTasks) ? currentTasks : []).map((task) => (task._id === response.data._id ? response.data : task))
         );
       }
-      queryClient.invalidateQueries({ queryKey: ['gamification', currentUser?._id] });
+      if (!response?.__offline) {
+        queryClient.invalidateQueries({ queryKey: ['gamification', currentUser?._id] });
+      }
     },
   });
 
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: tasksQueryKey,
     queryFn: async () => {
-      const response = await fetchTasks(currentUser._id, contentType);
-      return response.data || [];
+      if (isOfflineNow()) return readCachedTasks(currentUser._id, contentType);
+      try {
+        const response = await fetchTasks(currentUser._id, contentType);
+        const nextTasks = response.data || [];
+        writeCachedTasks(currentUser._id, contentType, nextTasks);
+        return nextTasks;
+      } catch (error) {
+        if (!error.response) return readCachedTasks(currentUser._id, contentType);
+        throw error;
+      }
     },
     enabled: !!currentUser?._id,
     refetchInterval: toggleTaskMutation.isPending ? false : 3000,
@@ -137,26 +191,94 @@ const HomePage = ({ contentType = 'task' }) => {
   });
 
   const addTaskMutation = useMutation({
-    mutationFn: (payload) => createTask({ ...payload, userId: currentUser._id }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks', currentUser?._id, contentType] });
+    mutationFn: async (payload) => {
+      const createLocalTask = () => {
+        const task = createOfflineTask({ ...payload, userId: currentUser._id });
+        enqueueOfflineOperation(currentUser._id, {
+          type: 'create',
+          tempId: task._id,
+          taskId: task._id,
+          contentType,
+          payload: { ...payload, userId: currentUser._id },
+        });
+        cacheCreatedTask(currentUser._id, contentType, task);
+        return { __offline: true, data: task };
+      };
+
+      if (isOfflineNow()) return createLocalTask();
+      try {
+        return await createTask({ ...payload, userId: currentUser._id });
+      } catch (error) {
+        if (error.response) throw error;
+        return createLocalTask();
+      }
+    },
+    onSuccess: (response) => {
+      if (response?.__offline) {
+        queryClient.setQueryData(tasksQueryKey, (currentTasks) => insertTaskTree(currentTasks, response.data));
+      } else {
+        queryClient.invalidateQueries({ queryKey: ['tasks', currentUser?._id, contentType] });
+      }
       setCurrentPage(1);
     },
     onError: (error) => toast.error(error.response?.data?.message || t.taskCreateError),
   });
 
   const deleteTaskMutation = useMutation({
-    mutationFn: (taskId) => deleteTask(taskId, currentUser._id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks', currentUser?._id, contentType] });
+    mutationFn: async (taskId) => {
+      const removeLocalTask = () => {
+        enqueueOfflineOperation(currentUser._id, { type: 'delete', taskId, contentType });
+        cacheDeletedTask(currentUser._id, contentType, taskId);
+        return { __offline: true, data: { _id: taskId } };
+      };
+
+      if (isOfflineNow() || taskId.startsWith('offline-')) return removeLocalTask();
+      try {
+        return await deleteTask(taskId, currentUser._id);
+      } catch (error) {
+        if (error.response) throw error;
+        return removeLocalTask();
+      }
+    },
+    onSuccess: (response) => {
+      if (response?.__offline) {
+        queryClient.setQueryData(tasksQueryKey, (currentTasks) => removeTaskTree(currentTasks, response.data._id));
+      } else {
+        queryClient.invalidateQueries({ queryKey: ['tasks', currentUser?._id, contentType] });
+      }
     },
   });
 
   const updateTaskMutation = useMutation({
-    mutationFn: ({ taskId, body }) => updateTask(taskId, currentUser._id, body),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks', currentUser?._id, contentType] });
-      queryClient.invalidateQueries({ queryKey: ['gamification', currentUser?._id] });
+    mutationFn: async ({ taskId, body }) => {
+      const patchLocalTask = () => {
+        const existing = flattenTasks(queryClient.getQueryData(tasksQueryKey)).find((task) => task._id === taskId);
+        const updated = { ...(existing || { _id: taskId }), ...body, updatedAt: new Date().toISOString() };
+        enqueueOfflineOperation(currentUser._id, { type: 'update', taskId, contentType, payload: body });
+        cacheUpdatedTask(currentUser._id, contentType, updated);
+        return { __offline: true, data: updated };
+      };
+
+      if (isOfflineNow() || taskId.startsWith('offline-')) return patchLocalTask();
+      try {
+        return await updateTask(taskId, currentUser._id, body);
+      } catch (error) {
+        if (error.response) throw error;
+        return patchLocalTask();
+      }
+    },
+    onSuccess: (response) => {
+      if (response?.data?._id) {
+        cacheUpdatedTask(currentUser._id, contentType, response.data);
+      }
+      if (response?.__offline) {
+        queryClient.setQueryData(tasksQueryKey, (currentTasks) => (
+          (Array.isArray(currentTasks) ? currentTasks : []).map((task) => (task._id === response.data._id ? { ...task, ...response.data } : task))
+        ));
+      } else {
+        queryClient.invalidateQueries({ queryKey: ['tasks', currentUser?._id, contentType] });
+        queryClient.invalidateQueries({ queryKey: ['gamification', currentUser?._id] });
+      }
     },
   });
 

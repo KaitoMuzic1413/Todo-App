@@ -5,7 +5,8 @@ import { Settings2, Palette, Check, Globe, Moon, Sun, ShieldCheck, Pencil, X, Ca
 import { toast } from 'sonner';
 import { LayoutShell } from '@/components/LayoutShell';
 import { Link } from 'react-router-dom';
-import { fetchCurrentUser, updateUserAvatar, updateUserProfile } from '@/lib/api';
+import { fetchCurrentUser, logoutUser, updateUserAvatar, updateUserProfile } from '@/lib/api';
+import PushNotificationSettings from '@/components/PushNotificationSettings';
 import { useLanguage } from '@/lib/i18n';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
 
@@ -48,7 +49,12 @@ const SettingsPage = () => {
     return () => { active = false; };
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await logoutUser();
+    } catch {
+      // The local session is cleared even if the server is unreachable.
+    }
     localStorage.removeItem('todo-user');
     localStorage.removeItem('todo-user-email');
     localStorage.removeItem('token');
@@ -329,6 +335,8 @@ const SettingsPage = () => {
               </div>
             </div>
           </section>
+
+          <PushNotificationSettings />
 
           <section className='lg:col-span-2 rounded-3xl border border-slate-200/80 bg-white/85 p-6 shadow-[0_16px_44px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-slate-900/75'>
             <h2 className='text-lg font-semibold text-slate-900 dark:text-white'>{t.legalPolicies}</h2>

@@ -4,16 +4,68 @@ import { API_BASE_URL } from './apiConfig';
 const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 20000,
-  withCredentials: false,
+  withCredentials: true,
 });
+
+const AUTH_PATHS_WITHOUT_REFRESH = [
+  '/auth/login',
+  '/auth/register',
+  '/auth/refresh',
+  '/auth/logout',
+  '/auth/forgot-password',
+  '/auth/verify-reset-otp',
+  '/auth/reset-password',
+  '/auth/verify-email',
+  '/auth/resend-verification',
+];
+
+const clearStoredSession = () => {
+  [
+    'todo-user',
+    'todo-user-email',
+    'token',
+    'accessToken',
+    'user',
+  ].forEach((key) => localStorage.removeItem(key));
+  sessionStorage.clear();
+
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('todo-auth-changed'));
+    window.dispatchEvent(new Event('todo-auth-expired'));
+
+    if (!window.location.pathname.includes('/signin')) {
+      window.location.href = '/signin';
+    }
+  }
+};
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  config.headers['X-Requested-With'] = 'XMLHttpRequest';
   return config;
 });
+
+let refreshRequest = null;
+
+const refreshAccessToken = async () => {
+  if (!refreshRequest) {
+    refreshRequest = axios.post(
+      `${API_BASE_URL}/auth/refresh`,
+      {},
+      {
+        timeout: 20000,
+        withCredentials: true,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      }
+    ).finally(() => {
+      refreshRequest = null;
+    });
+  }
+  return refreshRequest;
+};
 
 api.interceptors.response.use(
   (response) => {
@@ -21,28 +73,29 @@ api.interceptors.response.use(
     if (refreshedToken) localStorage.setItem('token', refreshedToken);
     return response;
   },
-  (error) => {
-    if (error.response?.status === 401) {
-      // A 401 from a protected API means the current session cannot be used.
-      // Clear every token key used by the app so stale credentials are not retried.
-      [
-        'todo-user',
-        'todo-user-email',
-        'token',
-        'accessToken',
-        'user',
-      ].forEach((key) => localStorage.removeItem(key));
-      sessionStorage.clear();
+  async (error) => {
+    const status = error.response?.status;
+    const requestUrl = error.config?.url || '';
+    const isAuthEndpoint = AUTH_PATHS_WITHOUT_REFRESH.some((path) => requestUrl.includes(path));
 
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new Event('todo-auth-changed'));
-        window.dispatchEvent(new Event('todo-auth-expired'));
-
-        if (!window.location.pathname.includes('/signin')) {
-          window.location.href = '/signin';
+    if (status === 401 && !isAuthEndpoint) {
+      const retried = Boolean(error.config?.__retriedAfterRefresh);
+      if (!retried && !requestUrl.includes('/auth/')) {
+        try {
+          const { data } = await refreshAccessToken();
+          if (data?.token) localStorage.setItem('token', data.token);
+          if (data?.user) localStorage.setItem('todo-user', JSON.stringify(data.user));
+          return api({ ...error.config, __retriedAfterRefresh: true });
+        } catch {
+          clearStoredSession();
+          return Promise.reject(error);
         }
       }
+
+      if (retried) clearStoredSession();
+      return Promise.reject(error);
     }
+
     return Promise.reject(error);
   }
 );
@@ -56,6 +109,12 @@ export const forgotPassword = (email) => api.post('/auth/forgot-password', { ema
 export const verifyResetOtp = (email, otp) => api.post('/auth/verify-reset-otp', { email, otp });
 
 export const resetPassword = (email, otp, newPassword, name) => api.post('/auth/reset-password', { email, otp, newPassword, ...(name ? { name } : {}) });
+
+export const logoutUser = () => api.post('/auth/logout');
+
+export const verifyEmail = (token, email) => api.get('/auth/verify-email', { params: { token, email } });
+
+export const resendVerificationEmail = (email) => api.post('/auth/resend-verification', { email });
 
 export const fetchUserPreferences = () => api.get('/users/preferences');
 
@@ -139,6 +198,22 @@ export const deleteTaskPermanently = (taskId, userId) => api.delete(`/tasks/${ta
 export const clearTrash = (userId) => api.delete('/tasks/trash/clear', { data: { userId } });
 
 export const getUserQuota = (userId) => api.get(`/tasks/quota/${userId}`);
+
+export const fetchPremiumStatus = () => api.get('/premium/me');
+
+export const redeemPremiumInvite = (code) => api.post('/premium/redeem', { code });
+
+export const fetchPremiumInvites = () => api.get('/premium/invite/list');
+
+export const createPremiumInvite = (payload) => api.post('/premium/invite/create', payload);
+
+export const deletePremiumInvite = (inviteId) => api.delete(`/premium/invite/${inviteId}`);
+
+export const fetchPushConfig = () => api.get('/push/public-key');
+
+export const savePushSubscription = (subscription) => api.post('/push/subscribe', subscription);
+
+export const removePushSubscription = (endpoint) => api.delete('/push/subscribe', { data: { endpoint } });
 
 export const uploadAttachment = (file, { taskId = null, title, description = '', onUploadProgress } = {}) => {
   const formData = new FormData();

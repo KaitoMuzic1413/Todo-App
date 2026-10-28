@@ -1,7 +1,7 @@
-import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import { verifyAccessToken } from '../utils/authTokens.js';
 
-const JWT_SECRET = () => process.env.JWT_SECRET;
+const INVALID_TOKEN_MESSAGE = 'Token invalid or expired!';
 
 const verifyToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -22,18 +22,17 @@ const verifyToken = async (req, res, next) => {
 
   let decoded;
   try {
-    decoded = jwt.verify(token, JWT_SECRET());
-  } catch (error) {
-    const expired = error?.name === 'TokenExpiredError';
+    decoded = verifyAccessToken(token);
+  } catch {
     return res.status(401).json({
-      message: expired ? 'Token expired. Please sign in again.' : 'Token invalid. Please sign in again.',
-      code: expired ? 'AUTH_TOKEN_EXPIRED' : 'AUTH_TOKEN_INVALID',
+      message: INVALID_TOKEN_MESSAGE,
+      code: 'AUTH_TOKEN_INVALID',
     });
   }
 
-  if (!decoded?.userId) {
+  if (decoded?.type !== 'access' || !decoded?.userId) {
     return res.status(401).json({
-      message: 'Token is missing the user identity. Please sign in again.',
+      message: INVALID_TOKEN_MESSAGE,
       code: 'AUTH_TOKEN_INVALID',
     });
   }
@@ -42,7 +41,6 @@ const verifyToken = async (req, res, next) => {
   try {
     user = await User.findById(decoded.userId).select('_id lastActiveAt sessionVersion');
   } catch (error) {
-    // Database/query failures are server errors, not invalid credentials.
     return next(error);
   }
 
@@ -61,8 +59,6 @@ const verifyToken = async (req, res, next) => {
     });
   }
 
-  // Older MongoDB user documents may not have sessionVersion yet. Treat that
-  // legacy state as version 0, matching the schema's default.
   const currentSessionVersion = user.sessionVersion ?? 0;
   if (
     decoded.sessionVersion !== undefined &&
@@ -74,12 +70,6 @@ const verifyToken = async (req, res, next) => {
     });
   }
 
-  const refreshedToken = jwt.sign(
-    { userId: user._id, sessionVersion: currentSessionVersion },
-    JWT_SECRET(),
-    { expiresIn: '30d' }
-  );
-  res.set('X-Auth-Token', refreshedToken);
   req.user = {
     ...decoded,
     userId: user._id.toString(),

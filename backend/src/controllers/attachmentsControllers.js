@@ -1,6 +1,8 @@
 import mongoose from 'mongoose';
 import Attachment from '../models/Attachment.js';
 import Task from '../models/Task.js';
+import { checkAttachmentQuota } from '../utils/premium.js';
+import { validateFileSignature } from '../utils/fileValidation.js';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ALLOWED_TYPES = /^(image\/(jpeg|png|gif|webp|bmp|svg\+xml|heic|heif|avif)|audio\/(mpeg|wav|x-wav|ogg|aac|mp4|opus|flac|x-flac|x-ms-wma|midi|x-midi)|application\/(pdf|rtf|msword|vnd\.openxmlformats-officedocument\.(wordprocessingml\.document|spreadsheetml\.sheet|presentationml\.presentation)|vnd\.oasis\.opendocument\.(text|spreadsheet|presentation)|vnd\.ms-excel|vnd\.ms-powerpoint|json|xml)|text\/(plain|markdown|x-markdown|csv|xml))$/i;
@@ -90,6 +92,22 @@ export const uploadAttachment = async (req, res) => {
     const extension = file.originalname.split('.').pop()?.toLowerCase();
     if (!ALLOWED_TYPES.test(file.mimetype) && !ALLOWED_FILE_EXTENSIONS.has(extension)) {
       return res.status(400).json({ message: 'This file type is not supported.' });
+    }
+
+    const signature = validateFileSignature({ buffer: file.buffer, mimeType: file.mimetype });
+    if (!signature.valid) {
+      return res.status(400).json({ message: signature.message });
+    }
+
+    const { snapshot, exceeded } = await checkAttachmentQuota(ownerId);
+    if (exceeded) {
+      return res.status(403).json({
+        code: 'ATTACHMENT_QUOTA_EXCEEDED',
+        message: snapshot.premiumActive
+          ? 'You have reached the maximum number of archived files for this plan.'
+          : 'You have reached the free file archive limit. Upgrade to Premium to store more files.',
+        quota: snapshot,
+      });
     }
 
     const fileId = new mongoose.Types.ObjectId();

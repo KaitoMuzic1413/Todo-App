@@ -5,6 +5,7 @@ import Attachment from '../models/Attachment.js';
 import { deleteAttachmentRecords } from './attachmentsControllers.js';
 import { hasScheduleInput, validateTaskSchedule } from '../utils/taskSchedule.js';
 import GamificationEvent from '../models/GamificationEvent.js';
+import { checkTaskQuota, getQuotaSnapshot } from '../utils/premium.js';
 import {
   DAILY_TASK_GOAL,
   getActivityKeys,
@@ -215,10 +216,10 @@ export const getUserQuota = async (req, res) => {
     const userId = getAuthenticatedUserId(req);
     if (!userId) return res.status(400).json({ message: 'userId required' });
 
-    const user = await User.findById(userId);
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    const snapshot = await getQuotaSnapshot(userId);
+    if (!snapshot) return res.status(404).json({ message: 'User not found' });
 
-    return res.status(200).json({ remaining: null, allowed: null, created: 0, unlimited: true });
+    return res.status(200).json(snapshot);
   } catch (error) {
     console.error('Error getUserQuota', error);
     return res.status(500).json({ message: 'Server error' });
@@ -288,6 +289,17 @@ export const createTask = async (req, res) => {
       await touchUserActivity(userId);
 
       return res.status(200).json(existingPendingTaskToday);
+    }
+
+    const { snapshot, exceeded } = await checkTaskQuota(userId);
+    if (exceeded) {
+      return res.status(403).json({
+        code: 'TASK_QUOTA_EXCEEDED',
+        message: snapshot.premiumActive
+          ? 'You have reached the maximum number of tasks for this plan.'
+          : 'You have reached the free task limit. Upgrade to Premium to add more tasks.',
+        quota: snapshot,
+      });
     }
 
     const task = new Task({

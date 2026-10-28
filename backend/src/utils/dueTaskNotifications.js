@@ -1,6 +1,7 @@
 import Task from '../models/Task.js';
 import Notification from '../models/Notification.js';
 import NotificationRecipient from '../models/NotificationRecipient.js';
+import { sendPushToUser } from './webPush.js';
 
 const getOrCreateTaskNotification = async ({ task, userId, language }) => {
   const dueTimestamp = new Date(task.dueAt).getTime();
@@ -32,6 +33,8 @@ const getOrCreateTaskNotification = async ({ task, userId, language }) => {
     throw error;
   }
 };
+
+const seedPushTag = (task, now) => `task-due-${task._id}-${new Date(task.dueAt).getTime() || now.getTime()}`;
 
 export const runDueTaskNotifications = async (now = new Date()) => {
   try {
@@ -74,6 +77,14 @@ export const runDueTaskNotifications = async (now = new Date()) => {
           { $setOnInsert: { notificationId: notification._id, userId, deliveredAt: now } },
           { upsert: true }
         );
+        await sendPushToUser(userId, {
+          title: notification.title,
+          body: notification.content,
+          url: '/home',
+          tag: seedPushTag(task, now),
+        }).catch((pushError) => {
+          console.error(`Push reminder failed for task ${task._id}:`, pushError);
+        });
         delivered += 1;
       } catch (error) {
         await Task.updateOne(
