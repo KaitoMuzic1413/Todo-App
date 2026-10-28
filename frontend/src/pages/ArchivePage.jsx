@@ -389,18 +389,18 @@ const ArchivePage = () => {
                   <article
                     key={attachment._id}
                     onClick={() => handlePreview(attachment)}
-                    className={`cursor-pointer rounded-3xl border p-4 shadow-md transition-shadow duration-300 hover:border-violet-300 hover:shadow-lg dark:hover:border-violet-700 ${attachment.pinned ? 'border-violet-300 bg-violet-50/50 dark:border-violet-900 dark:bg-violet-950/20' : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-950/50'}`}
+                    className={`w-full max-w-full cursor-pointer rounded-3xl border p-2.5 shadow-md transition-shadow duration-300 hover:border-violet-300 hover:shadow-lg sm:p-4 dark:hover:border-violet-700 ${attachment.pinned ? 'border-violet-300 bg-violet-50/50 dark:border-violet-900 dark:bg-violet-950/20' : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-950/50'}`}
                   >
-                    <div className='flex items-start gap-3'>
-                      <div className='rounded-3xl bg-white p-2.5 text-violet-500 shadow-sm dark:bg-slate-900'>
+                    <div className='flex items-start gap-2 sm:gap-3'>
+                      <div className='shrink-0 rounded-3xl bg-white p-1.5 text-violet-500 shadow-sm sm:p-2.5 dark:bg-slate-900'>
                         <IconOf kind={kind} />
                       </div>
-                      <div className='min-w-0 flex-1'>
-                        <p className='truncate text-sm font-semibold text-slate-800 dark:text-slate-100'>{titleOf(attachment)}</p>
-                        <p className='mt-1 truncate text-xs text-slate-400'>{attachment.description || attachment.originalName}</p>
-                        <p className='mt-2 text-xs text-slate-400'>{t.uploadedLabel} {formatUploadedAt(attachment.createdAt, language)} · {formatSize(attachment.size)} · {kind === 'document' || kind === 'other' ? t.document : t.tapToView}{attachment.taskId ? ` · ${t.linkedTask}` : ''}</p>
+                      <div className='min-w-0 flex-1 overflow-hidden'>
+                        <p className='truncate text-xs font-semibold text-slate-800 sm:text-sm dark:text-slate-100'>{titleOf(attachment)}</p>
+                        <p className='mt-0.5 truncate text-[10px] text-slate-400 sm:mt-1 sm:text-xs'>{attachment.description || attachment.originalName}</p>
+                        <p className='mt-1.5 text-[10px] leading-tight text-slate-400 sm:mt-2 sm:text-xs'>{t.uploadedLabel} {formatUploadedAt(attachment.createdAt, language)} · {formatSize(attachment.size)} · {kind === 'document' || kind === 'other' ? t.document : t.tapToView}{attachment.taskId ? ` · ${t.linkedTask}` : ''}</p>
                       </div>
-                      <div className='flex gap-1'>
+                      <div className='flex shrink-0 gap-0.5 sm:gap-1'>
                         <button type='button' onClick={(event) => { event.stopPropagation(); toggleAttachment(attachment, 'pinned'); }} className={attachment.pinned ? 'text-violet-600' : 'text-slate-400 hover:text-slate-600'} aria-label={t.pinFile} title={t.pinFile}>
                           <Pin className='h-4 w-4' />
                         </button>
@@ -409,25 +409,25 @@ const ArchivePage = () => {
                         </button>
                       </div>
                     </div>
-                    <div className='mt-3 flex justify-end gap-2'>
-                      <button type='button' onClick={(event) => { event.stopPropagation(); setEditing(attachment); setDraft({ content: titleOf(attachment), caption: attachment.description || '' }); }} aria-label={t.editFile} title={t.editFile} className='rounded-3xl border border-slate-200 p-2 text-slate-500 hover:bg-slate-100 dark:border-slate-700 dark:hover:bg-slate-800'>
-                        <Pencil className='h-4 w-4' />
+                    <div className='mt-2 flex items-center justify-end gap-1 sm:mt-3 sm:flex-wrap sm:gap-2'>
+                      <button type='button' onClick={(event) => { event.stopPropagation(); setEditing(attachment); setDraft({ content: titleOf(attachment), caption: attachment.description || '' }); }} aria-label={t.editFile} title={t.editFile} className='shrink-0 rounded-3xl border border-slate-200 p-1.5 text-slate-500 hover:bg-slate-100 sm:p-2 dark:border-slate-700 dark:hover:bg-slate-800'>
+                        <Pencil className='h-3.5 w-3.5 sm:h-4 sm:w-4' />
                       </button>
                       <button
                         type='button'
                         onClick={(event) => { event.stopPropagation(); handleDownloadClick(attachment); }}
                         aria-label={isDownloaded ? t.downloaded : t.download}
-                        className={`inline-flex items-center gap-1.5 rounded-3xl border px-3 py-2 text-xs font-medium transition ${
+                        className={`inline-flex shrink-0 items-center gap-1 rounded-3xl border px-2 py-1 text-[11px] font-medium transition sm:gap-1.5 sm:px-3 sm:py-2 sm:text-xs ${
                           isDownloaded
                             ? 'border-emerald-200 bg-emerald-50 text-emerald-600 dark:border-emerald-900/50 dark:bg-emerald-950/30 dark:text-emerald-400 shadow-sm'
                             : 'border-slate-200 text-slate-500 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800'
                         }`}
                       >
-                        {isDownloaded ? <Check className='h-4 w-4' /> : <Download className='h-4 w-4' />}
+                        {isDownloaded ? <Check className='h-3.5 w-3.5 sm:h-4 sm:w-4' /> : <Download className='h-3.5 w-3.5 sm:h-4 sm:w-4' />}
                         <span>{isDownloaded ? t.downloaded : t.download}</span>
                       </button>
-                      <button type='button' onClick={(event) => { event.stopPropagation(); handleDelete(attachment._id); }} aria-label={t.deleteFile} title={t.deleteFile} className='rounded-3xl border border-rose-200 p-2 text-rose-500 hover:bg-rose-50 dark:border-rose-900/50 dark:hover:bg-rose-950/30'>
-                        <Trash2 className='h-4 w-4' />
+                      <button type='button' onClick={(event) => { event.stopPropagation(); handleDelete(attachment._id); }} aria-label={t.deleteFile} title={t.deleteFile} className='shrink-0 rounded-3xl border border-rose-200 p-1.5 text-rose-500 hover:bg-rose-50 sm:p-2 dark:border-rose-900/50 dark:hover:bg-rose-950/30'>
+                        <Trash2 className='h-3.5 w-3.5 sm:h-4 sm:w-4' />
                       </button>
                     </div>
                   </article>
