@@ -10,6 +10,15 @@ process.env.OTP_SECRET = 'test-otp-secret-0123456789abcdef';
 process.env.FRONTEND_URL = 'http://localhost:5173';
 
 const { default: app } = await import('../src/server.js');
+const { isAllowedOrigin } = await import('../src/config/env.js');
+
+test('development allows private LAN frontend origins on the Vite port', () => {
+  assert.equal(isAllowedOrigin('http://10.10.1.118:5173'), true);
+  assert.equal(isAllowedOrigin('http://192.168.1.20:5173'), true);
+  assert.equal(isAllowedOrigin('http://172.20.0.5:5173'), true);
+  assert.equal(isAllowedOrigin('http://10.10.1.118:5001'), false);
+  assert.equal(isAllowedOrigin('http://8.8.8.8:5173'), false);
+});
 
 test('CORS preflight completes before database and route authentication middleware', async (t) => {
   const server = app.listen(0, '127.0.0.1');
