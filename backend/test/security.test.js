@@ -6,6 +6,7 @@ import { validateFileSignature } from '../src/utils/fileValidation.js';
 import { createRateLimiter } from '../src/middleware/rateLimit.js';
 
 const envModuleUrl = new URL('../src/config/env.js', import.meta.url).href;
+const stripAnsi = (value) => value.replace(/\u001b\[[0-9;]*m/g, '');
 const requiredEnvKeys = ['JWT_SECRET', 'OTP_SECRET', 'MONGODB_CONNECTIONSTRING', 'FRONTEND_URL'];
 
 const baseEnv = () => {
@@ -246,7 +247,7 @@ test('email verification is only enabled when an email provider is configured', 
 
   const withoutProvider = readFlag(base);
   assert.equal(withoutProvider.status, 0, withoutProvider.stderr);
-  assert.equal(withoutProvider.stdout.trim(), 'false');
+  assert.equal(stripAnsi(withoutProvider.stdout).trim(), 'false');
 
   const withProvider = readFlag({
     ...base,
@@ -255,5 +256,5 @@ test('email verification is only enabled when an email provider is configured', 
     SENDGRID_API_KEY: 'test-key',
   });
   assert.equal(withProvider.status, 0, withProvider.stderr);
-  assert.equal(withProvider.stdout.trim(), 'true');
+  assert.equal(stripAnsi(withProvider.stdout).trim(), 'true');
 });

@@ -153,6 +153,31 @@ const isDevelopmentLoopbackOrigin = (origin) => {
   }
 };
 
+// Vite's LAN URL changes with the local network. In development, trust only
+// HTTP origins on Vite's port from RFC1918 private IPv4 ranges.
+const isDevelopmentLanOrigin = (origin) => {
+  if (env.isProduction || typeof origin !== 'string') return false;
+  try {
+    const url = new URL(origin);
+    if (url.protocol !== 'http:' || url.port !== '5173' || url.origin !== origin) return false;
+
+    const octets = url.hostname.split('.').map(Number);
+    if (octets.length !== 4 || octets.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) {
+      return false;
+    }
+
+    const [first, second] = octets;
+    return first === 10
+      || (first === 172 && second >= 16 && second <= 31)
+      || (first === 192 && second === 168);
+  } catch {
+    return false;
+  }
+};
+
 export const isAllowedOrigin = (origin) => (
-  !origin || allowedOrigins.has(origin) || isDevelopmentLoopbackOrigin(origin)
+  !origin
+  || allowedOrigins.has(origin)
+  || isDevelopmentLoopbackOrigin(origin)
+  || isDevelopmentLanOrigin(origin)
 );
