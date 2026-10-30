@@ -31,9 +31,11 @@ const resolveApiBaseUrl = () => {
   if (configuredApiUrl.startsWith('/')) return configuredApiUrl;
 
   if (import.meta.env.MODE === 'development') {
+    // Use Vite's proxy so both localhost and phones on the LAN call the API
+    // through the frontend origin instead of resolving localhost on the device.
     return configuredApiUrl && !isLoopbackApi(configuredApiUrl)
       ? configuredApiUrl
-      : 'http://localhost:5001/api';
+      : SAME_ORIGIN_API;
   }
 
   // On Cloudflare Workers, the Worker proxies /api to the API server. Requests

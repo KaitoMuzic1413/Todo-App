@@ -8,7 +8,7 @@
     "esbuild": true
   },
   "scripts": {
-    "dev": "node node_modules/vite/bin/vite.js",
+    "dev": "node node_modules/vite/bin/vite.js --host 0.0.0.0",
     "build": "node node_modules/vite/bin/vite.js build",
     "build:android": "npm run build && node node_modules/@capacitor/cli/bin/capacitor sync android",
     "android:open": "node node_modules/@capacitor/cli/bin/capacitor open android",
