@@ -1,4 +1,4 @@
-const DEFAULT_PRODUCTION_API = 'https://todo-app-1112.onrender.com/api';
+const DEFAULT_PRODUCTION_API = 'https://todo-app-itr6.onrender.com/api';
 const SAME_ORIGIN_API = '/api';
 
 const configuredApiUrl = (import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || '').trim();

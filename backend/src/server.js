@@ -26,6 +26,8 @@ const INACTIVE_ACCOUNT_CHECK_INTERVAL = 60 * 60 * 1000;
 
 const app = express();
 
+app.set('trust proxy', 1);
+
 const hasWildcardOrigin = env.extraCorsOrigins.includes('*')
   || process.env.CORS_ALLOW_ALL === 'true';
 
@@ -57,6 +59,24 @@ app.use(cors(corsOptions));
 // Answer preflights before the database or any authentication work runs.
 app.options('*', cors(corsOptions));
 app.use(express.json({ limit: '2mb' }));
+
+app.get('/api/health', async (req, res) => {
+  try {
+    await connectDB();
+    res.status(200).json({
+      status: 'ok',
+      database: 'connected',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Health check failed:', error);
+    res.status(503).json({
+      status: 'unavailable',
+      database: 'disconnected',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
 
 app.use(async (req, res, next) => {
   try {

@@ -43,7 +43,7 @@ Chặn phát hành nghiêm trọng nhất:
 | Web/PWA | Service worker app-shell, manifest, Cloudflare static assets |
 | Android | Capacitor 8, `com.kaito.todox`, versionName 3.1.0 |
 | Desktop | Tauri 2, auto-update qua GitHub Releases |
-| Deploy | Render (`todo-app-1112`, root `backend`) + Cloudflare (`frontend/dist`) + GitHub Actions (desktop) |
+| Deploy | Render (`todo-app-itr6`, root `backend`) + Cloudflare (`frontend/dist`) + GitHub Actions (desktop) |
 
 ### 1.2 Sơ đồ hiện tại
 
@@ -92,7 +92,7 @@ flowchart LR
 
 ### 1.4 Triển khai
 
-- `render.yaml`: service `todo-app-1112`, `buildCommand: npm ci`, `startCommand: npm start`, health check `/`.
+- `render.yaml`: service `todo-app-itr6`, `buildCommand: npm ci`, `startCommand: npm start`, health check `/api/health`.
 - `wrangler.jsonc`: SPA assets từ `./frontend/dist`.
 - `.github/workflows/desktop-release.yml`: chỉ build desktop theo tag; **không có workflow test/lint/build cho backend/frontend**.
 - Node 24 là yêu cầu trong `package.json` (`engines`) nhưng `render.yaml` không ghim phiên bản; máy audit đang dùng Node 22.

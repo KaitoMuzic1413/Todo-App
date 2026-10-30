@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kaito-todo-shell-v2';
+const CACHE_NAME = 'kaito-todo-shell-v3';
 const APP_SHELL = ['/', '/index.html', '/manifest.webmanifest', '/favicon.png', '/icons/todo-192.png', '/icons/todo-512.png'];
 
 self.addEventListener('install', (event) => {
