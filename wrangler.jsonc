@@ -4,7 +4,7 @@
   "main": "worker/index.js",
   "compatibility_date": "2026-10-19",
   "vars": {
-    "API_ORIGIN": "https://todo-app-1112.onrender.com"
+    "API_ORIGIN": "https://todo-app-itr6.onrender.com"
   },
   "assets": {
     "directory": "./frontend/dist",

@@ -20,7 +20,7 @@ npx wrangler deploy
 
 Use `npm run deploy:cloudflare` to run both steps. If the API moves, update `vars.API_ORIGIN` in `wrangler.jsonc` and redeploy. For a custom domain that is not `*.workers.dev`, build with `VITE_API_BASE_URL=/api` so the client also uses the Worker proxy. The Android and desktop builds keep using the absolute production API URL.
 
-The backend also accepts `*.workers.dev` browsers directly, plus any origin listed in `CORS_ORIGINS`; set `CORS_ORIGINS=*` on the API host if another static host must call it directly.
+The backend also accepts browsers whose origin is listed in `FRONTEND_URL` or `CORS_ORIGINS`; set `CORS_ORIGINS=*` on the API host only if another static host must call it directly. Verify the deployed API through the Worker with `curl https://todo-app.kaitomuzicvn.workers.dev/api/health`.
 
 ## Android
 
@@ -82,7 +82,7 @@ GitHub Actions builds both operating systems, fails if an expected installer or 
 
 - `VITE_API_BASE_URL` is public client configuration, not a secret. MongoDB credentials and JWT signing secrets belong only in backend environment configuration.
 - Existing sign-in stores its bearer token in WebView `localStorage`; Android backup is disabled. If the threat model requires OS-backed encrypted token storage, that requires an explicit native secure-storage migration across the app's existing storage use.
-- The backend uses an origin allowlist (`FRONTEND_URL` plus optional `CORS_ORIGINS`), automatically accepts `*.workers.dev` and `*.pages.dev`, and runs with credentials disabled. Set `CORS_ORIGINS=*` only when any origin must call the API directly. Set a strong `JWT_SECRET` in the backend deployment before release.
+- The backend uses an origin allowlist (`FRONTEND_URL` plus optional `CORS_ORIGINS`) and only accepts listed browser origins. Set `CORS_ORIGINS=*` only when any origin must call the API directly. Set a strong `JWT_SECRET` in the backend deployment before release.
 - PWA installability requires a production HTTPS deployment. A development server does not test service worker installation.
 
 ## Phát hành cho người dùng tải desktop
