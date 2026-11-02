@@ -71,7 +71,7 @@ const NotificationLanguageToggle = ({ value, onChange, label }) => (
   </div>
 );
 
-const SwipeableNotificationCard = ({ notification, filter, language, onSwipeRelease, onClick, children }) => {
+const SwipeableNotificationCard = ({ notification, filter, language, onSwipeRelease, onArchive, onClick, children }) => {
   const x = useMotionValue(0);
   const backgroundColor = useTransform(
     x,
@@ -106,10 +106,10 @@ const SwipeableNotificationCard = ({ notification, filter, language, onSwipeRele
 
   return (
     <div className='relative overflow-hidden rounded-2xl'>
-      <motion.div aria-hidden='true' className='absolute inset-0 flex items-center justify-between px-5' style={{ backgroundColor }}>
-        <motion.span style={{ opacity: archiveOpacity }} className='flex items-center gap-2 text-xs font-bold text-white'>
+      <motion.div className='pointer-events-none absolute inset-0 flex items-center justify-between px-5' style={{ backgroundColor }}>
+        <motion.button type='button' aria-label={archiveLabel} onClick={() => onArchive(notification, filter === 'archived' ? 'trash' : filter === 'trash' ? 'permanent-delete' : 'archive')} style={{ opacity: archiveOpacity, pointerEvents: 'auto' }} className='pointer-events-auto flex items-center gap-2 rounded-xl px-2 py-2 text-xs font-bold text-white'>
           <Check className='h-5 w-5' />{archiveLabel}
-        </motion.span>
+        </motion.button>
         <motion.span style={{ opacity: trashOpacity, scale: trashScale }} className='flex items-center gap-2 text-xs font-bold text-white'>
           <X className='h-6 w-6' />{trashLabel}
         </motion.span>
@@ -128,7 +128,6 @@ const SwipeableNotificationCard = ({ notification, filter, language, onSwipeRele
       >
         {children}
       </motion.button>
-      {Math.abs(x.get()) > 1 ? null : null}
     </div>
   );
 };
@@ -521,6 +520,7 @@ const NotificationCenter = ({ userId, navigationOpen = false, onDrawerOpenChange
                             filter={filter}
                             language={language}
                             onSwipeRelease={handleNotificationSwipe}
+                            onArchive={handleNotificationSwipe}
                             onClick={() => handleNotificationClick(notification.id)}
                           >
                             <span className={`block w-full rounded-2xl border p-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${notification.isRead ? 'border-slate-100 bg-white text-slate-600 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400' : 'border-violet-100 bg-violet-50/80 text-slate-900 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-slate-100'}`} aria-label={translatedNotifications[notification.id]?.title || notification.title}>
