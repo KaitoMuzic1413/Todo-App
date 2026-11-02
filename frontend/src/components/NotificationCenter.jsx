@@ -106,11 +106,11 @@ const SwipeableNotificationCard = ({ notification, filter, language, onSwipeRele
 
   return (
     <div className='relative overflow-hidden rounded-2xl'>
-      <motion.div className='pointer-events-none absolute inset-0 flex items-center justify-between px-5' style={{ backgroundColor }}>
+      <motion.div className='pointer-events-none absolute inset-0 flex items-center justify-end px-5' style={{ backgroundColor }}>
         <motion.button type='button' aria-label={archiveLabel} onClick={() => onArchive(notification, filter === 'archived' ? 'trash' : filter === 'trash' ? 'permanent-delete' : 'archive')} style={{ opacity: archiveOpacity, pointerEvents: 'auto' }} className='pointer-events-auto flex items-center gap-2 rounded-xl px-2 py-2 text-xs font-bold text-white'>
           <Check className='h-5 w-5' />{archiveLabel}
         </motion.button>
-        <motion.span style={{ opacity: trashOpacity, scale: trashScale }} className='flex items-center gap-2 text-xs font-bold text-white'>
+        <motion.span style={{ opacity: trashOpacity, scale: trashScale }} className='absolute right-5 flex items-center gap-2 text-xs font-bold text-white'>
           <X className='h-6 w-6' />{trashLabel}
         </motion.span>
       </motion.div>
