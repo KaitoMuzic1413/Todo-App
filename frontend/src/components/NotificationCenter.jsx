@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AnimatePresence, animate, motion, useMotionValue } from 'framer-motion';
+import { AnimatePresence, animate, motion, useMotionValue, useTransform } from 'framer-motion';
 import { Bell, Check, LoaderCircle, X } from 'lucide-react';
 import {
   fetchNotification,
@@ -70,6 +70,68 @@ const NotificationLanguageToggle = ({ value, onChange, label }) => (
     ))}
   </div>
 );
+
+const SwipeableNotificationCard = ({ notification, filter, language, onSwipeRelease, onClick, children }) => {
+  const x = useMotionValue(0);
+  const backgroundColor = useTransform(
+    x,
+    [-240, -180, -90, 0],
+    ['rgba(239, 68, 68, 0.98)', 'rgba(239, 68, 68, 0.88)', 'rgba(59, 130, 246, 0.88)', 'rgba(148, 163, 184, 0)']
+  );
+  const archiveOpacity = useTransform(x, [-125, -75, 0], [0, 1, 0]);
+  const trashOpacity = useTransform(x, [-225, -155, -115], [1, 1, 0]);
+  const trashScale = useTransform(x, [-225, -155], [1.35, 0.8]);
+  const archiveLabel = language === 'vi' ? 'Lưu trữ' : 'Archive';
+  const trashLabel = language === 'vi' ? 'Xóa' : 'Delete';
+
+  const handleDragEnd = (_, info) => {
+    const distance = Math.max(0, -x.get());
+    const velocity = Math.max(0, -info.velocity.x);
+    const projected = distance + Math.min(velocity * 0.12, 70);
+    if (projected >= 205) {
+      x.set(-240);
+      onSwipeRelease(notification, filter === 'trash' ? 'permanent-delete' : 'trash');
+      return;
+    }
+    if (projected >= 130) {
+      animate(x, -165, { type: 'spring', stiffness: 420, damping: 34 });
+      return;
+    }
+    if (projected >= 55) {
+      animate(x, -82, { type: 'spring', stiffness: 420, damping: 34 });
+      return;
+    }
+    animate(x, 0, { type: 'spring', stiffness: 500, damping: 38 });
+  };
+
+  return (
+    <div className='relative overflow-hidden rounded-2xl'>
+      <motion.div aria-hidden='true' className='absolute inset-0 flex items-center justify-between px-5' style={{ backgroundColor }}>
+        <motion.span style={{ opacity: archiveOpacity }} className='flex items-center gap-2 text-xs font-bold text-white'>
+          <Check className='h-5 w-5' />{archiveLabel}
+        </motion.span>
+        <motion.span style={{ opacity: trashOpacity, scale: trashScale }} className='flex items-center gap-2 text-xs font-bold text-white'>
+          <X className='h-6 w-6' />{trashLabel}
+        </motion.span>
+      </motion.div>
+      <motion.button
+        type='button'
+        drag='x'
+        dragDirectionLock
+        dragConstraints={{ left: -240, right: 0 }}
+        dragElastic={{ left: 0.16, right: 0.04 }}
+        style={{ x, touchAction: 'pan-y' }}
+        onDragEnd={handleDragEnd}
+        onClick={onClick}
+        aria-label={children.props?.['aria-label']}
+        className='relative z-10 w-full rounded-2xl bg-white text-left dark:bg-slate-950'
+      >
+        {children}
+      </motion.button>
+      {Math.abs(x.get()) > 1 ? null : null}
+    </div>
+  );
+};
 
 const NotificationCenter = ({ userId, navigationOpen = false, onDrawerOpenChange = () => {} }) => {
   const { t, language } = useLanguage();
@@ -313,43 +375,19 @@ const NotificationCenter = ({ userId, navigationOpen = false, onDrawerOpenChange
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [drawerOpen, focusNotificationButton, selectedId]);
 
-  const handleNotificationTouchStart = (event, notification) => {
-    if (event.touches.length !== 1) {
-      notificationSwipeStart.current = null;
-      return;
-    }
-    const touch = event.touches[0];
-    notificationSwipeStart.current = { id: notification.id, x: touch.clientX, y: touch.clientY };
-  };
-
-  const handleNotificationTouchEnd = async (event) => {
-    const start = notificationSwipeStart.current;
-    notificationSwipeStart.current = null;
-    if (!start || !event.changedTouches.length) return;
-    const touch = event.changedTouches[0];
-    const dx = touch.clientX - start.x;
-    const dy = touch.clientY - start.y;
-    if (Math.abs(dx) < 65 || Math.abs(dx) < Math.abs(dy) * 1.25) return;
-
-    const action = filter === 'trash'
-      ? (dx > 0 ? 'restore' : 'permanent-delete')
-      : filter === 'archived'
-        ? (dx > 0 ? 'restore' : 'trash')
-        : (dx < 0 ? 'archive' : 'trash');
-    const previous = notifications.find((item) => item.id === start.id);
-    if (!previous) return;
-
+  const handleNotificationSwipe = async (notification, action) => {
+    const previous = notification;
     suppressNotificationClick.current = true;
     window.setTimeout(() => { suppressNotificationClick.current = false; }, 500);
-    setNotifications((items) => items.filter((item) => item.id !== start.id));
+    setNotifications((items) => items.filter((item) => item.id !== notification.id));
     try {
-      await updateNotificationState(start.id, action);
+      await updateNotificationState(notification.id, action);
       if (!previous.isRead && action === 'permanent-delete') {
         setUnreadCount((count) => (typeof count === 'number' ? Math.max(0, count - 1) : count));
       }
       await Promise.all([refreshCount().catch(() => {}), refreshList(filter).catch(() => {})]);
     } catch {
-      setNotifications((items) => items.some((item) => item.id === start.id) ? items : [previous, ...items]);
+      setNotifications((items) => items.some((item) => item.id === notification.id) ? items : [previous, ...items]);
       setListError(t.notificationReadError);
     }
   };
@@ -478,14 +516,14 @@ const NotificationCenter = ({ userId, navigationOpen = false, onDrawerOpenChange
                     <AnimatePresence initial={false}>
                       {notifications.map((notification) => (
                         <motion.li key={notification.id} layout initial={{ opacity: 0, x: 0 }} exit={{ opacity: 0, x: -36, height: 0, marginBottom: 0, transition: { duration: 0.22, ease: 'easeOut' } }} transition={{ layout: { duration: 0.22, ease: 'easeOut' } }} className='overflow-hidden'>
-                          <button
-                            type='button'
-                            onTouchStart={(event) => handleNotificationTouchStart(event, notification)}
-                            onTouchEnd={(event) => void handleNotificationTouchEnd(event)}
+                          <SwipeableNotificationCard
+                            notification={notification}
+                            filter={filter}
+                            language={language}
+                            onSwipeRelease={handleNotificationSwipe}
                             onClick={() => handleNotificationClick(notification.id)}
-                            aria-label={translatedNotifications[notification.id]?.title || notification.title}
-                            className={`w-full rounded-2xl border p-3 text-left transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${notification.isRead ? 'border-slate-100 bg-white text-slate-600 hover:border-slate-200 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400 dark:hover:border-slate-700' : 'border-violet-100 bg-violet-50/80 text-slate-900 hover:border-violet-200 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-slate-100 dark:hover:border-violet-500/40'}`}
                           >
+                            <span className={`block w-full rounded-2xl border p-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${notification.isRead ? 'border-slate-100 bg-white text-slate-600 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400' : 'border-violet-100 bg-violet-50/80 text-slate-900 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-slate-100'}`} aria-label={translatedNotifications[notification.id]?.title || notification.title}>
                             <span className='flex items-start gap-3'>
                               <span className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-3xl ${notification.isRead ? 'bg-slate-300 dark:bg-slate-700' : 'bg-violet-600 dark:bg-violet-300'}`} aria-hidden='true' />
                               <span className='min-w-0 flex-1'>
@@ -495,7 +533,8 @@ const NotificationCenter = ({ userId, navigationOpen = false, onDrawerOpenChange
                                 {<span className='mt-1 block text-[10px] font-medium text-violet-600 dark:text-violet-300'>{filter === 'trash' ? (language === 'vi' ? 'Vuốt phải: khôi phục · Vuốt trái: xóa vĩnh viễn' : 'Swipe right: restore · left: delete forever') : filter === 'archived' ? (language === 'vi' ? 'Vuốt phải: khôi phục · Vuốt trái: chuyển vào thùng rác' : 'Swipe right: restore · left: move to trash') : (language === 'vi' ? 'Vuốt trái: lưu trữ · Vuốt phải: chuyển vào thùng rác' : 'Swipe left: archive · right: move to trash')}</span>}
                               </span>
                             </span>
-                          </button>
+                            </span>
+                          </SwipeableNotificationCard>
                         </motion.li>
                       ))}
                     </AnimatePresence>
