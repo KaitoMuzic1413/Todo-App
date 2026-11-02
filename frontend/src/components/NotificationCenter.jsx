@@ -6,6 +6,7 @@ import {
   fetchNotifications,
   fetchUnreadNotificationCount,
   markNotificationRead,
+  updateNotificationState,
   translateNotificationTexts,
 } from '@/lib/api';
 import { useLanguage } from '@/lib/i18n';
@@ -313,7 +314,7 @@ const NotificationCenter = ({ userId, navigationOpen = false, onDrawerOpenChange
   }, [drawerOpen, focusNotificationButton, selectedId]);
 
   const handleNotificationTouchStart = (event, notification) => {
-    if (filter !== 'unread' || notification.isRead || event.touches.length !== 1) {
+    if (event.touches.length !== 1) {
       notificationSwipeStart.current = null;
       return;
     }
@@ -324,24 +325,31 @@ const NotificationCenter = ({ userId, navigationOpen = false, onDrawerOpenChange
   const handleNotificationTouchEnd = async (event) => {
     const start = notificationSwipeStart.current;
     notificationSwipeStart.current = null;
-    if (!start || !event.changedTouches.length || filter !== 'unread') return;
+    if (!start || !event.changedTouches.length) return;
     const touch = event.changedTouches[0];
     const dx = touch.clientX - start.x;
     const dy = touch.clientY - start.y;
-    if (dx > -60 || Math.abs(dx) < Math.abs(dy) * 1.25) return;
+    if (Math.abs(dx) < 65 || Math.abs(dx) < Math.abs(dy) * 1.25) return;
+
+    const action = filter === 'trash'
+      ? (dx > 0 ? 'restore' : 'permanent-delete')
+      : filter === 'archived'
+        ? (dx > 0 ? 'restore' : 'trash')
+        : (dx < 0 ? 'archive' : 'trash');
+    const previous = notifications.find((item) => item.id === start.id);
+    if (!previous) return;
 
     suppressNotificationClick.current = true;
-    window.setTimeout(() => { suppressNotificationClick.current = false; }, 350);
-    const previous = notifications.find((item) => item.id === start.id);
-    if (!previous || previous.isRead) return;
+    window.setTimeout(() => { suppressNotificationClick.current = false; }, 500);
     setNotifications((items) => items.filter((item) => item.id !== start.id));
-    setUnreadCount((count) => (typeof count === 'number' ? Math.max(0, count - 1) : count));
     try {
-      await markNotificationRead(start.id);
-      await refreshCount().catch(() => {});
+      await updateNotificationState(start.id, action);
+      if (!previous.isRead && action === 'permanent-delete') {
+        setUnreadCount((count) => (typeof count === 'number' ? Math.max(0, count - 1) : count));
+      }
+      await Promise.all([refreshCount().catch(() => {}), refreshList(filter).catch(() => {})]);
     } catch {
       setNotifications((items) => items.some((item) => item.id === start.id) ? items : [previous, ...items]);
-      await refreshCount().catch(() => {});
       setListError(t.notificationReadError);
     }
   };
@@ -438,14 +446,15 @@ const NotificationCenter = ({ userId, navigationOpen = false, onDrawerOpenChange
                 </div>
               </header>
               <div className='shrink-0 border-b border-slate-100 px-5 py-3 dark:border-slate-800 sm:px-6'>
-                <div className='relative grid grid-cols-3 gap-1 rounded-3xl bg-slate-100 p-1 dark:bg-slate-900' role='tablist' aria-label={t.notifications}>
-                  <motion.span aria-hidden='true' layoutId='notification-filter-indicator' className='absolute bottom-1 top-1 rounded-3xl bg-violet-100 shadow-sm dark:bg-violet-500/15' initial={false} animate={{ left: filter === 'all' ? '4px' : filter === 'unread' ? 'calc(33.333% + 1px)' : 'calc(66.666% - 2px)', width: 'calc(33.333% - 2px)' }} transition={{ type: 'spring', stiffness: 420, damping: 34 }} />
+                <div className='flex gap-1 overflow-x-auto rounded-3xl bg-slate-100 p-1 dark:bg-slate-900' role='tablist' aria-label={t.notifications}>
                   {[
                     { key: 'all', label: t.allNotifications },
                     { key: 'unread', label: t.unreadNotifications },
                     { key: 'task', label: t.taskNotifications },
+                    { key: 'archived', label: language === 'vi' ? 'Đã lưu trữ' : 'Archived' },
+                    { key: 'trash', label: language === 'vi' ? 'Thùng rác' : 'Trash' },
                   ].map(({ key, label }) => (
-                    <button key={key} type='button' role='tab' aria-selected={filter === key} onClick={() => setFilter(key)} className={`relative z-10 min-h-10 rounded-3xl px-1 text-xs font-semibold transition-colors sm:px-2 sm:text-sm ${filter === key ? 'text-violet-700 dark:text-violet-100' : 'text-slate-500 hover:text-violet-700 dark:text-slate-400 dark:hover:text-violet-200'}`}>
+                    <button key={key} type='button' role='tab' aria-selected={filter === key} onClick={() => setFilter(key)} className={`min-h-10 shrink-0 rounded-3xl px-3 text-xs font-semibold transition-colors ${filter === key ? 'bg-violet-100 text-violet-700 shadow-sm dark:bg-violet-500/15 dark:text-violet-100' : 'text-slate-500 hover:text-violet-700 dark:text-slate-400 dark:hover:text-violet-200'}`}>
                       {label}
                     </button>
                   ))}
@@ -462,7 +471,7 @@ const NotificationCenter = ({ userId, navigationOpen = false, onDrawerOpenChange
                 ) : notifications.length === 0 ? (
                   <div className='flex min-h-56 flex-col items-center justify-center px-6 text-center'>
                     <span className='mb-4 flex h-14 w-14 items-center justify-center rounded-3xl bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-300'><Check className='h-6 w-6' /></span>
-                    <p className='text-sm font-medium text-slate-600 dark:text-slate-300'>{filter === 'task' ? t.noTaskNotifications : t.noNotifications}</p>
+                    <p className='text-sm font-medium text-slate-600 dark:text-slate-300'>{filter === 'task' ? t.noTaskNotifications : filter === 'archived' ? (language === 'vi' ? 'Chưa có thông báo lưu trữ' : 'No archived notifications') : filter === 'trash' ? (language === 'vi' ? 'Thùng rác đang trống' : 'Trash is empty') : t.noNotifications}</p>
                   </div>
                 ) : (
                   <ul className='space-y-2'>
@@ -474,7 +483,7 @@ const NotificationCenter = ({ userId, navigationOpen = false, onDrawerOpenChange
                             onTouchStart={(event) => handleNotificationTouchStart(event, notification)}
                             onTouchEnd={(event) => void handleNotificationTouchEnd(event)}
                             onClick={() => handleNotificationClick(notification.id)}
-                            aria-label={filter === 'unread' && !notification.isRead ? `${translatedNotifications[notification.id]?.title || notification.title}. ${t.swipeToRead}` : (translatedNotifications[notification.id]?.title || notification.title)}
+                            aria-label={translatedNotifications[notification.id]?.title || notification.title}
                             className={`w-full rounded-2xl border p-3 text-left transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${notification.isRead ? 'border-slate-100 bg-white text-slate-600 hover:border-slate-200 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400 dark:hover:border-slate-700' : 'border-violet-100 bg-violet-50/80 text-slate-900 hover:border-violet-200 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-slate-100 dark:hover:border-violet-500/40'}`}
                           >
                             <span className='flex items-start gap-3'>
@@ -483,7 +492,7 @@ const NotificationCenter = ({ userId, navigationOpen = false, onDrawerOpenChange
                                 <span className={`block truncate text-sm ${notification.isRead ? 'font-medium' : 'font-bold'}`}>{translatedNotifications[notification.id]?.title || notification.title}</span>
                                 <span className='notification-rich-content mt-1 block overflow-hidden text-ellipsis text-xs leading-5 text-slate-500 dark:text-slate-400' style={{ display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, overflow: 'hidden' }} dangerouslySetInnerHTML={{ __html: sanitizeNotificationHtml(translatedNotifications[notification.id]?.content || notification.content) }} />
                                 <span className='mt-2 block text-[11px] text-slate-400 dark:text-slate-500'>{formatDate(notification.createdAt || notification.deliveredAt)}</span>
-                                {filter === 'unread' && !notification.isRead ? <span className='mt-1 block text-[10px] font-medium text-violet-600 dark:text-violet-300'>{t.swipeToRead}</span> : null}
+                                {<span className='mt-1 block text-[10px] font-medium text-violet-600 dark:text-violet-300'>{filter === 'trash' ? (language === 'vi' ? 'Vuốt phải: khôi phục · Vuốt trái: xóa vĩnh viễn' : 'Swipe right: restore · left: delete forever') : filter === 'archived' ? (language === 'vi' ? 'Vuốt phải: khôi phục · Vuốt trái: chuyển vào thùng rác' : 'Swipe right: restore · left: move to trash') : (language === 'vi' ? 'Vuốt trái: lưu trữ · Vuốt phải: chuyển vào thùng rác' : 'Swipe left: archive · right: move to trash')}</span>}
                               </span>
                             </span>
                           </button>
