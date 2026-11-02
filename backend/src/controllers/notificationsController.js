@@ -41,7 +41,7 @@ export const listNotifications = async (req, res) => {
   try {
     if (req.query.filter === 'task') {
       const recipients = await NotificationRecipient.aggregate([
-        { $match: { userId: new mongoose.Types.ObjectId(req.user.userId) } },
+        { $match: { userId: new mongoose.Types.ObjectId(req.user.userId), archivedAt: null, deletedAt: null } },
         {
           $lookup: {
             from: Notification.collection.name,
@@ -87,7 +87,7 @@ export const listNotifications = async (req, res) => {
 
 export const getUnreadNotificationCount = async (req, res) => {
   try {
-    const count = await NotificationRecipient.countDocuments({ userId: req.user.userId, isRead: false });
+    const count = await NotificationRecipient.countDocuments({ userId: req.user.userId, isRead: false, archivedAt: null, deletedAt: null });
     return res.status(200).json({ count });
   } catch (error) {
     console.error('Unread notification count error:', error);
