@@ -8,8 +8,8 @@ const getOrCreateTaskNotification = async ({ task, userId, language }) => {
   const seedKey = `task-due:${task._id}:${dueTimestamp}`;
   const title = language === 'vi' ? 'Công việc sắp đến hạn' : 'Task due soon';
   const content = language === 'vi'
-    ? `Công việc “${task.title}” sẽ đến hạn trong 15 phút nữa.`
-    : `Task “${task.title}” is due in 15 minutes.`;
+    ? `Công việc “${task.title}” sắp đến hạn.`
+    : `Task “${task.title}” is due soon.`;
   const notificationFields = {
     title,
     content: content.slice(0, 5000),
