@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AnimatePresence, animate, motion, useMotionValue, useTransform } from 'framer-motion';
-import { Bell, Check, LoaderCircle, X } from 'lucide-react';
+import { Archive, Bell, Check, LoaderCircle, RotateCcw, Trash2, X } from 'lucide-react';
 import {
   fetchNotification,
   fetchNotifications,
@@ -124,7 +124,7 @@ const SwipeableNotificationCard = ({ notification, filter, language, onSwipeRele
         onDragEnd={handleDragEnd}
         onClick={onClick}
         aria-label={children.props?.['aria-label']}
-        className='relative z-10 w-full rounded-2xl bg-white text-left dark:bg-slate-950'
+        className='relative z-10 w-full rounded-[22px] bg-white/95 text-left shadow-[0_5px_20px_rgba(15,23,42,0.045)] ring-1 ring-slate-200/80 backdrop-blur-xl transition-shadow dark:bg-slate-900/95 dark:ring-white/[0.07]'
       >
         {children}
       </motion.button>
@@ -466,12 +466,12 @@ const NotificationCenter = ({ userId, navigationOpen = false, onDrawerOpenChange
               initial={false}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className='fixed inset-y-0 right-0 z-[61] flex w-[min(320px,88vw)] flex-col border-l border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-950'
+              className='fixed inset-y-0 right-0 z-[61] flex w-[min(360px,92vw)] flex-col border-l border-white/70 bg-[linear-gradient(155deg,#ffffff_0%,#f7f7ff_48%,#f1f5ff_100%)] shadow-[0_24px_80px_rgba(15,23,42,0.28)] backdrop-blur-2xl dark:border-white/10 dark:bg-[linear-gradient(155deg,#111827_0%,#11152b_52%,#101b32_100%)]'
               style={{ x: drawerX, paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
             >
-              <header className='flex shrink-0 items-center justify-between gap-2 border-b border-slate-200 px-5 py-4 dark:border-slate-800 sm:px-6'>
+              <header className='relative flex shrink-0 items-center justify-between gap-2 overflow-hidden border-b border-violet-200/50 bg-[linear-gradient(120deg,rgba(124,58,237,0.10),rgba(59,130,246,0.08),transparent)] px-5 py-5 dark:border-white/10 dark:bg-[linear-gradient(120deg,rgba(139,92,246,0.18),rgba(59,130,246,0.12),transparent)] sm:px-6'>
                 <div className='min-w-0'>
-                  <h2 id='notification-drawer-title' className='truncate text-lg font-bold text-slate-900 dark:text-white'>{t.notifications}</h2>
+                  <h2 id='notification-drawer-title' className='truncate bg-gradient-to-r from-violet-700 via-indigo-600 to-blue-600 bg-clip-text text-xl font-extrabold tracking-tight text-transparent dark:from-violet-200 dark:via-indigo-200 dark:to-sky-200'>{t.notifications}</h2>
                   {unreadCount > 0 ? <p className='mt-0.5 truncate text-xs text-slate-500 dark:text-slate-400'>{unreadCount} {t.unreadNotifications.toLowerCase()}</p> : null}
                 </div>
                 <div className='flex shrink-0 items-center gap-2'>
@@ -481,8 +481,8 @@ const NotificationCenter = ({ userId, navigationOpen = false, onDrawerOpenChange
                   </button>
                 </div>
               </header>
-              <div className='shrink-0 border-b border-slate-100 px-5 py-3 dark:border-slate-800 sm:px-6'>
-                <div className='flex gap-1 overflow-x-auto rounded-3xl bg-slate-100 p-1 dark:bg-slate-900' role='tablist' aria-label={t.notifications}>
+              <div className='shrink-0 border-b border-violet-100/70 px-4 py-3 dark:border-white/[0.06] sm:px-5'>
+                <div className='flex gap-1 overflow-x-auto rounded-2xl border border-white/80 bg-white/70 p-1 shadow-inner shadow-slate-200/60 backdrop-blur-xl dark:border-white/[0.06] dark:bg-slate-950/45 dark:shadow-black/20' role='tablist' aria-label={t.notifications}>
                   {[
                     { key: 'all', label: t.allNotifications },
                     { key: 'unread', label: t.unreadNotifications },
@@ -490,13 +490,13 @@ const NotificationCenter = ({ userId, navigationOpen = false, onDrawerOpenChange
                     { key: 'archived', label: language === 'vi' ? 'Đã lưu trữ' : 'Archived' },
                     { key: 'trash', label: language === 'vi' ? 'Thùng rác' : 'Trash' },
                   ].map(({ key, label }) => (
-                    <button key={key} type='button' role='tab' aria-selected={filter === key} onClick={() => setFilter(key)} className={`min-h-10 shrink-0 rounded-3xl px-3 text-xs font-semibold transition-colors ${filter === key ? 'bg-violet-100 text-violet-700 shadow-sm dark:bg-violet-500/15 dark:text-violet-100' : 'text-slate-500 hover:text-violet-700 dark:text-slate-400 dark:hover:text-violet-200'}`}>
+                    <button key={key} type='button' role='tab' aria-selected={filter === key} onClick={() => setFilter(key)} className={`min-h-9 shrink-0 rounded-xl px-3 text-[11px] font-bold transition-all duration-200 ${filter === key ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md shadow-violet-500/25' : 'text-slate-500 hover:bg-violet-50 hover:text-violet-700 dark:text-slate-400 dark:hover:bg-white/[0.06] dark:hover:text-violet-200'}`}>
                       {label}
                     </button>
                   ))}
                 </div>
               </div>
-              <div className='min-h-0 flex-1 overflow-y-auto px-4 py-3 [overscroll-behavior:contain] sm:px-5' style={{ touchAction: 'pan-y' }}>
+              <div className='min-h-0 flex-1 overflow-y-auto bg-[radial-gradient(ellipse_at_top,rgba(139,92,246,0.055),transparent_58%)] px-3 py-4 [overscroll-behavior:contain] dark:bg-[radial-gradient(ellipse_at_top,rgba(139,92,246,0.10),transparent_58%)] sm:px-4' style={{ touchAction: 'pan-y' }}>
                 {listLoading ? (
                   <div className='flex min-h-48 items-center justify-center text-violet-600 dark:text-violet-300'><LoaderCircle className='h-6 w-6 animate-spin' /><span className='sr-only'>{t.loading}</span></div>
                 ) : listError ? (
@@ -510,7 +510,7 @@ const NotificationCenter = ({ userId, navigationOpen = false, onDrawerOpenChange
                     <p className='text-sm font-medium text-slate-600 dark:text-slate-300'>{filter === 'task' ? t.noTaskNotifications : filter === 'archived' ? (language === 'vi' ? 'Chưa có thông báo lưu trữ' : 'No archived notifications') : filter === 'trash' ? (language === 'vi' ? 'Thùng rác đang trống' : 'Trash is empty') : t.noNotifications}</p>
                   </div>
                 ) : (
-                  <ul className='space-y-2'>
+                  <ul className='space-y-3'>
                     <AnimatePresence initial={false}>
                       {notifications.map((notification) => (
                         <motion.li key={notification.id} layout initial={{ opacity: 0, x: 0 }} exit={{ opacity: 0, x: -36, height: 0, marginBottom: 0, transition: { duration: 0.22, ease: 'easeOut' } }} transition={{ layout: { duration: 0.22, ease: 'easeOut' } }} className='overflow-hidden'>
@@ -522,14 +522,14 @@ const NotificationCenter = ({ userId, navigationOpen = false, onDrawerOpenChange
                             onArchive={handleNotificationSwipe}
                             onClick={() => handleNotificationClick(notification.id)}
                           >
-                            <span className={`block w-full rounded-2xl border p-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${notification.isRead ? 'border-slate-100 bg-white text-slate-600 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400' : 'border-violet-100 bg-violet-50/80 text-slate-900 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-slate-100'}`} aria-label={translatedNotifications[notification.id]?.title || notification.title}>
+                            <span className={`block w-full rounded-[22px] border p-3.5 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 ${notification.isRead ? 'border-slate-200/80 bg-white/90 text-slate-600 hover:border-violet-200 hover:bg-white dark:border-white/[0.07] dark:bg-slate-900/85 dark:text-slate-400 dark:hover:border-violet-400/30' : 'border-violet-200/80 bg-[linear-gradient(120deg,rgba(245,243,255,0.98),rgba(239,246,255,0.88))] text-slate-900 shadow-[0_5px_18px_rgba(124,58,237,0.07)] hover:border-violet-300 dark:border-violet-400/20 dark:bg-[linear-gradient(120deg,rgba(139,92,246,0.13),rgba(59,130,246,0.09))] dark:text-slate-100'}`} aria-label={translatedNotifications[notification.id]?.title || notification.title}>
                             <span className='flex items-start gap-3'>
                               <span className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-3xl ${notification.isRead ? 'bg-slate-300 dark:bg-slate-700' : 'bg-violet-600 dark:bg-violet-300'}`} aria-hidden='true' />
                               <span className='min-w-0 flex-1'>
                                 <span className={`block truncate text-sm ${notification.isRead ? 'font-medium' : 'font-bold'}`}>{translatedNotifications[notification.id]?.title || notification.title}</span>
                                 <span className='notification-rich-content mt-1 block overflow-hidden text-ellipsis text-xs leading-5 text-slate-500 dark:text-slate-400' style={{ display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2, overflow: 'hidden' }} dangerouslySetInnerHTML={{ __html: sanitizeNotificationHtml(translatedNotifications[notification.id]?.content || notification.content) }} />
                                 <span className='mt-2 block text-[11px] text-slate-400 dark:text-slate-500'>{formatDate(notification.createdAt || notification.deliveredAt)}</span>
-                                {<span className='mt-1 block text-[10px] font-medium text-violet-600 dark:text-violet-300'>{filter === 'trash' ? (language === 'vi' ? 'Vuốt phải: khôi phục · Vuốt trái: xóa vĩnh viễn' : 'Swipe right: restore · left: delete forever') : filter === 'archived' ? (language === 'vi' ? 'Vuốt phải: khôi phục · Vuốt trái: chuyển vào thùng rác' : 'Swipe right: restore · left: move to trash') : (language === 'vi' ? 'Vuốt trái: lưu trữ · Vuốt phải: chuyển vào thùng rác' : 'Swipe left: archive · right: move to trash')}</span>}
+                                {<span className='mt-1.5 block text-[10px] font-medium text-violet-500/90 dark:text-violet-300/80'>{language === 'vi' ? 'Vuốt sang trái để xem thao tác' : 'Swipe left to reveal actions'}</span>}
                               </span>
                             </span>
                             </span>
@@ -567,7 +567,7 @@ const NotificationCenter = ({ userId, navigationOpen = false, onDrawerOpenChange
               aria-labelledby='notification-detail-title'
               initial={{ opacity: 0, y: 14, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8, scale: 0.99 }}
               transition={{ duration: 0.2 }}
-              className='flex w-[90vw] min-h-[50dvh] max-w-[600px] max-h-[78dvh] flex-col overflow-hidden rounded-3xl border border-white/60 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900'
+              className='flex w-[92vw] min-h-[50dvh] max-w-[620px] max-h-[82dvh] flex-col overflow-hidden rounded-[28px] border border-white/70 bg-[linear-gradient(145deg,#ffffff,#f8f7ff)] shadow-[0_28px_100px_rgba(15,23,42,0.32)] dark:border-white/10 dark:bg-[linear-gradient(145deg,#171b2d,#111827)]'
             >
               <header className='flex shrink-0 items-start justify-between gap-4 border-b border-slate-100 px-5 py-4 sm:px-6 sm:py-5 dark:border-slate-800'>
                 <div className='min-w-0'>
