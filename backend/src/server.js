@@ -5,6 +5,7 @@ import { connectDB } from './config/db.js';
 import { cleanupExpiredTrashTasks } from './controllers/tasksControllers.js';
 import { cleanupInactiveUsers } from './controllers/usersControllers.js';
 import { cleanupExpiredTrashAttachments } from './controllers/attachmentsControllers.js';
+import { cleanupExpiredNotifications } from './controllers/notificationsController.js';
 import authRoute from './routes/authRoutes.js';
 import taskRoute from './routes/tasksRouters.js';
 import userRoute from './routes/usersRoutes.js';
@@ -122,10 +123,11 @@ const runMaintenanceJobs = async () => {
     const { deletedUsers, deletedTasks } = await cleanupInactiveUsers();
     const expiredTrashTasks = await cleanupExpiredTrashTasks();
     const expiredTrashAttachments = await cleanupExpiredTrashAttachments();
+    const expiredNotifications = await cleanupExpiredNotifications();
 
-    if (deletedUsers > 0 || deletedTasks > 0 || expiredTrashTasks > 0 || expiredTrashAttachments > 0) {
+    if (deletedUsers > 0 || deletedTasks > 0 || expiredTrashTasks > 0 || expiredTrashAttachments > 0 || expiredNotifications.deletedCount > 0) {
       console.log(
-        `[Maintenance] Cleaned: ${deletedUsers} inactive users, ${deletedTasks} tasks, ${expiredTrashTasks} expired trash tasks, ${expiredTrashAttachments} expired trash attachments.`
+        `[Maintenance] Cleaned: ${deletedUsers} inactive users, ${deletedTasks} tasks, ${expiredTrashTasks} expired trash tasks, ${expiredTrashAttachments} expired trash attachments, ${expiredNotifications.deletedCount} expired notifications.`
       );
     }
   } catch (error) {
