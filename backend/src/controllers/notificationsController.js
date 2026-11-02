@@ -16,6 +16,8 @@ const notificationView = (notification, recipient) => ({
   deliveredAt: recipient.deliveredAt,
   isRead: recipient.isRead,
   readAt: recipient.readAt,
+  archivedAt: recipient.archivedAt,
+  deletedAt: recipient.deletedAt,
 });
 
 export const translateNotificationTexts = async (req, res) => {
@@ -59,6 +61,12 @@ export const listNotifications = async (req, res) => {
 
     const recipientFilter = { userId: req.user.userId };
     if (req.query.filter === 'unread') recipientFilter.isRead = false;
+    if (req.query.filter === 'archived') recipientFilter.archivedAt = { $ne: null };
+    else if (req.query.filter === 'trash') recipientFilter.deletedAt = { $ne: null };
+    else {
+      recipientFilter.archivedAt = null;
+      recipientFilter.deletedAt = null;
+    }
     const recipients = await NotificationRecipient.find(recipientFilter)
       .sort({ deliveredAt: -1, _id: -1 })
       .limit(100)
@@ -132,6 +140,37 @@ export const markAllNotificationsRead = async (req, res) => {
     console.error('Mark all notifications read error:', error);
     return res.status(500).json({ message: 'Unable to update notification statuses.' });
   }
+};
+
+
+export const updateNotificationState = async (req, res) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) return res.status(404).json({ message: 'Notification not found.' });
+    const action = req.body?.action;
+    const now = new Date();
+    const update = action === 'archive' ? { archivedAt: now, deletedAt: null }
+      : action === 'trash' ? { deletedAt: now, archivedAt: null }
+      : action === 'restore' ? { archivedAt: null, deletedAt: null }
+      : action === 'permanent-delete' ? null : undefined;
+    if (update === undefined) return res.status(400).json({ message: 'Invalid notification action.' });
+    const filter = { notificationId: req.params.id, userId: req.user.userId };
+    if (action === 'permanent-delete') {
+      const result = await NotificationRecipient.deleteOne(filter);
+      if (!result.deletedCount) return res.status(404).json({ message: 'Notification not found.' });
+    } else {
+      const result = await NotificationRecipient.updateOne(filter, { $set: update });
+      if (!result.matchedCount) return res.status(404).json({ message: 'Notification not found.' });
+    }
+    return res.status(200).json({ updated: true, action });
+  } catch (error) {
+    console.error('Update notification state error:', error);
+    return res.status(500).json({ message: 'Unable to update notification.' });
+  }
+};
+
+export const cleanupExpiredNotifications = async (now = new Date()) => {
+  const expiry = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  return NotificationRecipient.deleteMany({ deletedAt: { $ne: null, $lte: expiry } });
 };
 
 export const listAdminNotifications = async (req, res) => {
