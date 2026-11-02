@@ -11,6 +11,7 @@ import {
   listNotifications,
   markAllNotificationsRead,
   markNotificationRead,
+  updateNotificationState,
 } from '../controllers/notificationsController.js';
 
 const router = express.Router();
@@ -25,5 +26,6 @@ router.delete('/admin/:id', requireAdmin, deleteAdminNotification);
 router.patch('/read-all', markAllNotificationsRead);
 router.get('/:id', getNotification);
 router.patch('/:id/read', markNotificationRead);
+router.patch('/:id/state', updateNotificationState);
 
 export default router;
