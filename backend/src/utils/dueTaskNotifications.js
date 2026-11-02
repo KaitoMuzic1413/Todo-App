@@ -6,10 +6,10 @@ import { sendPushToUser } from './webPush.js';
 const getOrCreateTaskNotification = async ({ task, userId, language }) => {
   const dueTimestamp = new Date(task.dueAt).getTime();
   const seedKey = `task-due:${task._id}:${dueTimestamp}`;
-  const title = language === 'vi' ? 'Công việc đến hạn' : 'Task due now';
+  const title = language === 'vi' ? 'Công việc sắp đến hạn' : 'Task due soon';
   const content = language === 'vi'
-    ? `Công việc “${task.title}” đã đến thời hạn.`
-    : `Task “${task.title}” has reached its due time.`;
+    ? `Công việc “${task.title}” sẽ đến hạn trong 15 phút nữa.`
+    : `Task “${task.title}” is due in 15 minutes.`;
   const notificationFields = {
     title,
     content: content.slice(0, 5000),
@@ -41,7 +41,7 @@ export const runDueTaskNotifications = async (now = new Date()) => {
     const dueTasks = await Task.find({
       isDeleted: false,
       status: 'active',
-      dueAt: { $lte: now, $ne: null },
+      dueAt: { $lte: new Date(now.getTime() + 15 * 60 * 1000), $gt: now, $ne: null },
       dueNotificationSentFor: null,
       $or: [{ contentType: 'task' }, { contentType: { $exists: false } }],
     })
