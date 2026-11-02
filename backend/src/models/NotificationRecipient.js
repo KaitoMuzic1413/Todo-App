@@ -5,6 +5,8 @@ const notificationRecipientSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   isRead: { type: Boolean, default: false },
   readAt: { type: Date, default: null },
+  archivedAt: { type: Date, default: null },
+  deletedAt: { type: Date, default: null },
   deliveredAt: { type: Date, default: Date.now },
 }, { timestamps: true });
 
