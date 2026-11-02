@@ -241,3 +241,5 @@ export const downloadAttachment = (attachmentId, preview = false) => api.get(`/a
 });
 
 export default api;
+
+export const updateNotificationState = (notificationId, action) => api.patch(`/notifications/${notificationId}/state`, { action });
