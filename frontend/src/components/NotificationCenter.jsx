@@ -152,7 +152,6 @@ const NotificationCenter = ({ userId, navigationOpen = false, onDrawerOpenChange
   const drawerRef = useRef(null);
   const detailRef = useRef(null);
   const swipeStart = useRef(null);
-  const notificationSwipeStart = useRef(null);
   const suppressNotificationClick = useRef(false);
   const [isDraggingDrawer, setIsDraggingDrawer] = useState(false);
   const drawerX = useMotionValue(typeof window === 'undefined' ? 320 : Math.min(320, window.innerWidth * 0.88));
