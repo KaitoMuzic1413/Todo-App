@@ -40,7 +40,7 @@ const DueTaskReminderWatcher = () => {
           if (task.status === 'complete' || !task.dueAt) continue;
           const dueTime = new Date(task.dueAt).getTime();
           const remaining = dueTime - now;
-          if (!Number.isFinite(dueTime) || remaining <= 0 || remaining > 30 * 60 * 1000) continue;
+          if (!Number.isFinite(dueTime) || remaining <= 0 || remaining > 15 * 60 * 1000) continue;
 
           const reminderKey = `todo-due-reminder:${userId}:${task._id}:${dueTime}`;
           if (localStorage.getItem(reminderKey)) continue;
