@@ -3,13 +3,12 @@ import { DurableObject } from 'cloudflare:workers';
 const API_PREFIX = '/api';
 const API_PORT = 5001;
 const CONTAINER_NAME = 'todo-api-primary';
-const CONTAINER_IDLE_TIMEOUT_MS = 15_000;
+const CONTAINER_IDLE_TIMEOUT_MS = 120_000;
 const STARTUP_ATTEMPTS = 80;
 const STARTUP_RETRY_MS = 250;
 
 const PROXY_REQUEST_HEADERS_TO_DROP = [
   'host',
-  'origin',
   'referer',
   'accept-encoding',
   'connection',
