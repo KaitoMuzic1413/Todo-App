@@ -7,6 +7,7 @@ import NotificationRecipient from '../models/NotificationRecipient.js';
 import Notification from '../models/Notification.js';
 import PushSubscription from '../models/PushSubscription.js';
 import RefreshToken from '../models/RefreshToken.js';
+import InviteCode from '../models/InviteCode.js';
 import FocusSession from '../models/FocusSession.js';
 import GamificationEvent from '../models/GamificationEvent.js';
 import { sendEmail } from '../utils/email.js';
@@ -198,7 +199,17 @@ export const cleanupInactiveUsers = async () => {
       await GamificationEvent.deleteMany({ userId: user._id });
       await Attachment.deleteMany({ ownerId: user._id });
       await NotificationRecipient.deleteMany({ userId: user._id });
-      await Notification.deleteMany({ targetType: 'user', targetId: user._id });
+      await Notification.deleteMany({
+        $or: [
+          { targetType: 'user', targetId: user._id },
+          { createdBy: user._id },
+        ],
+      });
+      await InviteCode.deleteMany({ createdBy: user._id });
+      await InviteCode.updateMany(
+        { 'usedBy.userId': user._id },
+        { $pull: { usedBy: { userId: user._id } } }
+      );
       await PushSubscription.deleteMany({ userId: user._id });
       await RefreshToken.deleteMany({ userId: user._id });
       const deletedUser = await User.findByIdAndDelete(user._id);
