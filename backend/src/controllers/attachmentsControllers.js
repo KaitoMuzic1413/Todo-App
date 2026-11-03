@@ -37,9 +37,9 @@ export const cleanupExpiredTrashAttachments = async () => {
 
     if (!expired.length) return 0;
 
-    // A trashed parent task owns the retention lifecycle of its attachments.
-    // Leave those files for cleanupExpiredTrashTasks so a failed task cleanup
-    // cannot be bypassed by this attachment-only cleanup pass.
+    // A parent task owns the retention lifecycle of its attachments.
+    // Leave linked files for task deletion or explicit attachment cleanup so
+    // this scheduled pass cannot race with restoring or deleting a task.
     const linkedTaskIds = [...new Set(expired.filter((item) => item.taskId).map((item) => String(item.taskId)))];
     const existingTasks = linkedTaskIds.length
       ? await Task.find({ _id: { $in: linkedTaskIds } }).select('_id')
