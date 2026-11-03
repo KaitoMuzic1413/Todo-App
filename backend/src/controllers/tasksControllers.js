@@ -5,6 +5,7 @@ import Attachment from '../models/Attachment.js';
 import { deleteAttachmentRecords } from './attachmentsControllers.js';
 import { hasScheduleInput, validateTaskSchedule } from '../utils/taskSchedule.js';
 import { touchUserActivity as persistUserActivity } from '../utils/userActivity.js';
+import { deleteTasksWithAttachmentsSafely } from '../utils/taskCleanup.js';
 import GamificationEvent from '../models/GamificationEvent.js';
 import { checkTaskQuota, getQuotaSnapshot } from '../utils/premium.js';
 import {
@@ -129,13 +130,32 @@ export const cleanupExpiredTrashTasks = async () => {
   try {
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - 30);
-
-    const result = await Task.deleteMany({
+    const expiredTasks = await Task.find({
       isDeleted: true,
       deletedAt: { $lte: cutoff },
-    });
+    }).select('_id userId');
 
-    return result.deletedCount || 0;
+    const { deletedCount, failures } = await deleteTasksWithAttachmentsSafely(
+      expiredTasks,
+      {
+        deleteAttachments: (task) => deleteAttachmentRecords({
+          taskId: task._id,
+          ownerId: task.userId,
+        }),
+        deleteTask: (task) => Task.deleteOne({
+          _id: task._id,
+          userId: task.userId,
+          isDeleted: true,
+          deletedAt: { $lte: cutoff },
+        }),
+      }
+    );
+
+    for (const failure of failures) {
+      console.error(`Expired task cleanup deferred for task ${failure.taskId}:`, failure.error);
+    }
+
+    return deletedCount;
   } catch (error) {
     console.error('Error cleanupExpiredTrashTasks:', error);
     return 0;
