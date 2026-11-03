@@ -4,11 +4,16 @@ import Task from '../models/Task.js';
 import Attachment from '../models/Attachment.js';
 import CalendarNote from '../models/CalendarNote.js';
 import NotificationRecipient from '../models/NotificationRecipient.js';
+import Notification from '../models/Notification.js';
+import PushSubscription from '../models/PushSubscription.js';
+import RefreshToken from '../models/RefreshToken.js';
+import InviteCode from '../models/InviteCode.js';
 import FocusSession from '../models/FocusSession.js';
 import GamificationEvent from '../models/GamificationEvent.js';
 import { sendEmail } from '../utils/email.js';
 import { validatePreferenceUpdates } from '../utils/userPreferences.js';
 import { deliverNewAccountNotifications } from '../utils/onboardingNotifications.js';
+import { deleteGridFsFileIfExists, deleteGridFsFilesSafely } from '../utils/deleteGridFsFiles.js';
 
 const INACTIVE_ACCOUNT_DAYS = 90;
 const DELETION_NOTICE_DAYS = 3;
@@ -156,27 +161,62 @@ export const cleanupInactiveUsers = async () => {
       ],
     }).select('_id email');
 
+    let deletedUsers = 0;
     let deletedTasks = 0;
+
     for (const user of inactiveUsers) {
+      const attachments = await Attachment.find({ ownerId: user._id }).select('_id fileId');
+      if (attachments.length) {
+        if (!mongoose.connection.db) {
+          console.error(`Cannot delete inactive user ${user._id}: GridFS is unavailable.`);
+          continue;
+        }
+
+        const bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, { bucketName: 'attachments' });
+        const { deletedIds, failures } = await deleteGridFsFilesSafely(
+          attachments,
+          (fileId) => deleteGridFsFileIfExists(bucket, fileId)
+        );
+
+        if (deletedIds.length) {
+          await Attachment.deleteMany({ _id: { $in: deletedIds }, ownerId: user._id });
+        }
+
+        if (failures.length) {
+          failures.forEach(({ id, error }) => {
+            console.error(`Could not delete inactive user attachment ${id}; account cleanup was deferred:`, error);
+          });
+          // Do not remove the account or its other records while any linked file
+          // still exists or could not be confirmed deleted. Retry on the next run.
+          continue;
+        }
+      }
+
       const taskResult = await Task.deleteMany({ userId: user._id });
       deletedTasks += taskResult.deletedCount || 0;
       await CalendarNote.deleteMany({ userId: user._id });
       await FocusSession.deleteMany({ userId: user._id });
       await GamificationEvent.deleteMany({ userId: user._id });
-      const attachments = await Attachment.find({ ownerId: user._id }).select('fileId');
-      if (mongoose.connection.db) {
-        const bucket = new mongoose.mongo.GridFSBucket(mongoose.connection.db, { bucketName: 'attachments' });
-        const deleteResults = await Promise.allSettled(attachments.map(({ fileId }) => bucket.delete(fileId)));
-        deleteResults.forEach((result) => {
-          if (result.status === 'rejected') console.error('Could not delete an inactive user attachment file:', result.reason);
-        });
-      }
       await Attachment.deleteMany({ ownerId: user._id });
       await NotificationRecipient.deleteMany({ userId: user._id });
-      await User.findByIdAndDelete(user._id);
+      await Notification.deleteMany({
+        $or: [
+          { targetType: 'user', targetId: user._id },
+          { createdBy: user._id },
+        ],
+      });
+      await InviteCode.deleteMany({ createdBy: user._id });
+      await InviteCode.updateMany(
+        { 'usedBy.userId': user._id },
+        { $pull: { usedBy: { userId: user._id } } }
+      );
+      await PushSubscription.deleteMany({ userId: user._id });
+      await RefreshToken.deleteMany({ userId: user._id });
+      const deletedUser = await User.findByIdAndDelete(user._id);
+      if (deletedUser) deletedUsers += 1;
     }
 
-    return { deletedUsers: inactiveUsers.length, deletedTasks };
+    return { deletedUsers, deletedTasks };
   } catch (error) {
     console.error('Error cleanupInactiveUsers:', error);
     return { deletedUsers: 0, deletedTasks: 0 };

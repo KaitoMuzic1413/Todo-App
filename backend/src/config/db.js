@@ -1,20 +1,34 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
+
+let connectionPromise = null;
 
 export const connectDB = async () => {
-    if (!process.env.MONGODB_CONNECTIONSTRING) {
-        throw new Error("MONGODB_CONNECTIONSTRING is required.");
-    }
+  const mongoUri = process.env.MONGODB_CONNECTIONSTRING;
+  if (!mongoUri) {
+    throw new Error('MONGODB_CONNECTIONSTRING is required.');
+  }
 
-    if (mongoose.connection.readyState === 1) {
-        return mongoose;
-    }
+  if (mongoose.connection.readyState === 1) {
+    return mongoose;
+  }
 
-    try {
-        await mongoose.connect(process.env.MONGODB_CONNECTIONSTRING);
-        console.log("MongoDB connected successfully");
-        return mongoose;
-    } catch (error) {
-        console.error("MongoDB connection error:", error);
-        throw error;
-    }
+  // Share one in-flight connection attempt across concurrent cold-start requests.
+  if (connectionPromise) {
+    return connectionPromise;
+  }
+
+  connectionPromise = mongoose.connect(mongoUri)
+    .then(() => {
+      console.log('MongoDB connected successfully');
+      return mongoose;
+    })
+    .catch((error) => {
+      console.error('MongoDB connection error:', error);
+      throw error;
+    })
+    .finally(() => {
+      connectionPromise = null;
+    });
+
+  return connectionPromise;
 };

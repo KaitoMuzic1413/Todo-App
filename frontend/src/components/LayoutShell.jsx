@@ -292,7 +292,7 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
               <div className='flex shrink-0 items-center justify-between border-b border-slate-200/80 bg-white/60 p-4 dark:border-slate-800 dark:bg-slate-950/60'>
                 <div className='flex items-center gap-3 rounded-3xl border border-violet-200/80 bg-violet-50/70 px-3 py-3 shadow-sm dark:border-violet-500/20 dark:bg-violet-500/10'>
                   <span className='rounded-2xl bg-gradient-to-br from-violet-400 via-violet-600 to-violet-800 p-[2px] shadow-md shadow-violet-500/20'>
-                    <img src='/Logo.jpg' alt='Redhat logo' draggable={false} onDragStart={(event) => event.preventDefault()} className='h-12 w-12 select-none rounded-[14px] border border-white/70 object-cover dark:border-slate-900 [-webkit-touch-callout:none]' />
+                    <img src='/Logo.jpg' alt='Redhat logo' draggable={false} onDragStart={(event) => event.preventDefault()} className='h-12 w-12 select-none rounded-3xl border border-white/70 object-cover dark:border-slate-900 [-webkit-touch-callout:none]' />
                   </span>
                   <div className='min-w-0'>
                     <p className='truncate text-xl font-bold tracking-tight text-slate-900 dark:text-white'>Redhat</p>

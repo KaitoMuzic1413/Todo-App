@@ -4,6 +4,13 @@ import User from '../models/User.js';
 import Attachment from '../models/Attachment.js';
 import { deleteAttachmentRecords } from './attachmentsControllers.js';
 import { hasScheduleInput, validateTaskSchedule } from '../utils/taskSchedule.js';
+import { touchUserActivity as persistUserActivity } from '../utils/userActivity.js';
+import {
+  claimTaskForDeletion,
+  deleteTasksWithAttachmentsSafely,
+  releaseTaskDeletionClaim,
+  TASK_DELETION_CLAIM_LEASE_MS,
+} from '../utils/taskCleanup.js';
 import GamificationEvent from '../models/GamificationEvent.js';
 import { checkTaskQuota, getQuotaSnapshot } from '../utils/premium.js';
 import {
@@ -22,10 +29,10 @@ const getUserFilter = (req) => {
 };
 
 const getAuthenticatedUserId = (req) => req.user?.userId;
+let legacyTaskTtlIndexRemoved = false;
 
 const touchUserActivity = async (userId) => {
-  if (!userId) return;
-  await User.findByIdAndUpdate(userId, { lastActiveAt: new Date() }, { returnDocument: 'after' });
+  await persistUserActivity(User, userId);
 };
 
 const awardTaskCompletionXp = async ({ userId, taskId, timeZone = 'UTC' }) => {
@@ -125,17 +132,64 @@ const getTrashDateFilter = ({ start, endExclusive, period }) => {
   return null;
 };
 
+export const ensureTaskTtlIndexRemoved = async () => {
+  if (legacyTaskTtlIndexRemoved) return;
+
+  try {
+    await Task.collection.dropIndex('deletedAt_1');
+  } catch (error) {
+    if (![26, 27].includes(error.code) && !['NamespaceNotFound', 'IndexNotFound'].includes(error.codeName)) throw error;
+  }
+
+  legacyTaskTtlIndexRemoved = true;
+};
+
 export const cleanupExpiredTrashTasks = async () => {
   try {
+    await ensureTaskTtlIndexRemoved();
+
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - 30);
-
-    const result = await Task.deleteMany({
+    const expiredTasks = await Task.find({
       isDeleted: true,
       deletedAt: { $lte: cutoff },
-    });
+    }).select('_id userId');
 
-    return result.deletedCount || 0;
+    const claimedTasks = [];
+    for (const task of expiredTasks) {
+      const now = new Date();
+      const claimed = await claimTaskForDeletion(Task, {
+        taskId: task._id,
+        userId: task.userId,
+        now,
+        deletedBefore: cutoff,
+      });
+      if (claimed) claimedTasks.push(claimed);
+    }
+
+    const { deletedCount, failures } = await deleteTasksWithAttachmentsSafely(
+      claimedTasks,
+      {
+        deleteAttachments: (task) => deleteAttachmentRecords({
+          taskId: task._id,
+          ownerId: task.userId,
+        }),
+        deleteTask: (task) => Task.deleteOne({
+          _id: task._id,
+          userId: task.userId,
+          isDeleted: true,
+          deletedAt: { $lte: cutoff },
+          cleanupClaimedAt: task.cleanupClaimedAt,
+        }),
+        releaseTask: (task) => releaseTaskDeletionClaim(Task, task),
+      }
+    );
+
+    for (const failure of failures) {
+      console.error(`Expired task cleanup deferred for task ${failure.taskId}:`, failure.error);
+    }
+
+    return deletedCount;
   } catch (error) {
     console.error('Error cleanupExpiredTrashTasks:', error);
     return 0;
@@ -458,20 +512,29 @@ export const toggleTaskStatus = async (req, res) => {
 export const restoreTask = async (req, res) => {
   try {
     const userId = getAuthenticatedUserId(req);
-    const task = await Task.findOne({ _id: req.params.id, userId, isDeleted: true });
-
-    if (!task) {
-      return res.status(404).json({ message: 'Task not found' });
-    }
-
-    const restoredTask = await Task.findByIdAndUpdate(
-      req.params.id,
-      { isDeleted: false, deletedAt: null },
+    const staleClaimBefore = new Date(Date.now() - TASK_DELETION_CLAIM_LEASE_MS);
+    const restoredTask = await Task.findOneAndUpdate(
+      {
+        _id: req.params.id,
+        userId,
+        isDeleted: true,
+        $or: [
+          { cleanupClaimedAt: null },
+          { cleanupClaimedAt: { $lte: staleClaimBefore } },
+        ],
+      },
+      { $set: { isDeleted: false, deletedAt: null, cleanupClaimedAt: null } },
       { returnDocument: 'after' }
     );
 
+    if (!restoredTask) {
+      const stillInTrash = await Task.exists({ _id: req.params.id, userId, isDeleted: true });
+      if (!stillInTrash) return res.status(404).json({ message: 'Task not found' });
+      return res.status(409).json({ message: 'This task is being permanently deleted. Try again shortly.' });
+    }
+
     await Attachment.updateMany(
-      { taskId: task._id, ownerId: userId, isDeleted: true },
+      { taskId: restoredTask._id, ownerId: userId, isDeleted: true },
       { isDeleted: false, deletedAt: null }
     );
 
@@ -484,19 +547,44 @@ export const restoreTask = async (req, res) => {
 };
 
 export const deletePermanentTask = async (req, res) => {
+  let claimedTask = null;
   try {
     const userId = getAuthenticatedUserId(req);
-    const task = await Task.findOneAndDelete({ _id: req.params.id, userId, isDeleted: true });
+    const claimedAt = new Date();
+    claimedTask = await claimTaskForDeletion(Task, {
+      taskId: req.params.id,
+      userId,
+      now: claimedAt,
+    });
 
-    if (!task) {
-      return res.status(404).json({ message: 'Task not found' });
+    if (!claimedTask) {
+      const stillInTrash = await Task.exists({ _id: req.params.id, userId, isDeleted: true });
+      if (!stillInTrash) return res.status(404).json({ message: 'Task not found' });
+      return res.status(409).json({ message: 'This task is already being permanently deleted. Try again shortly.' });
     }
 
-    await deleteAttachmentRecords({ taskId: task._id, ownerId: userId });
+    await deleteAttachmentRecords({ taskId: claimedTask._id, ownerId: userId });
+
+    const deletedTask = await Task.findOneAndDelete({
+      _id: claimedTask._id,
+      userId,
+      isDeleted: true,
+      cleanupClaimedAt: claimedTask.cleanupClaimedAt,
+    });
+    if (!deletedTask) {
+      throw new Error('Task changed while it was being permanently deleted.');
+    }
 
     await touchUserActivity(userId);
-    return res.status(200).json({ message: 'Task permanently deleted', task });
+    return res.status(200).json({ message: 'Task permanently deleted', task: deletedTask });
   } catch (error) {
+    if (claimedTask) {
+      try {
+        await releaseTaskDeletionClaim(Task, claimedTask);
+      } catch (releaseError) {
+        console.error('Could not release task deletion claim:', releaseError);
+      }
+    }
     console.error('Error deletePermanentTask:', error);
     return res.status(500).json({ message: 'Server error' });
   }
@@ -509,11 +597,55 @@ export const clearTrash = async (req, res) => {
       return res.status(400).json({ message: 'userId is required.' });
     }
 
-    const deletedTasks = await Task.find({ userId, isDeleted: true }).select('_id');
-    await Promise.all(deletedTasks.map((task) => deleteAttachmentRecords({ taskId: task._id, ownerId: userId })));
-    const result = await Task.deleteMany({ userId, isDeleted: true });
+    const tasks = await Task.find({ userId, isDeleted: true }).select('_id');
+    const claimedTasks = [];
+    for (const task of tasks) {
+      const now = new Date();
+      const claimed = await claimTaskForDeletion(Task, {
+        taskId: task._id,
+        userId,
+        now,
+      });
+      if (claimed) claimedTasks.push(claimed);
+    }
+
+    const { deletedCount, failures } = await deleteTasksWithAttachmentsSafely(
+      claimedTasks,
+      {
+        deleteAttachments: (task) => deleteAttachmentRecords({
+          taskId: task._id,
+          ownerId: userId,
+        }),
+        deleteTask: (task) => Task.deleteOne({
+          _id: task._id,
+          userId,
+          isDeleted: true,
+          cleanupClaimedAt: task.cleanupClaimedAt,
+        }),
+        releaseTask: (task) => releaseTaskDeletionClaim(Task, task),
+      }
+    );
+
+    const remainingTrashCount = tasks.length
+      ? await Task.countDocuments({
+        userId,
+        isDeleted: true,
+        _id: { $in: tasks.map((task) => task._id) },
+      })
+      : 0;
+
     await touchUserActivity(userId);
-    return res.status(200).json({ message: 'Trash cleared successfully', deletedCount: result.deletedCount || 0 });
+    if (failures.length || remainingTrashCount > 0) {
+      failures.forEach(({ taskId, error }) => {
+        console.error(`Could not permanently delete task ${taskId}:`, error);
+      });
+      return res.status(500).json({
+        message: 'Some tasks could not be permanently deleted or are already being cleaned up. Retry after the current operation finishes.',
+        deletedCount,
+      });
+    }
+
+    return res.status(200).json({ message: 'Trash cleared successfully', deletedCount });
   } catch (error) {
     console.error('Error clearTrash:', error);
     return res.status(500).json({ message: 'Server error' });

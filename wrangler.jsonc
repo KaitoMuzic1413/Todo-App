@@ -2,9 +2,37 @@
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "todo-app",
   "main": "worker/index.js",
-  "compatibility_date": "2026-10-19",
+  "compatibility_date": "2026-11-03",
   "vars": {
-    "API_ORIGIN": "https://todo-app-itr6.onrender.com"
+    "FRONTEND_URL": "https://todo-app.kaitomuzicvn.workers.dev"
+  },
+  "containers": [
+    {
+      "class_name": "ApiContainer",
+      "scheduling_policy": "durable_object",
+      "images": {
+        "base": {
+          "dockerfile": "./Dockerfile"
+        }
+      }
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "API_CONTAINER",
+        "class_name": "ApiContainer"
+      }
+    ]
+  },
+  "exports": {
+    "ApiContainer": {
+      "type": "durable-object",
+      "storage": "sqlite"
+    }
+  },
+  "triggers": {
+    "crons": ["* * * * *", "0 * * * *"]
   },
   "assets": {
     "directory": "./frontend/dist",

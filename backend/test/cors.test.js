@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { once } from 'node:events';
 
 process.env.NODE_ENV = 'test';
-process.env.VERCEL = '1';
+process.env.RUN_SERVER = 'false';
 process.env.MONGODB_CONNECTIONSTRING = 'mongodb://127.0.0.1:27017/test';
 process.env.JWT_SECRET = 'test-access-secret-0123456789abcdef';
 process.env.OTP_SECRET = 'test-otp-secret-0123456789abcdef';

@@ -79,6 +79,7 @@ const taskSchema = new mongoose.Schema(
     important: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false },
     deletedAt: { type: Date, default: null },
+    cleanupClaimedAt: { type: Date, default: null, select: false },
   },
   { timestamps: true }
 );
@@ -88,7 +89,6 @@ taskSchema.index({ userId: 1, contentType: 1, isDeleted: 1, createdAt: -1 });
 taskSchema.index({ userId: 1, isDeleted: 1, startAt: 1 });
 taskSchema.index({ userId: 1, isDeleted: 1, dueAt: 1 });
 taskSchema.index({ userId: 1, isDeleted: 1, completedAt: 1 });
-taskSchema.index({ deletedAt: 1 }, { expireAfterSeconds: 2592000 });
 
 const Task = mongoose.model("Task", taskSchema);
 export default Task;

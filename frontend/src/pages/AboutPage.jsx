@@ -1,5 +1,4 @@
-import { ArrowUpRight, Code2, Download, GraduationCap, Heart, Laptop2, Mail, MessageSquareText, Phone, Terminal } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { ArrowUpRight, Code2, GraduationCap, Heart, Laptop2, Mail, MessageSquareText, Phone, Terminal } from 'lucide-react';
 import Header from '@/components/Header';
 import { LayoutShell } from '@/components/LayoutShell';
 import { useLanguage } from '@/lib/i18n';
@@ -89,17 +88,13 @@ const AboutPage = () => {
               <div><p className='text-xs font-semibold uppercase tracking-[0.18em] text-violet-600 dark:text-violet-300'>{t.aboutSelectedWork}</p><h2 className='mt-1 text-xl font-bold text-slate-900 dark:text-white'>{t.aboutProjects}</h2></div>
               <Code2 className='mb-1 h-5 w-5 text-slate-400' aria-hidden='true' />
             </div>
-            <div className='grid gap-4 md:grid-cols-2 cursor-pointer'>
-              <article className='group rounded-3xl border border-slate-200/80 bg-slate-50 p-5 shadow-sm transition-all hover:-translate-y-1 hover:border-violet-300 hover:bg-violet-50/50 hover:shadow-lg dark:border-slate-800 dark:bg-slate-950/50 dark:hover:border-violet-700 dark:hover:bg-slate-900/80 sm:p-6 motion-reduce:transition-none'>
+            <div className='grid gap-4 md:grid-cols-1'>
+              <article className='group max-w-3xl rounded-3xl border border-slate-200/80 bg-slate-50 p-5 shadow-sm transition-all hover:-translate-y-1 hover:border-violet-300 hover:bg-violet-50/50 hover:shadow-lg dark:border-slate-800 dark:bg-slate-950/50 dark:hover:border-violet-700 dark:hover:bg-slate-900/80 sm:p-6 motion-reduce:transition-none'>
                 <div className='flex items-start justify-between gap-3'><div><h3 className='text-lg font-semibold text-slate-900 dark:text-white'>Todo App</h3><p className='mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300'>{t.aboutTodoProjectDescription}</p></div><span className='flex h-10 w-10 shrink-0 items-center justify-center rounded-3xl bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-200'><Code2 className='h-5 w-5' aria-hidden='true' /></span></div>
                 <div className='mt-4 flex flex-wrap gap-1.5'>{['React', 'Node.js'].map((tech) => <span key={tech} className='rounded-3xl bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300'>{tech}</span>)}</div>
                 <a href='https://todo-app.kaitomuzicvn.workers.dev/' target='_blank' rel='noopener noreferrer' className='mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-violet-700 transition-colors hover:text-violet-900 dark:text-violet-300 dark:hover:text-violet-100'>{t.aboutOpenDemo}<ArrowUpRight className='h-4 w-4' aria-hidden='true' /></a>
               </article>
-              <article className='group rounded-3xl border border-slate-200/80 bg-slate-50 p-5 shadow-sm transition-all hover:-translate-y-1 hover:border-violet-300 hover:bg-violet-50/50 hover:shadow-lg dark:border-slate-800 dark:bg-slate-950/50 dark:hover:border-violet-700 dark:hover:bg-slate-900/80 sm:p-6 motion-reduce:transition-none'>
-                <div className='flex items-start justify-between gap-3'><div><h3 className='text-lg font-semibold text-slate-900 dark:text-white'>{t.aboutDesktopProject}</h3><p className='mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300'>{t.aboutDesktopProjectDescription}</p></div><span className='flex h-10 w-10 shrink-0 items-center justify-center rounded-3xl bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-200'><Laptop2 className='h-5 w-5' aria-hidden='true' /></span></div>
-                <div className='mt-4 flex flex-wrap gap-1.5'>{['React', 'Tauri', 'Remote API'].map((tech) => <span key={tech} className='rounded-3xl bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300'>{tech}</span>)}</div>
-                <Link to='/download' className='mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-violet-700 transition-colors hover:text-violet-900 dark:text-violet-300 dark:hover:text-violet-100'>{t.desktopDownloadButton}<Download className='h-4 w-4' aria-hidden='true' /></Link>
-              </article>
+
             </div>
           </section>
 

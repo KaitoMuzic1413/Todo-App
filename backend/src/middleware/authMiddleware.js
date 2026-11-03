@@ -1,5 +1,6 @@
 import User from '../models/User.js';
 import { verifyAccessToken } from '../utils/authTokens.js';
+import { touchUserActivity } from '../utils/userActivity.js';
 
 const INVALID_TOKEN_MESSAGE = 'Token invalid or expired!';
 
@@ -77,10 +78,7 @@ const verifyToken = async (req, res, next) => {
   };
 
   try {
-    await User.findByIdAndUpdate(user._id, {
-      lastActiveAt: new Date(),
-      inactiveDeletionNoticeSentAt: null,
-    });
+    await touchUserActivity(User, user._id);
   } catch (error) {
     return next(error);
   }
