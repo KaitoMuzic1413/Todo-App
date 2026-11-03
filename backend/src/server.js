@@ -3,7 +3,7 @@ import express from 'express';
 import { timingSafeEqual } from 'node:crypto';
 import { allowedOrigins, env, isAllowedOrigin } from './config/env.js';
 import { connectDB } from './config/db.js';
-import { cleanupExpiredTrashTasks } from './controllers/tasksControllers.js';
+import { cleanupExpiredTrashTasks, ensureTaskTtlIndexRemoved } from './controllers/tasksControllers.js';
 import { cleanupInactiveUsers } from './controllers/usersControllers.js';
 import { cleanupExpiredTrashAttachments } from './controllers/attachmentsControllers.js';
 import authRoute from './routes/authRoutes.js';
@@ -64,6 +64,7 @@ app.use(express.json({ limit: '2mb' }));
 app.get('/api/health', async (req, res) => {
   try {
     await connectDB();
+    await ensureTaskTtlIndexRemoved();
     res.status(200).json({
       status: 'ok',
       database: 'connected',
