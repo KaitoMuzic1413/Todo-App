@@ -30,12 +30,27 @@ export const cleanupExpiredTrashAttachments = async () => {
       legacyAttachmentTtlIndexRemoved = true;
     }
     const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const expired = await Attachment.find({ isDeleted: true, deletedAt: { $lte: cutoff } }).select('_id fileId');
+    const expired = await Attachment.find({
+      isDeleted: true,
+      deletedAt: { $lte: cutoff },
+    }).select('_id fileId taskId');
+
     if (!expired.length) return 0;
 
+    // A trashed parent task owns the retention lifecycle of its attachments.
+    // Leave those files for cleanupExpiredTrashTasks so a failed task cleanup
+    // cannot be bypassed by this attachment-only cleanup pass.
+    const linkedTaskIds = [...new Set(expired.filter((item) => item.taskId).map((item) => String(item.taskId)))];
+    const existingTasks = linkedTaskIds.length
+      ? await Task.find({ _id: { $in: linkedTaskIds } }).select('_id')
+      : [];
+    const existingTaskIds = new Set(existingTasks.map((task) => String(task._id)));
+    const eligible = expired.filter((item) => !item.taskId || !existingTaskIds.has(String(item.taskId)));
+    if (!eligible.length) return 0;
+
     const bucket = getBucket();
-    const results = await Promise.allSettled(expired.map(({ fileId }) => deleteGridFsFileIfExists(bucket, fileId)));
-    const successfullyDeletedIds = expired
+    const results = await Promise.allSettled(eligible.map(({ fileId }) => deleteGridFsFileIfExists(bucket, fileId)));
+    const successfullyDeletedIds = eligible
       .filter((_, index) => results[index].status === 'fulfilled')
       .map(({ _id }) => _id);
     if (successfullyDeletedIds.length) await Attachment.deleteMany({ _id: { $in: successfullyDeletedIds } });
