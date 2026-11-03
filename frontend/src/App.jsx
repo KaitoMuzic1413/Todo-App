@@ -1,27 +1,27 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Route, Routes, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { Toaster } from 'sonner';
 import { PageTransition } from './components/PageTransition';
-import AboutPage from './pages/AboutPage';
-import HomePages from './pages/HomePage';
-import SignUpPage from './pages/Login/SignUpPage';
-import SignInPage from './pages/Login/SignInPage';
-import ForgotPasswordPage from './pages/Login/ForgotPasswordPage';
-import ResetPasswordPage from './pages/Login/ResetPasswordPage';
-import VerifyEmailPage from './pages/Login/VerifyEmailPage';
-import PremiumPage from './pages/PremiumPage';
-import InviteCreatePage from './pages/InviteCreatePage';
-import NotFound from './pages/NotFound';
-import TrashPage from './pages/TrashPage';
-import ArchivePage from './pages/ArchivePage';
-import CalendarPage from './pages/CalendarPage';
-import FocusPage from './pages/FocusPage';
-import DashboardPage from './pages/DashboardPage';
-import SettingsPage from './pages/SettingsPage';
-import LegalPoliciesPage from './pages/LegalPoliciesPage';
-import AdminNotificationsPage from './pages/AdminNotificationsPage';
+const AboutPage = lazy(() => import('./pages/AboutPage'));
+const HomePages = lazy(() => import('./pages/HomePage'));
+const SignUpPage = lazy(() => import('./pages/Login/SignUpPage'));
+const SignInPage = lazy(() => import('./pages/Login/SignInPage'));
+const ForgotPasswordPage = lazy(() => import('./pages/Login/ForgotPasswordPage'));
+const ResetPasswordPage = lazy(() => import('./pages/Login/ResetPasswordPage'));
+const VerifyEmailPage = lazy(() => import('./pages/Login/VerifyEmailPage'));
+const PremiumPage = lazy(() => import('./pages/PremiumPage'));
+const InviteCreatePage = lazy(() => import('./pages/InviteCreatePage'));
+const NotFound = lazy(() => import('./pages/NotFound'));
+const TrashPage = lazy(() => import('./pages/TrashPage'));
+const ArchivePage = lazy(() => import('./pages/ArchivePage'));
+const CalendarPage = lazy(() => import('./pages/CalendarPage'));
+const FocusPage = lazy(() => import('./pages/FocusPage'));
+const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+const LegalPoliciesPage = lazy(() => import('./pages/LegalPoliciesPage'));
+const AdminNotificationsPage = lazy(() => import('./pages/AdminNotificationsPage'));
 import DueTaskReminderWatcher from './components/DueTaskReminderWatcher';
 import OfflineStatus from './components/OfflineStatus';
 import PushOptInBanner from './components/PushOptInBanner';
@@ -115,29 +115,6 @@ const RootRedirect = () => {
 function App() {
   const location = useLocation();
 
-  useEffect(() => {
-    const blockDevToolsShortcuts = (event) => {
-      const key = event.key.toLowerCase();
-      const isDevToolsShortcut = event.key === 'F12'
-        || ((event.ctrlKey || event.metaKey) && key === 'u')
-        || (event.ctrlKey && event.shiftKey && ['i', 'j', 'c', 'k', 'm'].includes(key))
-        || (event.metaKey && event.altKey && ['i', 'j', 'c'].includes(key));
-
-      if (isDevToolsShortcut) {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-      }
-    };
-    const blockContextMenu = (event) => event.preventDefault();
-
-    document.addEventListener('keydown', blockDevToolsShortcuts, true);
-    document.addEventListener('contextmenu', blockContextMenu, true);
-    return () => {
-      document.removeEventListener('keydown', blockDevToolsShortcuts, true);
-      document.removeEventListener('contextmenu', blockContextMenu, true);
-    };
-  }, []);
-
   return (
     <QueryClientProvider client={queryClient}>
       <DueTaskReminderWatcher />
@@ -146,6 +123,14 @@ function App() {
       <PushOptInBanner />
       <AnimatePresence mode='wait'>
       <PageTransition key={location.pathname}>
+      <Suspense fallback={
+        <div className='grid min-h-[50vh] place-items-center p-6' role='status' aria-live='polite'>
+          <div className='flex items-center gap-3 rounded-3xl border border-slate-200/80 bg-white/90 px-5 py-4 text-sm font-medium text-slate-600 shadow-lg dark:border-slate-800 dark:bg-slate-950/90 dark:text-slate-300'>
+            <span className='h-5 w-5 animate-spin rounded-full border-2 border-violet-200 border-t-violet-600 motion-reduce:animate-none' aria-hidden='true' />
+            Loading page…
+          </div>
+        </div>
+      }>
       <Routes location={location}>
         <Route path='/' element={<RootRedirect />} />
 
@@ -175,6 +160,7 @@ function App() {
         <Route path='/404' element={<NotFound />} />
         <Route path='*' element={<NotFound />} />
       </Routes>
+      </Suspense>
       </PageTransition>
       </AnimatePresence>
       <Toaster richColors position='top-right' />

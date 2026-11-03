@@ -4,6 +4,7 @@ import User from '../models/User.js';
 import Attachment from '../models/Attachment.js';
 import { deleteAttachmentRecords } from './attachmentsControllers.js';
 import { hasScheduleInput, validateTaskSchedule } from '../utils/taskSchedule.js';
+import { touchUserActivity as persistUserActivity } from '../utils/userActivity.js';
 import GamificationEvent from '../models/GamificationEvent.js';
 import { checkTaskQuota, getQuotaSnapshot } from '../utils/premium.js';
 import {
@@ -24,8 +25,7 @@ const getUserFilter = (req) => {
 const getAuthenticatedUserId = (req) => req.user?.userId;
 
 const touchUserActivity = async (userId) => {
-  if (!userId) return;
-  await User.findByIdAndUpdate(userId, { lastActiveAt: new Date() }, { returnDocument: 'after' });
+  await persistUserActivity(User, userId);
 };
 
 const awardTaskCompletionXp = async ({ userId, taskId, timeZone = 'UTC' }) => {
@@ -486,16 +486,27 @@ export const restoreTask = async (req, res) => {
 export const deletePermanentTask = async (req, res) => {
   try {
     const userId = getAuthenticatedUserId(req);
-    const task = await Task.findOneAndDelete({ _id: req.params.id, userId, isDeleted: true });
+    const task = await Task.findOne({ _id: req.params.id, userId, isDeleted: true });
 
     if (!task) {
       return res.status(404).json({ message: 'Task not found' });
     }
 
+    // Remove linked file data first. If GridFS deletion fails, keep the task
+    // and its remaining attachment records available for a safe retry.
     await deleteAttachmentRecords({ taskId: task._id, ownerId: userId });
 
+    const deletedTask = await Task.findOneAndDelete({
+      _id: task._id,
+      userId,
+      isDeleted: true,
+    });
+    if (!deletedTask) {
+      return res.status(409).json({ message: 'Task changed while it was being deleted. Refresh and try again.' });
+    }
+
     await touchUserActivity(userId);
-    return res.status(200).json({ message: 'Task permanently deleted', task });
+    return res.status(200).json({ message: 'Task permanently deleted', task: deletedTask });
   } catch (error) {
     console.error('Error deletePermanentTask:', error);
     return res.status(500).json({ message: 'Server error' });

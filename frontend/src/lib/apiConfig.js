@@ -1,4 +1,3 @@
-const DEFAULT_PRODUCTION_API = 'https://todo-app-itr6.onrender.com/api';
 const SAME_ORIGIN_API = '/api';
 
 const configuredApiUrl = (import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || '').trim();
@@ -18,14 +17,6 @@ const isCloudflareHost = () => {
   return hostname.endsWith('.workers.dev') || hostname.endsWith('.pages.dev');
 };
 
-const isNativeRuntime = () => {
-  if (typeof window === 'undefined') return false;
-  return Boolean(window.__TAURI_INTERNALS__)
-    || Boolean(window.Capacitor)
-    || window.location.protocol === 'tauri:'
-    || window.location.protocol === 'capacitor:';
-};
-
 const resolveApiBaseUrl = () => {
   // An explicitly configured path (for example "/api") is always respected.
   if (configuredApiUrl.startsWith('/')) return configuredApiUrl;
@@ -43,9 +34,9 @@ const resolveApiBaseUrl = () => {
   if (isCloudflareHost()) return SAME_ORIGIN_API;
 
   if (configuredApiUrl && !isLoopbackApi(configuredApiUrl)) return configuredApiUrl;
-  if (isNativeRuntime()) return DEFAULT_PRODUCTION_API;
 
-  return DEFAULT_PRODUCTION_API;
+  // The web app is served alongside the API Worker; avoid hard-coded external hosts.
+  return SAME_ORIGIN_API;
 };
 
 export const API_BASE_URL = resolveApiBaseUrl();

@@ -64,7 +64,7 @@ const createEmailVerification = async (user) => {
       <div style="font-family: sans-serif; padding: 20px;">
         <h2>Verify your email</h2>
         <p>Confirm your Kaito Todo email address to finish setting up your account.</p>
-        <p><a href="${link}" style="display:inline-block;padding:12px 20px;border-radius:16px;background:#7c3aed;color:#ffffff;text-decoration:none;font-weight:600;">Verify email</a></p>
+        <p><a href="${link}" style="display:inline-block;padding:12px 20px;border-radius:24px;background:#7c3aed;color:#ffffff;text-decoration:none;font-weight:600;">Verify email</a></p>
         <p>This link expires in 24 hours. If you did not create this account, you can ignore this email.</p>
       </div>
     `,

@@ -30,27 +30,16 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
-      '/socket.io': {
-        target: 'http://127.0.0.1:5001',
-        changeOrigin: true,
-        ws: true,
-      },
     },
   },
   build: {
-    chunkSizeWarningLimit: 5000,
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (id.includes('node_modules')) {
-            if (id.includes('framer-motion')) {
-              return 'vendor-framer-motion';
-            }
-            if (id.includes('lucide-react')) {
-              return 'vendor-lucide';
-            }
-            return 'vendor';
-          }
+          if (!id.includes('node_modules')) return undefined;
+          if (id.includes('framer-motion')) return 'vendor-framer-motion';
+          if (id.includes('lucide-react')) return 'vendor-lucide';
+          return undefined;
         },
       },
     },

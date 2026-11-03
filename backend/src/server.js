@@ -1,5 +1,6 @@
 import cors from 'cors';
 import express from 'express';
+import { timingSafeEqual } from 'node:crypto';
 import { allowedOrigins, env, isAllowedOrigin } from './config/env.js';
 import { connectDB } from './config/db.js';
 import { cleanupExpiredTrashTasks } from './controllers/tasksControllers.js';
@@ -78,6 +79,42 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
+// Cloudflare Cron invokes these jobs with a secret that is never exposed to browsers.
+app.post('/api/internal/jobs/:job', async (req, res, next) => {
+  const expectedSecret = process.env.INTERNAL_JOB_SECRET || '';
+  const providedSecret = req.get('X-Internal-Job-Secret') || '';
+  const expectedBuffer = Buffer.from(expectedSecret);
+  const providedBuffer = Buffer.from(providedSecret);
+  const secretMatches = expectedBuffer.length >= 32
+    && expectedBuffer.length === providedBuffer.length
+    && timingSafeEqual(expectedBuffer, providedBuffer);
+
+  if (!secretMatches) {
+    return res.status(401).json({ message: 'Unauthorized.' });
+  }
+
+  try {
+    await connectDB();
+
+    if (req.params.job === 'reminders') {
+      const [emailsSent, notificationsSent] = await Promise.all([
+        runDueTaskEmailReminders(),
+        runDueTaskNotifications(),
+      ]);
+      return res.status(200).json({ status: 'ok', emailsSent, notificationsSent });
+    }
+
+    if (req.params.job === 'maintenance') {
+      await runMaintenanceJobs();
+      return res.status(200).json({ status: 'ok' });
+    }
+
+    return res.status(404).json({ message: 'Scheduled job not found.' });
+  } catch (error) {
+    return next(error);
+  }
+});
+
 app.use(async (req, res, next) => {
   try {
     await connectDB();
@@ -133,7 +170,7 @@ const runMaintenanceJobs = async () => {
   }
 };
 
-if (!process.env.VERCEL) {
+if (process.env.RUN_SERVER !== 'false') {
   const startMaintenanceJobs = () => {
     runMaintenanceJobs();
     setInterval(runMaintenanceJobs, INACTIVE_ACCOUNT_CHECK_INTERVAL);
@@ -143,10 +180,19 @@ if (!process.env.VERCEL) {
     setInterval(runDueTaskNotifications, 60 * 1000);
   };
 
-  app.listen(PORT, "0.0.0.0", async () => {
+  app.listen(PORT, '0.0.0.0', async () => {
     console.log(`Server running on port ${PORT}`);
-    await connectDB();
-    startMaintenanceJobs();
+    try {
+      await connectDB();
+    } catch (error) {
+      console.error('Initial MongoDB connection failed; requests will retry:', error);
+    }
+
+    if (process.env.RUN_MAINTENANCE_JOBS !== 'false') {
+      startMaintenanceJobs();
+    } else {
+      console.log('Background jobs are delegated to the platform scheduler.');
+    }
   });
 }
 

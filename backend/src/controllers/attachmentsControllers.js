@@ -3,11 +3,13 @@ import Attachment from '../models/Attachment.js';
 import Task from '../models/Task.js';
 import { checkAttachmentQuota } from '../utils/premium.js';
 import { validateFileSignature } from '../utils/fileValidation.js';
+import { deleteGridFsFileIfExists, deleteGridFsFilesSafely } from '../utils/deleteGridFsFiles.js';
+import { getAttachmentContentDisposition } from '../utils/attachmentHeaders.js';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
-const ALLOWED_TYPES = /^(image\/(jpeg|png|gif|webp|bmp|svg\+xml|heic|heif|avif)|audio\/(mpeg|wav|x-wav|ogg|aac|mp4|opus|flac|x-flac|x-ms-wma|midi|x-midi)|application\/(pdf|rtf|msword|vnd\.openxmlformats-officedocument\.(wordprocessingml\.document|spreadsheetml\.sheet|presentationml\.presentation)|vnd\.oasis\.opendocument\.(text|spreadsheet|presentation)|vnd\.ms-excel|vnd\.ms-powerpoint|json|xml)|text\/(plain|markdown|x-markdown|csv|xml))$/i;
+const ALLOWED_TYPES = /^(image\/(jpeg|png|gif|webp|bmp|heic|heif|avif)|audio\/(mpeg|wav|x-wav|ogg|aac|mp4|opus|flac|x-flac|x-ms-wma|midi|x-midi)|application\/(pdf|rtf|msword|vnd\.openxmlformats-officedocument\.(wordprocessingml\.document|spreadsheetml\.sheet|presentationml\.presentation)|vnd\.oasis\.opendocument\.(text|spreadsheet|presentation)|vnd\.ms-excel|vnd\.ms-powerpoint|json|xml)|text\/(plain|markdown|x-markdown|csv|xml))$/i;
 const ALLOWED_FILE_EXTENSIONS = new Set([
-  'jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'heic', 'heif', 'avif',
+  'jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'heic', 'heif', 'avif',
   'mp3', 'wav', 'm4a', 'aac', 'ogg', 'opus', 'flac', 'wma', 'mid', 'midi',
   'txt', 'md', 'markdown', 'rtf', 'pdf', 'doc', 'docx', 'odt',
   'xls', 'xlsx', 'ods', 'ppt', 'pptx', 'odp', 'csv', 'json', 'xml',
@@ -32,7 +34,7 @@ export const cleanupExpiredTrashAttachments = async () => {
     if (!expired.length) return 0;
 
     const bucket = getBucket();
-    const results = await Promise.allSettled(expired.map(({ fileId }) => bucket.delete(fileId)));
+    const results = await Promise.allSettled(expired.map(({ fileId }) => deleteGridFsFileIfExists(bucket, fileId)));
     const successfullyDeletedIds = expired
       .filter((_, index) => results[index].status === 'fulfilled')
       .map(({ _id }) => _id);
@@ -50,18 +52,38 @@ const getBucket = () => {
 };
 
 export const deleteAttachmentRecords = async ({ taskId, ownerId }) => {
-  const attachments = await Attachment.find({ taskId, ownerId }).select('fileId');
+  const attachments = await Attachment.find({ taskId, ownerId }).select('_id fileId');
+  if (!attachments.length) return 0;
 
-  if (mongoose.connection.readyState === 1 && attachments.length > 0) {
-    const bucket = getBucket();
-    await Promise.allSettled(attachments.map(({ fileId }) => bucket.delete(fileId)));
+  // Keep metadata for any file whose GridFS deletion failed so it can be retried.
+  const bucket = getBucket();
+  const { deletedIds, failures } = await deleteGridFsFilesSafely(
+    attachments,
+    (fileId) => deleteGridFsFileIfExists(bucket, fileId)
+  );
+
+  for (const failure of failures) {
+    console.error(`GridFS delete failed for attachment ${failure.id}:`, failure.error);
   }
 
-  const result = await Attachment.deleteMany({ taskId, ownerId });
-  return result.deletedCount || 0;
+  if (deletedIds.length) {
+    await Attachment.deleteMany({ _id: { $in: deletedIds }, taskId, ownerId });
+  }
+
+  if (failures.length) {
+    const error = new Error(`Unable to delete ${failures.length} attachment file(s).`);
+    error.cause = failures[0].error;
+    throw error;
+  }
+
+  return deletedIds.length;
 };
 
 export const uploadAttachment = async (req, res) => {
+  let uploadFileId = null;
+  let uploadBucket = null;
+  let uploadAttempted = false;
+
   try {
     const ownerId = getOwnerId(req);
     const { taskId = null, title = '', description = '' } = req.body;
@@ -112,6 +134,10 @@ export const uploadAttachment = async (req, res) => {
 
     const fileId = new mongoose.Types.ObjectId();
     const bucket = getBucket();
+    uploadFileId = fileId;
+    uploadBucket = bucket;
+    uploadAttempted = true;
+
     await new Promise((resolve, reject) => {
       const uploadStream = bucket.openUploadStreamWithId(fileId, file.originalname, {
         metadata: { ownerId: String(ownerId), mimeType: file.mimetype },
@@ -135,8 +161,15 @@ export const uploadAttachment = async (req, res) => {
 
     return res.status(201).json({ attachment });
   } catch (error) {
-    console.error('Create upload URL error:', error);
-    return res.status(500).json({ message: error.message || 'Unable to prepare file upload.' });
+    if (uploadAttempted && uploadBucket && uploadFileId) {
+      try {
+        await deleteGridFsFileIfExists(uploadBucket, uploadFileId);
+      } catch (cleanupError) {
+        console.error('Could not clean up failed GridFS upload:', cleanupError);
+      }
+    }
+    console.error('Attachment upload failed:', error);
+    return res.status(500).json({ message: 'Unable to upload file.' });
   }
 };
 
@@ -239,7 +272,8 @@ export const deleteAttachmentPermanently = async (req, res) => {
     });
     if (!attachment) return res.status(404).json({ message: 'Attachment not found.' });
 
-    await Promise.allSettled([getBucket().delete(attachment.fileId)]);
+    // Do not remove the database record unless GridFS confirms deletion.
+    await deleteGridFsFileIfExists(getBucket(), attachment.fileId);
     await attachment.deleteOne();
     return res.status(200).json({ message: 'Attachment permanently deleted.' });
   } catch (error) {
@@ -250,11 +284,33 @@ export const deleteAttachmentPermanently = async (req, res) => {
 
 export const clearTrashAttachments = async (req, res) => {
   try {
-    const attachments = await Attachment.find({ ownerId: getOwnerId(req), isDeleted: true }).select('fileId');
+    const attachments = await Attachment.find({ ownerId: getOwnerId(req), isDeleted: true }).select('_id fileId');
     const bucket = getBucket();
-    await Promise.allSettled(attachments.map(({ fileId }) => bucket.delete(fileId)));
-    const result = await Attachment.deleteMany({ ownerId: getOwnerId(req), isDeleted: true });
-    return res.status(200).json({ message: 'Deleted files cleared.', deletedCount: result.deletedCount || 0 });
+    const { deletedIds, failures } = await deleteGridFsFilesSafely(
+      attachments,
+      (fileId) => deleteGridFsFileIfExists(bucket, fileId)
+    );
+
+    for (const failure of failures) {
+      console.error(`GridFS delete failed for attachment ${failure.id}:`, failure.error);
+    }
+
+    if (deletedIds.length) {
+      await Attachment.deleteMany({
+        _id: { $in: deletedIds },
+        ownerId: getOwnerId(req),
+        isDeleted: true,
+      });
+    }
+
+    if (failures.length) {
+      return res.status(500).json({
+        message: 'Some files could not be permanently deleted. Their records were kept so the operation can be retried.',
+        deletedCount: deletedIds.length,
+      });
+    }
+
+    return res.status(200).json({ message: 'Deleted files cleared.', deletedCount: deletedIds.length });
   } catch (error) {
     console.error('Clear deleted attachments error:', error);
     return res.status(500).json({ message: 'Unable to clear deleted files.' });
@@ -269,8 +325,11 @@ export const downloadAttachment = async (req, res) => {
     const bucket = getBucket();
     const downloadStream = bucket.openDownloadStream(attachment.fileId);
     res.setHeader('Content-Type', attachment.mimeType);
-    const disposition = req.query.preview === 'true' ? 'inline' : 'attachment';
-    res.setHeader('Content-Disposition', `${disposition}; filename="${attachment.originalName.replace(/"/g, '')}"`);
+
+    res.setHeader(
+      'Content-Disposition',
+      getAttachmentContentDisposition(attachment.mimeType, attachment.originalName, req.query.preview === 'true')
+    );
     downloadStream.on('error', () => res.status(404).json({ message: 'File data not found.' }));
     downloadStream.pipe(res);
   } catch (error) {
