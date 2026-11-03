@@ -626,13 +626,21 @@ export const clearTrash = async (req, res) => {
       }
     );
 
+    const remainingTrashCount = tasks.length
+      ? await Task.countDocuments({
+        userId,
+        isDeleted: true,
+        _id: { $in: tasks.map((task) => task._id) },
+      })
+      : 0;
+
     await touchUserActivity(userId);
-    if (failures.length) {
+    if (failures.length || remainingTrashCount > 0) {
       failures.forEach(({ taskId, error }) => {
         console.error(`Could not permanently delete task ${taskId}:`, error);
       });
       return res.status(500).json({
-        message: 'Some tasks could not be permanently deleted. Their records were kept so the operation can be retried.',
+        message: 'Some tasks could not be permanently deleted or are already being cleaned up. Retry after the current operation finishes.',
         deletedCount,
       });
     }
