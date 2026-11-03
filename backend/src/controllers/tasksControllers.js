@@ -138,7 +138,7 @@ export const ensureTaskTtlIndexRemoved = async () => {
   try {
     await Task.collection.dropIndex('deletedAt_1');
   } catch (error) {
-    if (error.code !== 27 && error.codeName !== 'IndexNotFound') throw error;
+    if (![26, 27].includes(error.code) && !['NamespaceNotFound', 'IndexNotFound'].includes(error.codeName)) throw error;
   }
 
   legacyTaskTtlIndexRemoved = true;
