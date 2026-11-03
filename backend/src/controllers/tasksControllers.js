@@ -132,16 +132,21 @@ const getTrashDateFilter = ({ start, endExclusive, period }) => {
   return null;
 };
 
+export const ensureTaskTtlIndexRemoved = async () => {
+  if (legacyTaskTtlIndexRemoved) return;
+
+  try {
+    await Task.collection.dropIndex('deletedAt_1');
+  } catch (error) {
+    if (error.code !== 27 && error.codeName !== 'IndexNotFound') throw error;
+  }
+
+  legacyTaskTtlIndexRemoved = true;
+};
+
 export const cleanupExpiredTrashTasks = async () => {
   try {
-    if (!legacyTaskTtlIndexRemoved) {
-      try {
-        await Task.collection.dropIndex('deletedAt_1');
-      } catch (error) {
-        if (error.code !== 27 && error.codeName !== 'IndexNotFound') throw error;
-      }
-      legacyTaskTtlIndexRemoved = true;
-    }
+    await ensureTaskTtlIndexRemoved();
 
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - 30);
