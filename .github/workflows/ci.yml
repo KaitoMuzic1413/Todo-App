@@ -50,6 +50,7 @@ jobs:
         with:
           node-version: 24
       - run: node --check worker/index.js
+      - run: node --test worker/test
       - run: node --check backend/src/server.js
       - run: node -e "JSON.parse(require('node:fs').readFileSync('wrangler.jsonc', 'utf8'))"
       - run: npm run build
