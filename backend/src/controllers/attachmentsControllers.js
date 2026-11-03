@@ -37,15 +37,15 @@ export const cleanupExpiredTrashAttachments = async () => {
 
     if (!expired.length) return 0;
 
-    // A parent task owns the retention lifecycle of its attachments.
-    // Leave linked files for task deletion or explicit attachment cleanup so
-    // this scheduled pass cannot race with restoring or deleting a task.
+    // A trashed parent task owns the retention lifecycle of its attachments.
+    // Leave those files for task cleanup so a failed task deletion cannot be
+    // bypassed by this attachment-only cleanup pass.
     const linkedTaskIds = [...new Set(expired.filter((item) => item.taskId).map((item) => String(item.taskId)))];
-    const existingTasks = linkedTaskIds.length
-      ? await Task.find({ _id: { $in: linkedTaskIds } }).select('_id')
+    const trashedTasks = linkedTaskIds.length
+      ? await Task.find({ _id: { $in: linkedTaskIds }, isDeleted: true }).select('_id')
       : [];
-    const existingTaskIds = new Set(existingTasks.map((task) => String(task._id)));
-    const eligible = expired.filter((item) => !item.taskId || !existingTaskIds.has(String(item.taskId)));
+    const trashedTaskIds = new Set(trashedTasks.map((task) => String(task._id)));
+    const eligible = expired.filter((item) => !item.taskId || !trashedTaskIds.has(String(item.taskId)));
     if (!eligible.length) return 0;
 
     const bucket = getBucket();
@@ -299,10 +299,21 @@ export const deleteAttachmentPermanently = async (req, res) => {
 
 export const clearTrashAttachments = async (req, res) => {
   try {
-    const attachments = await Attachment.find({ ownerId: getOwnerId(req), isDeleted: true }).select('_id fileId');
+    const attachments = await Attachment.find({
+      ownerId: getOwnerId(req),
+      isDeleted: true,
+    }).select('_id fileId taskId');
+
+    const linkedTaskIds = [...new Set(attachments.filter((item) => item.taskId).map((item) => String(item.taskId)))];
+    const trashedTasks = linkedTaskIds.length
+      ? await Task.find({ _id: { $in: linkedTaskIds }, isDeleted: true }).select('_id')
+      : [];
+    const trashedTaskIds = new Set(trashedTasks.map((task) => String(task._id)));
+    const eligible = attachments.filter((item) => !item.taskId || !trashedTaskIds.has(String(item.taskId)));
+
     const bucket = getBucket();
     const { deletedIds, failures } = await deleteGridFsFilesSafely(
-      attachments,
+      eligible,
       (fileId) => deleteGridFsFileIfExists(bucket, fileId)
     );
 
@@ -318,9 +329,9 @@ export const clearTrashAttachments = async (req, res) => {
       });
     }
 
-    if (failures.length) {
+    if (failures.length || eligible.length !== attachments.length) {
       return res.status(500).json({
-        message: 'Some files could not be permanently deleted. Their records were kept so the operation can be retried.',
+        message: 'Some files could not be cleared. Files linked to trashed tasks must be cleared with their parent tasks.',
         deletedCount: deletedIds.length,
       });
     }
