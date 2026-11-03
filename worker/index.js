@@ -1,4 +1,5 @@
 import { DurableObject } from 'cloudflare:workers';
+import { createForwardedHeaders } from './proxyHeaders.js';
 
 const API_PREFIX = '/api';
 const API_PORT = 5001;
@@ -6,25 +7,6 @@ const CONTAINER_NAME = 'todo-api-primary';
 const CONTAINER_IDLE_TIMEOUT_MS = 120_000;
 const STARTUP_ATTEMPTS = 80;
 const STARTUP_RETRY_MS = 250;
-
-const PROXY_REQUEST_HEADERS_TO_DROP = [
-  'host',
-  'referer',
-  'accept-encoding',
-  'connection',
-  'keep-alive',
-  'proxy-connection',
-  'transfer-encoding',
-  'x-forwarded-host',
-  'x-forwarded-proto',
-  'x-forwarded-for',
-  'x-real-ip',
-  'cf-connecting-ip',
-  'cf-ipcountry',
-  'cf-ray',
-  'cf-visitor',
-  'cdn-loop',
-];
 
 const isApiRequest = (pathname) => pathname === API_PREFIX || pathname.startsWith(`${API_PREFIX}/`);
 
@@ -149,16 +131,7 @@ export class ApiContainer extends DurableObject {
 }
 
 const forwardApiRequest = async (request, env) => {
-  const incomingUrl = new URL(request.url);
-  const headers = new Headers(request.headers);
-  const clientIp = request.headers.get('CF-Connecting-IP');
-
-  for (const header of PROXY_REQUEST_HEADERS_TO_DROP) headers.delete(header);
-
-  if (clientIp) headers.set('X-Forwarded-For', clientIp);
-  headers.set('X-Forwarded-Host', incomingUrl.host);
-  headers.set('X-Forwarded-Proto', incomingUrl.protocol.replace(':', ''));
-
+  const headers = createForwardedHeaders(request);
   const forwarded = new Request(request, { headers });
 
   try {
