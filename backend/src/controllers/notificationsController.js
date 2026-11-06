@@ -16,7 +16,6 @@ const notificationView = (notification, recipient) => ({
   deliveredAt: recipient.deliveredAt,
   isRead: recipient.isRead,
   readAt: recipient.readAt,
-  archivedAt: recipient.archivedAt,
   deletedAt: recipient.deletedAt,
 });
 
@@ -41,7 +40,7 @@ export const listNotifications = async (req, res) => {
   try {
     if (req.query.filter === 'task') {
       const recipients = await NotificationRecipient.aggregate([
-        { $match: { userId: new mongoose.Types.ObjectId(req.user.userId), archivedAt: null, deletedAt: null } },
+        { $match: { userId: new mongoose.Types.ObjectId(req.user.userId), deletedAt: null } },
         {
           $lookup: {
             from: Notification.collection.name,
@@ -61,12 +60,8 @@ export const listNotifications = async (req, res) => {
 
     const recipientFilter = { userId: req.user.userId };
     if (req.query.filter === 'unread') recipientFilter.isRead = false;
-    if (req.query.filter === 'archived') recipientFilter.archivedAt = { $ne: null };
-    else if (req.query.filter === 'trash') recipientFilter.deletedAt = { $ne: null };
-    else {
-      recipientFilter.archivedAt = null;
-      recipientFilter.deletedAt = null;
-    }
+    if (req.query.filter === 'trash') recipientFilter.deletedAt = { $ne: null };
+    else recipientFilter.deletedAt = null;
     const recipients = await NotificationRecipient.find(recipientFilter)
       .sort({ deliveredAt: -1, _id: -1 })
       .limit(100)
@@ -87,7 +82,7 @@ export const listNotifications = async (req, res) => {
 
 export const getUnreadNotificationCount = async (req, res) => {
   try {
-    const count = await NotificationRecipient.countDocuments({ userId: req.user.userId, isRead: false, archivedAt: null, deletedAt: null });
+    const count = await NotificationRecipient.countDocuments({ userId: req.user.userId, isRead: false, deletedAt: null });
     return res.status(200).json({ count });
   } catch (error) {
     console.error('Unread notification count error:', error);
@@ -148,9 +143,8 @@ export const updateNotificationState = async (req, res) => {
     if (!mongoose.isValidObjectId(req.params.id)) return res.status(404).json({ message: 'Notification not found.' });
     const action = req.body?.action;
     const now = new Date();
-    const update = action === 'archive' ? { archivedAt: now, deletedAt: null }
-      : action === 'trash' ? { deletedAt: now, archivedAt: null }
-      : action === 'restore' ? { archivedAt: null, deletedAt: null }
+    const update = action === 'trash' ? { deletedAt: now }
+      : action === 'restore' ? { deletedAt: null }
       : action === 'permanent-delete' ? null : undefined;
     if (update === undefined) return res.status(400).json({ message: 'Invalid notification action.' });
     const filter = { notificationId: req.params.id, userId: req.user.userId };

@@ -8,6 +8,9 @@
     "esbuild": true
   },
   "scripts": {
+    "lint": "npm run lint --prefix backend && npm run lint --prefix frontend",
+    "lint:backend": "npm run lint --prefix backend",
+    "lint:frontend": "npm run lint --prefix frontend",
     "build": "npm --prefix backend ci && npm --prefix frontend ci && npm --prefix frontend run build",
     "start": "npm run start --prefix backend",
     "deploy:cloudflare": "npm run build && npx wrangler deploy"

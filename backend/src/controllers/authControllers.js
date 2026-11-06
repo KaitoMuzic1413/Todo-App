@@ -460,7 +460,7 @@ export const refreshSession = async (req, res) => {
 
     const now = new Date();
     const candidateToken = createRefreshTokenValue();
-    const candidateHash = hashRefreshToken(candidateToken);
+    const _candidateHash = hashRefreshToken(candidateToken);
     const candidateExpiresAt = getRefreshTokenExpiry();
 
     const claimed = await RefreshToken.findOneAndUpdate(

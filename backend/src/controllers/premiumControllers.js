@@ -13,7 +13,7 @@ const DAY_IN_MS = 24 * 60 * 60 * 1000;
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
 const normalizeCode = (value) => (typeof value === 'string' ? value.trim().toUpperCase() : '');
-const normalizeEmail = (value) => (typeof value === 'string' ? value.trim().toLowerCase() : '');
+const _normalizeEmail = (value) => (typeof value === 'string' ? value.trim().toLowerCase() : '');
 
 const generateCode = () => {
   const block = () => Array.from({ length: 4 }, () => CODE_ALPHABET[crypto.randomInt(0, CODE_ALPHABET.length)]).join('');

@@ -6,6 +6,7 @@ import { validateFileSignature } from '../src/utils/fileValidation.js';
 import { createRateLimiter } from '../src/middleware/rateLimit.js';
 
 const envModuleUrl = new URL('../src/config/env.js', import.meta.url).href;
+// eslint-disable-next-line no-control-regex
 const stripAnsi = (value) => value.replace(/\u001b\[[0-9;]*m/g, '');
 const requiredEnvKeys = ['JWT_SECRET', 'OTP_SECRET', 'MONGODB_CONNECTIONSTRING', 'FRONTEND_URL'];
 
