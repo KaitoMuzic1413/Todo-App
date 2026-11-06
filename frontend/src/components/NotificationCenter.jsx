@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, animate, motion, useMotionValue } from 'framer-motion';
 import {
   Bell,
@@ -386,6 +386,23 @@ const NotificationCardSkeleton = () => (
   </div>
 );
 
+const NotificationContentPreview = memo(function NotificationContentPreview({ html }) {
+  const sanitized = useMemo(() => sanitizeNotificationHtml(html || ''), [html]);
+
+  return (
+    <div
+      className='notification-rich-content mt-1 block overflow-hidden text-xs leading-relaxed text-slate-500 dark:text-slate-400'
+      style={{
+        display: '-webkit-box',
+        WebkitBoxOrient: 'vertical',
+        WebkitLineClamp: 2,
+        overflow: 'hidden',
+      }}
+      dangerouslySetInnerHTML={{ __html: sanitized }}
+    />
+  );
+});
+
 const NotificationCenter = ({
   userId,
   navigationOpen = false,
@@ -420,6 +437,7 @@ const NotificationCenter = ({
   const notificationButtonRef = useRef(null);
   const drawerRef = useRef(null);
   const detailRef = useRef(null);
+  const drawerSyncTimer = useRef(null);
   const swipeStart = useRef(null);
   const knownNotificationIdsRef = useRef(new Set());
   const hasInitializedKnownIds = useRef(false);
@@ -432,6 +450,10 @@ const NotificationCenter = ({
   useEffect(() => {
     selectedIdRef.current = selectedId;
   }, [selectedId]);
+
+  useEffect(() => () => {
+    if (drawerSyncTimer.current) window.clearTimeout(drawerSyncTimer.current);
+  }, []);
 
   useEffect(() => {
     onDrawerOpenChange(drawerOpen);
@@ -1018,7 +1040,11 @@ const NotificationCenter = ({
   const openDrawer = () => {
     setActiveSwipeId(null);
     setDrawerOpen(true);
-    void syncNotifications(filter, false);
+    if (drawerSyncTimer.current) window.clearTimeout(drawerSyncTimer.current);
+    drawerSyncTimer.current = window.setTimeout(() => {
+      drawerSyncTimer.current = null;
+      void syncNotifications(filter, false);
+    }, 260);
   };
 
   return (
@@ -1070,7 +1096,7 @@ const NotificationCenter = ({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className='fixed inset-0 z-[60] cursor-default bg-slate-950/50 backdrop-blur-xs'
+              className='fixed inset-0 z-[60] cursor-default bg-slate-950/50 backdrop-blur-none md:backdrop-blur-xs'
               onClick={() => {
                 setDrawerOpen(false);
                 focusNotificationButton();
@@ -1085,7 +1111,7 @@ const NotificationCenter = ({
               initial={false}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className='fixed inset-y-0 right-0 z-[61] flex w-[min(380px,94vw)] flex-col rounded-l-3xl border-l border-white/70 bg-[linear-gradient(155deg,#ffffff_0%,#f8f9ff_48%,#f1f5ff_100%)] shadow-[0_24px_80px_rgba(15,23,42,0.28)] backdrop-blur-2xl dark:border-white/10 dark:bg-[linear-gradient(155deg,#111827_0%,#11152b_52%,#101b32_100%)]'
+              className='fixed inset-y-0 right-0 z-[61] flex w-[min(380px,94vw)] transform-gpu flex-col rounded-l-3xl border-l border-white/70 bg-[linear-gradient(155deg,#ffffff_0%,#f8f9ff_48%,#f1f5ff_100%)] shadow-[0_24px_80px_rgba(15,23,42,0.28)] will-change-transform dark:border-white/10 dark:bg-[linear-gradient(155deg,#111827_0%,#11152b_52%,#101b32_100%)]'
               style={{
                 x: drawerX,
                 paddingTop: 'env(safe-area-inset-top)',
@@ -1149,7 +1175,7 @@ const NotificationCenter = ({
               {/* Filter Tabs & Search Bar */}
               <div className='shrink-0 space-y-2 border-b border-violet-100/70 p-3 dark:border-white/[0.06] sm:px-4'>
                 <div
-                  className='grid grid-cols-4 gap-1 rounded-3xl border border-white/80 bg-white/70 p-1 shadow-inner shadow-slate-200/60 backdrop-blur-xl dark:border-white/[0.06] dark:bg-slate-950/45 dark:shadow-black/20'
+                  className='grid grid-cols-4 gap-1 rounded-3xl border border-white/80 bg-white/70 p-1 shadow-inner shadow-slate-200/60 backdrop-blur-none sm:backdrop-blur-xl dark:border-white/[0.06] dark:bg-slate-950/45 dark:shadow-black/20'
                   role='tablist'
                   aria-label={t.notifications}
                 >
@@ -1272,8 +1298,7 @@ const NotificationCenter = ({
                         return (
                           <motion.li
                             key={notification.id}
-                            layout
-                            initial={{ opacity: 0, y: -16, scale: 0.96 }}
+                            initial={isJustArrived ? { opacity: 0, y: -16, scale: 0.96 } : false}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{
                               opacity: 0,
@@ -1282,7 +1307,7 @@ const NotificationCenter = ({
                               marginBottom: 0,
                               transition: { duration: 0.22, ease: 'easeOut' },
                             }}
-                            transition={{ layout: { duration: 0.22, ease: 'easeOut' } }}
+                            transition={{ duration: 0.22, ease: 'easeOut' }}
                             className='overflow-hidden'
                           >
                             <SwipeableNotificationCard
@@ -1345,20 +1370,11 @@ const NotificationCenter = ({
                                     </div>
 
                                     {/* Content Preview */}
-                                    <div
-                                      className='notification-rich-content mt-1 block overflow-hidden text-xs leading-relaxed text-slate-500 dark:text-slate-400'
-                                      style={{
-                                        display: '-webkit-box',
-                                        WebkitBoxOrient: 'vertical',
-                                        WebkitLineClamp: 2,
-                                        overflow: 'hidden',
-                                      }}
-                                      dangerouslySetInnerHTML={{
-                                        __html: sanitizeNotificationHtml(
-                                          translatedNotifications[notification.id]?.content ||
-                                            notification.content
-                                        ),
-                                      }}
+                                    <NotificationContentPreview
+                                      html={
+                                        translatedNotifications[notification.id]?.content ||
+                                        notification.content
+                                      }
                                     />
 
                                     {/* Footer: Time */}
