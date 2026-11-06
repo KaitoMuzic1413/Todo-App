@@ -36,6 +36,35 @@ const isConfiguredAdmin = (email) => {
 
 const hasValidEmailShape = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
+// Diagnostic logs intentionally use a short email fingerprint and IDs only.
+// Never log passwords, tokens, cookies, or raw request bodies.
+const emailFingerprint = (email) => crypto
+  .createHash('sha256')
+  .update(String(email || '').trim().toLowerCase())
+  .digest('hex')
+  .slice(0, 12);
+
+const logAuthEvent = (level, event, details = {}) => {
+  const fields = Object.entries(details)
+    .filter(([, value]) => value !== undefined && value !== null && value !== '')
+    .map(([key, value]) => `${key}=${value}`)
+    .join(' ');
+  const message = `[auth] ${event}${fields ? ` ${fields}` : ''}`;
+
+  if (level === 'error') console.error(message);
+  else if (level === 'warn') console.warn(message);
+  else console.info(message);
+};
+
+const logAuthError = (event, error) => {
+  const details = [
+    error?.name ? `name=${error.name}` : '',
+    error?.code ? `code=${error.code}` : '',
+    error?.message ? `message=${String(error.message).slice(0, 200)}` : '',
+  ].filter(Boolean).join(' ');
+  console.error(`[auth] ${event}${details ? ` ${details}` : ''}`);
+};
+
 const publicUser = (user) => ({
   _id: user._id,
   email: user.email,
@@ -69,6 +98,21 @@ const createEmailVerification = async (user) => {
       </div>
     `,
   });
+};
+
+const trySendVerificationEmail = async (user, context) => {
+  try {
+    await createEmailVerification(user);
+    return true;
+  } catch (error) {
+    logAuthError('VERIFICATION_EMAIL_FAILED', error);
+    logAuthEvent('warn', 'REGISTER_VERIFICATION_PENDING', {
+      context,
+      userId: String(user._id),
+      emailHash: emailFingerprint(user.email),
+    });
+    return false;
+  }
 };
 
 const issueSession = async ({ user, req, res }) => {
@@ -120,6 +164,10 @@ export const register = async (req, res) => {
     const isFirstAccountSetup = !user || !user.password;
 
     if (user && user.password) {
+      logAuthEvent('warn', 'REGISTER_REJECTED', {
+        reason: 'account_exists',
+        emailHash: emailFingerprint(trimmedEmail),
+      });
       return res.status(409).json({
         exists: true,
         message: 'Account already exists. Please sign in instead.',
@@ -136,7 +184,7 @@ export const register = async (req, res) => {
       user.inactiveDeletionNoticeSentAt = null;
       if (verificationRequired) {
         user.emailVerified = false;
-        await createEmailVerification(user);
+        await trySendVerificationEmail(user, 'register_existing_account');
       } else {
         user.emailVerified = true;
         await user.save();
@@ -149,7 +197,7 @@ export const register = async (req, res) => {
         emailVerified: !verificationRequired,
         ...(name ? { name } : {}),
       });
-      if (verificationRequired) await createEmailVerification(user);
+      if (verificationRequired) await trySendVerificationEmail(user, 'register_new_account');
     }
 
     if (isConfiguredAdmin(trimmedEmail) && !user.isAdmin) {
@@ -157,7 +205,20 @@ export const register = async (req, res) => {
       await user.save();
     }
 
-    if (isFirstAccountSetup) await deliverNewAccountNotifications(user);
+    if (isFirstAccountSetup) {
+      try {
+        await deliverNewAccountNotifications(user);
+      } catch (error) {
+        // Onboarding notifications are best-effort and must never fail signup.
+        logAuthError('ONBOARDING_NOTIFICATION_FAILED', error);
+      }
+    }
+
+    logAuthEvent('info', 'REGISTER_SUCCEEDED', {
+      userId: String(user._id),
+      emailHash: emailFingerprint(trimmedEmail),
+      verificationRequired,
+    });
 
     return res.status(201).json({
       message: verificationRequired
@@ -166,7 +227,7 @@ export const register = async (req, res) => {
       verificationRequired,
     });
   } catch (error) {
-    console.error('Register error:', error);
+    logAuthError('REGISTER_ERROR', error);
     return res.status(500).json({ message: 'Server error during registration.' });
   }
 };
@@ -189,18 +250,32 @@ export const login = async (req, res) => {
     }
 
     const trimmedEmail = email.toLowerCase();
+    const emailHash = emailFingerprint(trimmedEmail);
     const user = await User.findOne({ email: trimmedEmail });
-    const invalidCredentials = () => res.status(401).json({
-      code: 'INVALID_CREDENTIALS',
-      message: 'Invalid email or password.',
-    });
+    const invalidCredentials = (reason) => {
+      logAuthEvent('warn', 'LOGIN_REJECTED', {
+        reason,
+        emailHash,
+        ...(user?._id ? { userId: String(user._id) } : {}),
+      });
+      return res.status(401).json({
+        code: 'INVALID_CREDENTIALS',
+        message: 'Invalid email or password.',
+      });
+    };
 
-    if (!user || !user.password) return invalidCredentials();
+    if (!user) return invalidCredentials('unknown_account');
+    if (!user.password) return invalidCredentials('missing_password_hash');
 
     const isPasswordMatch = await bcrypt.compare(password, user.password);
-    if (!isPasswordMatch) return invalidCredentials();
+    if (!isPasswordMatch) return invalidCredentials('password_mismatch');
 
     if (env.emailVerificationRequired && user.emailVerified === false) {
+      logAuthEvent('warn', 'LOGIN_REJECTED', {
+        reason: 'email_not_verified',
+        emailHash,
+        userId: String(user._id),
+      });
       return res.status(403).json({
         code: 'EMAIL_NOT_VERIFIED',
         message: 'Please verify your email before signing in.',
@@ -214,13 +289,18 @@ export const login = async (req, res) => {
 
     const token = await issueSession({ user, req, res });
 
+    logAuthEvent('info', 'LOGIN_SUCCEEDED', {
+      userId: String(user._id),
+      emailHash,
+    });
+
     return res.status(200).json({
       message: 'Login successful.',
       token,
       user: publicUser(user),
     });
   } catch (error) {
-    console.error('Login error:', error);
+    logAuthError('LOGIN_ERROR', error);
     return res.status(500).json({ message: 'Server error during login.' });
   }
 };

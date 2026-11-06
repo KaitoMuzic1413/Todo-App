@@ -2,9 +2,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { BellRing, LoaderCircle, Send, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { LayoutShell } from '@/components/LayoutShell';
+import SelectMenu from '@/components/ui/select-menu';
 import { deleteAdminNotification, fetchAdminNotifications, sendAdminNotification } from '@/lib/api';
 import { useLanguage } from '@/lib/i18n';
 import { sanitizeNotificationHtml } from '@/lib/notificationHtml';
+import { keepTextareaContentVisible } from '@/lib/textareaSizing';
 
 const createRequestId = () => (globalThis.crypto?.randomUUID?.()
   || `notification-${Date.now()}-${Math.random().toString(36).slice(2)}`);
@@ -25,6 +27,7 @@ const AdminNotificationsPage = () => {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [notificationToDelete, setNotificationToDelete] = useState(null);
+  const [notificationToView, setNotificationToView] = useState(null);
   const [deletingNotificationId, setDeletingNotificationId] = useState('');
   const [history, setHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(true);
@@ -49,13 +52,15 @@ const AdminNotificationsPage = () => {
   }, [loadHistory]);
 
   useEffect(() => {
-    if (!isPreviewOpen) return undefined;
+    if (!isPreviewOpen && !notificationToView) return undefined;
     const handleKeyDown = (event) => {
-      if (event.key === 'Escape') setIsPreviewOpen(false);
+      if (event.key !== 'Escape') return;
+      if (isPreviewOpen) setIsPreviewOpen(false);
+      if (notificationToView) setNotificationToView(null);
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isPreviewOpen]);
+  }, [isPreviewOpen, notificationToView]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -131,14 +136,33 @@ const AdminNotificationsPage = () => {
                 <label htmlFor='notification-content' className='text-sm font-semibold text-slate-700 dark:text-slate-200'>{t.notificationContent}</label>
                 <span className='text-xs text-slate-400'>{content.length}/5000</span>
               </div>
-              <textarea id='notification-content' required maxLength={5000} rows={6} value={content} onChange={(event) => setContent(event.target.value)} placeholder={'Liên hệ tôi <a href="https://example.com/contact">click vào</a> để được hỗ trợ.'} className='min-h-36 w-full resize-y rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-base leading-6 text-slate-900 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:focus:ring-violet-900/30' />
+              <textarea
+                id='notification-content'
+                required
+                maxLength={5000}
+                rows={6}
+                value={content}
+                onChange={(event) => {
+                  setContent(event.target.value);
+                  keepTextareaContentVisible(event.currentTarget);
+                }}
+                placeholder={'Liên hệ tôi <a href="https://example.com/contact">click vào</a> để được hỗ trợ.'}
+                className='min-h-36 w-full resize-y rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-base leading-6 text-slate-900 outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:focus:ring-violet-900/30'
+              />
             </div>
             <div className='grid gap-5 sm:grid-cols-2'>
               <div>
                 <label htmlFor='notification-type' className='mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-200'>{t.notificationType}</label>
-                <select id='notification-type' value={type} onChange={(event) => setType(event.target.value)} className='min-h-12 w-full rounded-3xl border border-slate-200 bg-slate-50 px-3 text-base text-slate-900 outline-none focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:focus:ring-violet-900/30'>
-                  {Object.entries(typeLabels).filter(([key]) => key !== 'task').map(([key, label]) => <option key={key} value={key}>{label}</option>)}
-                </select>
+                <SelectMenu
+                  id='notification-type'
+                  value={type}
+                  onChange={setType}
+                  ariaLabel={t.notificationType}
+                  options={Object.entries(typeLabels)
+                    .filter(([key]) => key !== 'task')
+                    .map(([key, label]) => ({ value: key, label }))}
+                  className='min-h-12 w-full bg-slate-50 px-3 text-base dark:bg-slate-950'
+                />
               </div>
               {type === 'welcome' ? (
                 <p className='self-end rounded-3xl border border-violet-100 bg-violet-50 p-4 text-sm leading-6 text-violet-800 dark:border-violet-500/20 dark:bg-violet-500/10 dark:text-violet-200'>
@@ -197,12 +221,13 @@ const AdminNotificationsPage = () => {
                       <h3 className='max-w-full break-words text-sm font-semibold text-slate-900 dark:text-white'>{notification.title}</h3>
                       <span className='rounded-3xl bg-violet-50 px-2.5 py-1 text-[11px] font-semibold text-violet-700 dark:bg-violet-500/10 dark:text-violet-200'>{typeLabels[notification.type] || notification.type}</span>
                     </div>
-                    <p className='mt-1 line-clamp-2 break-words text-xs leading-5 text-slate-500 dark:text-slate-400' dangerouslySetInnerHTML={{ __html: sanitizeNotificationHtml(notification.content) }} />
+                    <p className='notification-rich-content mt-1 line-clamp-2 break-words text-xs leading-5 text-slate-500 dark:text-slate-400' dangerouslySetInnerHTML={{ __html: sanitizeNotificationHtml(notification.content) }} />
                     <p className='mt-2 text-[11px] text-slate-400 dark:text-slate-500'>{formatDate(notification.createdAt)} · {notification.targetType === 'all' ? t.allUsers : (notification.targetType === 'new-users' ? t.newAccounts : t.oneUser)}</p>
                   </div>
                   <div className='flex shrink-0 items-center gap-3 text-xs text-slate-500 dark:text-slate-400'>
                     <span>{notification.recipients} {t.recipients.toLowerCase()}</span>
                     <span className='rounded-3xl bg-emerald-50 px-2.5 py-1.5 font-semibold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300'>{notification.read}/{notification.recipients} {t.readCount.toLowerCase()}</span>
+                    <button type='button' onClick={() => setNotificationToView(notification)} className='min-h-8 rounded-3xl bg-violet-50 px-3 text-[11px] font-semibold text-violet-700 transition hover:bg-violet-100 dark:bg-violet-500/10 dark:text-violet-200 dark:hover:bg-violet-500/20'>{t.viewNotification}</button>
                     <button type='button' aria-label={t.deleteNotification} title={t.deleteNotification} disabled={Boolean(deletingNotificationId)} onClick={() => setNotificationToDelete(notification)} className='flex h-10 w-10 items-center justify-center rounded-3xl text-slate-500 transition hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-50 dark:text-slate-400 dark:hover:bg-rose-500/10 dark:hover:text-rose-300'>
                       <Trash2 className='h-4 w-4' />
                     </button>
@@ -218,12 +243,32 @@ const AdminNotificationsPage = () => {
         <div className='fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/60 px-4 py-5 backdrop-blur-sm' onMouseDown={(event) => { if (event.target === event.currentTarget) setIsPreviewOpen(false); }}>
           <section role='dialog' aria-modal='true' aria-labelledby='notification-preview-title' className='flex w-[90vw] max-w-[600px] max-h-[78dvh] min-h-[50dvh] flex-col overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-slate-900'>
             <header className='flex shrink-0 items-start justify-between gap-3 border-b border-slate-100 px-5 py-4 dark:border-slate-800'>
-              <div className='min-w-0'><p className='text-xs font-semibold uppercase tracking-[0.15em] text-violet-600 dark:text-violet-300'>{t.preview}</p><h2 id='notification-preview-title' className='mt-1 break-words text-lg font-bold text-slate-900 dark:text-white'>{title || t.notificationTitle}</h2></div>
+              <div className='min-w-0 select-text [&_*]:select-text'><p className='text-xs font-semibold uppercase tracking-[0.15em] text-violet-600 dark:text-violet-300'>{t.preview}</p><h2 id='notification-preview-title' className='mt-1 break-words text-lg font-bold text-slate-900 dark:text-white'>{title || t.notificationTitle}</h2></div>
               <button type='button' autoFocus onClick={() => setIsPreviewOpen(false)} aria-label={t.close} className='flex h-10 w-10 shrink-0 items-center justify-center rounded-3xl text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'><X className='h-5 w-5' /></button>
             </header>
-            <div className='min-h-0 flex-1 overflow-y-auto px-5 py-5 [overscroll-behavior:contain]'>
+            <div className='min-h-0 flex-1 select-text overflow-y-auto px-5 py-5 [&_*]:select-text [overscroll-behavior:contain]'>
               <p className='text-xs text-slate-500 dark:text-slate-400'>{typeLabels[type]} · {type === 'welcome' ? t.newAccounts : (audienceType === 'all' ? t.allUsers : email)}</p>
               <div className='notification-rich-content mt-4 break-words text-sm leading-7 text-slate-700 dark:text-slate-200' dangerouslySetInnerHTML={{ __html: sanitizeNotificationHtml(content || t.notificationContent) }} />
+            </div>
+          </section>
+        </div>
+      ) : null}
+
+      {notificationToView ? (
+        <div className='fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/60 px-4 py-5 backdrop-blur-sm' onMouseDown={(event) => { if (event.target === event.currentTarget) setNotificationToView(null); }}>
+          <section role='dialog' aria-modal='true' aria-labelledby='notification-history-title' className='flex w-[90vw] max-w-[600px] max-h-[78dvh] min-h-[40dvh] flex-col overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-slate-900'>
+            <header className='flex shrink-0 items-start justify-between gap-3 border-b border-slate-100 px-5 py-4 dark:border-slate-800'>
+              <div className='min-w-0 select-text [&_*]:select-text'>
+                <p className='text-xs font-semibold uppercase tracking-[0.15em] text-violet-600 dark:text-violet-300'>{t.sentNotifications}</p>
+                <h2 id='notification-history-title' className='mt-1 break-words text-lg font-bold text-slate-900 dark:text-white'>{notificationToView.title}</h2>
+              </div>
+              <button type='button' autoFocus onClick={() => setNotificationToView(null)} aria-label={t.close} className='flex h-10 w-10 shrink-0 items-center justify-center rounded-3xl text-slate-500 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'><X className='h-5 w-5' /></button>
+            </header>
+            <div className='min-h-0 flex-1 select-text overflow-y-auto px-5 py-5 [&_*]:select-text [overscroll-behavior:contain]'>
+              <p className='text-xs text-slate-500 dark:text-slate-400'>
+                {typeLabels[notificationToView.type] || notificationToView.type} · {notificationToView.targetType === 'all' ? t.allUsers : (notificationToView.targetType === 'new-users' ? t.newAccounts : t.oneUser)} · {formatDate(notificationToView.createdAt)}
+              </p>
+              <div className='notification-rich-content mt-4 break-words text-sm leading-7 text-slate-700 dark:text-slate-200' dangerouslySetInnerHTML={{ __html: sanitizeNotificationHtml(notificationToView.content) }} />
             </div>
           </section>
         </div>

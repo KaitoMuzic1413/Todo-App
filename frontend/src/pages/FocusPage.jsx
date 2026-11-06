@@ -5,6 +5,7 @@ import { Bell, Check, Pause, Play, RotateCcw, Timer } from 'lucide-react';
 import { toast } from 'sonner';
 import { LayoutShell } from '@/components/LayoutShell';
 import Header from '@/components/Header';
+import SelectMenu from '@/components/ui/select-menu';
 import { fetchActiveFocusSession, fetchFocusSummary, fetchTasks, startFocusSession, updateFocusSession } from '@/lib/api';
 import { useLanguage } from '@/lib/i18n';
 import {
@@ -333,10 +334,16 @@ const FocusPage = () => {
             <div className='mx-auto grid max-w-md gap-3 text-left'>
               <label className='grid gap-1 text-xs text-slate-500 dark:text-slate-400'>
                 {t.linkTask}
-                <select value={taskId} onChange={(event) => setTaskId(event.target.value)} className='h-11 rounded-3xl border border-slate-200 bg-white px-4 text-sm text-slate-700 shadow-sm outline-none transition focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:focus:ring-violet-900/40'>
-                  <option value=''>{t.noLinkedTask}</option>
-                  {taskList.map((task) => <option key={task._id} value={task._id}>{task.title}</option>)}
-                </select>
+                <SelectMenu
+                  value={taskId}
+                  onChange={setTaskId}
+                  ariaLabel={t.linkTask}
+                  options={[
+                    { value: '', label: t.noLinkedTask },
+                    ...taskList.map((task) => ({ value: task._id, label: task.title })),
+                  ]}
+                  className='h-11 w-full px-4 text-sm shadow-sm'
+                />
               </label>
               <div className='grid grid-cols-3 gap-2'>
                 {modeOptions.map(([key, label]) => (

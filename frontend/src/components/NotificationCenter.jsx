@@ -24,7 +24,8 @@ import {
   translateNotificationTexts,
 } from '@/lib/api';
 import { useLanguage } from '@/lib/i18n';
-import { hasNotificationHtml, sanitizeNotificationHtml } from '@/lib/notificationHtml';
+import { openNotificationEventStream } from '@/lib/notificationEvents';
+import { sanitizeNotificationHtml } from '@/lib/notificationHtml';
 
 const SWIPE_ACTION_WIDTH = 92;
 const MAX_CACHED_TRANSLATIONS = 1000;
@@ -71,6 +72,62 @@ const translateTextsInBatches = async (texts, targetLanguage) => {
   }
 
   return translations;
+};
+
+const collectTranslatableContent = (content) => {
+  const container = document.createElement('div');
+  container.innerHTML = sanitizeNotificationHtml(content || '');
+  const textNodes = [];
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+  let node = walker.nextNode();
+
+  while (node) {
+    const parent = node.parentElement;
+    if (node.textContent.trim() && !parent?.closest('code')) textNodes.push(node);
+    node = walker.nextNode();
+  }
+
+  return { container, textNodes };
+};
+
+const buildTranslationJobs = (items) => {
+  const jobs = items.map((item) => {
+    const { container, textNodes } = collectTranslatableContent(item.content);
+    return { item, container, textNodes };
+  });
+  const texts = [];
+
+  jobs.forEach(({ item, textNodes }) => {
+    texts.push(item.title || '');
+    textNodes.forEach((node) => texts.push(node.textContent));
+  });
+
+  return { jobs, texts };
+};
+
+const applyTranslations = (jobs, translations) => {
+  const translatedById = {};
+  let cursor = 0;
+
+  jobs.forEach(({ item, container, textNodes }) => {
+    const title = translations[cursor] || item.title;
+    cursor += 1;
+
+    textNodes.forEach((node) => {
+      const translated = translations[cursor];
+      cursor += 1;
+      if (typeof translated === 'string' && translated.trim()) {
+        node.textContent = translated;
+      }
+    });
+
+    translatedById[item.id] = {
+      title,
+      content: container.innerHTML,
+    };
+  });
+
+  return translatedById;
 };
 
 const playGentleNotificationChime = () => {
@@ -152,37 +209,6 @@ const NotificationTypeIcon = ({ type }) => {
       return <Bell className='h-4 w-4 text-indigo-500 dark:text-indigo-400' />;
   }
 };
-
-const NotificationLanguageToggle = ({ value, onChange, label }) => (
-  <div
-    className='relative grid shrink-0 grid-cols-2 rounded-3xl border border-slate-200/90 bg-slate-100 p-0.5 shadow-inner dark:border-slate-800 dark:bg-slate-900'
-    role='group'
-    aria-label={label}
-  >
-    <motion.span
-      aria-hidden='true'
-      className='absolute bottom-0.5 top-0.5 w-[calc(50%-2px)] rounded-3xl bg-white shadow-xs dark:bg-violet-600/35'
-      initial={false}
-      animate={{ x: value === 'vi' ? 0 : '100%' }}
-      transition={{ type: 'spring', stiffness: 440, damping: 32 }}
-    />
-    {['vi', 'en'].map((code) => (
-      <button
-        key={code}
-        type='button'
-        onClick={() => onChange(code)}
-        aria-pressed={value === code}
-        className={`relative z-10 min-w-8 rounded-3xl px-2.5 py-1 text-[11px] font-bold uppercase transition-colors ${
-          value === code
-            ? 'text-violet-700 dark:text-violet-100'
-            : 'text-slate-500 hover:text-violet-700 dark:text-slate-400 dark:hover:text-violet-200'
-        }`}
-      >
-        {code}
-      </button>
-    ))}
-  </div>
-);
 
 const getSwipeActions = (filter, language) => {
   const deleteLabel = language === 'vi' ? 'Xóa' : 'Delete';
@@ -295,7 +321,7 @@ const SwipeableNotificationCard = ({
   };
 
   return (
-    <div ref={containerRef} className='group relative overflow-hidden rounded-3xl'>
+    <div ref={containerRef} className='group relative overflow-hidden rounded-3xl transition-shadow duration-300 ease-out group-hover:shadow-[0_12px_32px_rgba(124,58,237,0.18)] dark:group-hover:shadow-[0_12px_32px_rgba(76,29,149,0.35)]'>
       {left ? (
         <SwipeActionBackground
           x={x}
@@ -372,7 +398,6 @@ const NotificationCenter = ({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [filter, setFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [contentLanguage, setContentLanguage] = useState(null);
 
   const [notifications, setNotifications] = useState([]);
   const [translatedNotifications, setTranslatedNotifications] = useState({});
@@ -386,12 +411,11 @@ const NotificationCenter = ({
   const [detail, setDetail] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState('');
+  const selectedIdRef = useRef(null);
 
   const [newArrivalIds, setNewArrivalIds] = useState(new Set());
   const [activeSwipeId, setActiveSwipeId] = useState(null);
   const [isDraggingDrawer, setIsDraggingDrawer] = useState(false);
-
-  const activeContentLanguage = contentLanguage || language;
 
   const notificationButtonRef = useRef(null);
   const drawerRef = useRef(null);
@@ -404,6 +428,10 @@ const NotificationCenter = ({
     typeof window === 'undefined' ? 360 : Math.min(360, window.innerWidth * 0.92)
   );
   const getDrawerWidth = () => Math.min(360, window.innerWidth * 0.92);
+
+  useEffect(() => {
+    selectedIdRef.current = selectedId;
+  }, [selectedId]);
 
   useEffect(() => {
     onDrawerOpenChange(drawerOpen);
@@ -510,6 +538,35 @@ const NotificationCenter = ({
       // Quietly ignore background count error
     }
   }, [userId]);
+
+  useEffect(() => {
+    if (!userId) return undefined;
+
+    return openNotificationEventStream((event) => {
+      if (event?.type !== 'notification-deleted' || !event.notificationId) return;
+      const notificationId = String(event.notificationId);
+
+      knownNotificationIdsRef.current.delete(notificationId);
+      setNewArrivalIds((current) => {
+        if (!current.has(notificationId)) return current;
+        const next = new Set(current);
+        next.delete(notificationId);
+        return next;
+      });
+      setNotifications((items) => items.filter((item) => item.id !== notificationId));
+
+      if (selectedIdRef.current === notificationId) {
+        selectedIdRef.current = null;
+        setSelectedId(null);
+        setDetail(null);
+        setTranslatedDetail(null);
+        setDetailError('');
+        setDetailLoading(false);
+      }
+
+      void refreshCount();
+    });
+  }, [userId, refreshCount]);
 
   const openNotification = useCallback(
     async (notificationId) => {
@@ -768,24 +825,12 @@ const NotificationCenter = ({
       };
     }
 
-    const texts = notifications.flatMap((item) => [
-      item.title || '',
-      hasNotificationHtml(item.content) ? '' : item.content || '',
-    ]);
+    const { jobs, texts } = buildTranslationJobs(notifications);
 
-    void translateTextsInBatches(texts, activeContentLanguage)
+    void translateTextsInBatches(texts, language)
       .then((translations) => {
         if (!active || !Array.isArray(translations)) return;
-        const translated = {};
-        notifications.forEach((item, index) => {
-          translated[item.id] = {
-            title: translations[index * 2] || item.title,
-            content: hasNotificationHtml(item.content)
-              ? item.content
-              : translations[index * 2 + 1] || item.content,
-          };
-        });
-        setTranslatedNotifications(translated);
+        setTranslatedNotifications(applyTranslations(jobs, translations));
       })
       .catch(() => {
         if (active) setTranslatedNotifications({});
@@ -794,7 +839,7 @@ const NotificationCenter = ({
     return () => {
       active = false;
     };
-  }, [activeContentLanguage, notifications]);
+  }, [language, notifications]);
 
   // Translate detail modal on language change
   useEffect(() => {
@@ -809,18 +854,13 @@ const NotificationCenter = ({
       };
     }
 
-    void translateTextsInBatches(
-      [detail.title || '', hasNotificationHtml(detail.content) ? '' : detail.content || ''],
-      activeContentLanguage
-    )
+    const { jobs, texts } = buildTranslationJobs([detail]);
+
+    void translateTextsInBatches(texts, language)
       .then((translations) => {
         if (active && Array.isArray(translations)) {
-          setTranslatedDetail({
-            title: translations[0] || detail.title,
-            content: hasNotificationHtml(detail.content)
-              ? detail.content
-              : translations[1] || detail.content,
-          });
+          const translated = applyTranslations(jobs, translations);
+          setTranslatedDetail(translated[detail.id] || Object.values(translated)[0] || null);
         }
       })
       .catch(() => {
@@ -830,7 +870,7 @@ const NotificationCenter = ({
     return () => {
       active = false;
     };
-  }, [detail, activeContentLanguage]);
+  }, [detail, language]);
 
   // Prevent background scroll when drawer or detail modal is active
   useEffect(() => {
@@ -1090,13 +1130,6 @@ const NotificationCenter = ({
                     </button>
                   ) : null}
 
-                  {/* Language Toggle */}
-                  <NotificationLanguageToggle
-                    value={activeContentLanguage}
-                    onChange={setContentLanguage}
-                    label={t.notificationLanguage}
-                  />
-
                   {/* Close Drawer Button */}
                   <button
                     type='button'
@@ -1135,7 +1168,7 @@ const NotificationCenter = ({
                       className={`relative flex min-h-8.5 items-center justify-center rounded-3xl px-1.5 text-[11px] font-bold transition-all duration-200 ${
                         filter === key
                           ? 'text-white'
-                          : 'text-slate-500 hover:-translate-y-0.5 hover:bg-white hover:text-violet-700 hover:shadow-xs dark:text-slate-400 dark:hover:bg-white/[0.06] dark:hover:text-violet-200'
+                          : 'text-slate-500 hover:-translate-y-0.5 hover:bg-white/[0] hover:text-violet-700 dark:text-slate-400 dark:hover:bg-white/[0] dark:hover:text-violet-200'
                       }`}
                     >
                       {filter === key ? (
@@ -1265,7 +1298,7 @@ const NotificationCenter = ({
                               onClick={() => void openNotification(notification.id)}
                             >
                               <div
-                                className={`relative block w-full rounded-3xl border p-3.5 text-left transition-colors duration-200 ${
+                                className={`relative block w-full rounded-3xl border p-3.5 text-left transition-all duration-300 ease-out group-hover:border-violet-400/90 dark:group-hover:border-violet-400/60 ${
                                   isJustArrived
                                     ? 'ring-2 ring-violet-500/60 shadow-[0_0_24px_rgba(139,92,246,0.3)] '
                                     : ''
@@ -1402,18 +1435,13 @@ const NotificationCenter = ({
 
                   <h2
                     id='notification-detail-title'
-                    className='mt-2 break-words text-lg font-bold leading-snug text-slate-900 dark:text-white sm:text-xl'
+                    className='mt-2 select-text break-words text-lg font-bold leading-snug text-slate-900 dark:text-white sm:text-xl'
                   >
                     {translatedDetail?.title || detail?.title || t.notifications}
                   </h2>
                 </div>
 
                 <div className='flex shrink-0 items-center gap-2'>
-                  <NotificationLanguageToggle
-                    value={activeContentLanguage}
-                    onChange={setContentLanguage}
-                    label={t.notificationLanguage}
-                  />
                   <button
                     type='button'
                     autoFocus
@@ -1432,7 +1460,7 @@ const NotificationCenter = ({
 
               {/* Detail Body */}
               <div
-                className='sidebar-scrollbar min-h-0 flex-1 overflow-y-auto px-5 py-5 [overscroll-behavior:contain] sm:px-6 sm:py-6'
+                className='sidebar-scrollbar min-h-0 flex-1 select-text overflow-y-auto px-5 py-5 [&_*]:select-text [overscroll-behavior:contain] sm:px-6 sm:py-6'
                 style={{ touchAction: 'pan-y' }}
               >
                 {detailLoading ? (
@@ -1467,36 +1495,6 @@ const NotificationCenter = ({
                 )}
               </div>
 
-              {/* Detail Footer Actions */}
-              {detail ? (
-                <footer className='flex shrink-0 items-center justify-between border-t border-slate-100 bg-white/70 px-5 py-3 backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/70 sm:px-6'>
-                  <button
-                    type='button'
-                    onClick={async () => {
-                      const notificationItem = { id: selectedId, ...detail };
-                      setSelectedId(null);
-                      setDetail(null);
-                      await handleNotificationAction(notificationItem, 'trash');
-                    }}
-                    className='flex items-center gap-1.5 rounded-3xl px-3 py-1.5 text-xs font-semibold text-rose-600 transition hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/30'
-                  >
-                    <Trash2 className='h-4 w-4' />
-                    <span>{language === 'vi' ? 'Xóa thông báo' : 'Delete'}</span>
-                  </button>
-
-                  <button
-                    type='button'
-                    onClick={() => {
-                      setSelectedId(null);
-                      setDetail(null);
-                      focusNotificationButton();
-                    }}
-                    className='rounded-3xl bg-violet-600 px-4 py-2 text-xs font-bold text-white shadow-sm shadow-violet-600/30 transition hover:bg-violet-700 active:scale-95'
-                  >
-                    {t.close}
-                  </button>
-                </footer>
-              ) : null}
             </motion.section>
           </motion.div>
         ) : null}

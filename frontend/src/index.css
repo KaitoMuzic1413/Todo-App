@@ -287,28 +287,22 @@
   background: linear-gradient(115deg, rgb(255 255 255 / 0.12), transparent 38%, rgb(255 255 255 / 0.025) 72%, transparent);
 }
 
-.sidebar-scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: rgb(var(--accent-shadow-rgb) / 0.58) transparent;
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
-.sidebar-scrollbar::-webkit-scrollbar {
-  width: 8px;
+*::-webkit-scrollbar {
+  display: none;
 }
 
-.sidebar-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
-.sidebar-scrollbar::-webkit-scrollbar-thumb {
-  border: 2px solid transparent;
-  border-radius: 1.5rem;
-  background-color: rgb(var(--accent-shadow-rgb) / 0.58);
-  background-clip: content-box;
-}
-
-.sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: rgb(var(--accent-shadow-rgb) / 0.82);
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
  .app-status-notice {
@@ -332,3 +326,124 @@
 .app-status-notice p { flex: 1; margin: 0; font-size: .875rem; }
 .app-status-notice button { border: 0; background: transparent; color: inherit; cursor: pointer; }
 .app-status-notice .notice-dismiss { display: grid; place-items: center; padding: .25rem; }
+
+.notification-rich-content {
+  overflow-wrap: anywhere;
+}
+
+.notification-rich-content > :first-child {
+  margin-top: 0;
+}
+
+.notification-rich-content > :last-child {
+  margin-bottom: 0;
+}
+
+.notification-rich-content p {
+  margin-block: 0.5em;
+}
+
+.notification-rich-content h1,
+.notification-rich-content h2,
+.notification-rich-content h3,
+.notification-rich-content h4,
+.notification-rich-content h5,
+.notification-rich-content h6 {
+  margin-block: 0.75em 0.35em;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.notification-rich-content h1 { font-size: 1.4em; }
+.notification-rich-content h2 { font-size: 1.25em; }
+.notification-rich-content h3 { font-size: 1.12em; }
+.notification-rich-content h4,
+.notification-rich-content h5,
+.notification-rich-content h6 { font-size: 1em; }
+
+.notification-rich-content ul,
+.notification-rich-content ol {
+  margin-block: 0.5em;
+  padding-inline-start: 1.35rem;
+}
+
+.notification-rich-content ul { list-style: disc; }
+.notification-rich-content ol { list-style: decimal; }
+
+.notification-rich-content li {
+  margin-block: 0.15em;
+  padding-inline-start: 0.15rem;
+}
+
+.notification-rich-content li > ul,
+.notification-rich-content li > ol {
+  margin-block: 0.25em;
+}
+
+.notification-rich-content a {
+  color: hsl(var(--primary));
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.dark .notification-rich-content a {
+  color: var(--color-violet-300);
+}
+
+.notification-rich-content strong,
+.notification-rich-content b {
+  font-weight: 700;
+}
+
+.notification-rich-content em,
+.notification-rich-content i {
+  font-style: italic;
+}
+
+.notification-rich-content u { text-decoration: underline; }
+.notification-rich-content s,
+.notification-rich-content del { text-decoration: line-through; }
+.notification-rich-content mark { background: #fde68a; color: #1f2937; }
+
+.notification-rich-content blockquote {
+  margin-block: 0.75em;
+  border-inline-start: 3px solid rgb(var(--accent-shadow-rgb) / 0.5);
+  padding-inline-start: 0.75rem;
+  color: hsl(var(--muted-foreground));
+}
+
+.notification-rich-content code {
+  border-radius: 0.4rem;
+  background: rgb(var(--accent-shadow-rgb) / 0.1);
+  padding: 0.1em 0.35em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.9em;
+}
+
+.dark .notification-rich-content code {
+  background: rgb(255 255 255 / 0.1);
+}
+
+.notification-rich-content pre {
+  margin-block: 0.75em;
+  overflow-x: auto;
+  border-radius: 0.75rem;
+  background: rgb(15 23 42 / 0.06);
+  padding: 0.75rem 0.85rem;
+}
+
+.dark .notification-rich-content pre {
+  background: rgb(0 0 0 / 0.35);
+}
+
+.notification-rich-content pre code {
+  background: transparent;
+  padding: 0;
+}
+
+.notification-rich-content hr {
+  margin-block: 0.75em;
+  border: 0;
+  border-top: 1px solid hsl(var(--border));
+}

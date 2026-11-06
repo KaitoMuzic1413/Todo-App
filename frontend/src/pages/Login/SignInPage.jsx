@@ -61,15 +61,31 @@ const SignInPage = () => {
 
       completeLogin(res);
     } catch (requestError) {
-      const data = requestError?.response?.data;
+      const response = requestError?.response;
+      const data = response?.data;
+
       if (data?.code === 'EMAIL_NOT_VERIFIED') {
         sessionStorage.setItem('todo-auth-email', trimmedEmail);
         navigate(`/verify-email?email=${encodeURIComponent(trimmedEmail)}`);
         return;
       }
-      setError(
-        data?.message || 'Invalid email or password.'
-      );
+
+      if (!response) {
+        setError('Cannot reach the server. Check your connection and try again.');
+        return;
+      }
+
+      if (response.status === 429) {
+        setError(data?.message || 'Too many sign-in attempts. Please try again later.');
+        return;
+      }
+
+      if (response.status >= 500) {
+        setError(data?.message || 'The server could not complete sign-in. Please try again shortly.');
+        return;
+      }
+
+      setError(data?.message || 'Invalid email or password.');
     } finally {
       setIsSubmitting(false);
     }

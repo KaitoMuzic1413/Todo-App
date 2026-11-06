@@ -1,4 +1,8 @@
-const ALLOWED_TAGS = new Set(['A', 'B', 'STRONG', 'I', 'EM', 'U', 'BR', 'P', 'UL', 'OL', 'LI', 'BLOCKQUOTE', 'CODE']);
+const ALLOWED_TAGS = new Set([
+  'A', 'B', 'STRONG', 'I', 'EM', 'U', 'S', 'DEL', 'INS', 'MARK', 'SMALL', 'SUB', 'SUP',
+  'BR', 'HR', 'P', 'DIV', 'SPAN', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6',
+  'UL', 'OL', 'LI', 'BLOCKQUOTE', 'PRE', 'CODE',
+]);
 const ALLOWED_PROTOCOLS = new Set(['http:', 'https:']);
 
 const HTML_TAG_PATTERN = /<\/?[a-z][^>]*>/i;
@@ -50,18 +54,12 @@ export const sanitizeNotificationHtml = (value = '') => {
             clean.setAttribute('href', rawHref);
             clean.setAttribute('target', '_self');
             clean.setAttribute('rel', 'nofollow');
-            clean.style.color = '#7c3aed';
-            clean.style.textDecoration = 'underline';
-            clean.style.textUnderlineOffset = '3px';
           } else {
             const url = new URL(rawHref, window.location.origin);
             if (ALLOWED_PROTOCOLS.has(url.protocol)) {
               clean.setAttribute('href', url.href);
               clean.setAttribute('target', '_self');
               clean.setAttribute('rel', 'nofollow');
-              clean.style.color = '#7c3aed';
-              clean.style.textDecoration = 'underline';
-              clean.style.textUnderlineOffset = '3px';
             }
           }
         } catch {

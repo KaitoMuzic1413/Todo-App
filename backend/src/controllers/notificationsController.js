@@ -6,6 +6,7 @@ import { sendPushToUsers } from '../utils/webPush.js';
 import User from '../models/User.js';
 import { validateNotificationInput } from '../utils/notificationValidation.js';
 import { translateTexts } from '../utils/translateTexts.js';
+import { publishNotificationEvent, subscribeNotificationEvents } from '../utils/notificationEvents.js';
 
 const notificationView = (notification, recipient) => ({
   id: String(notification._id),
@@ -34,6 +35,33 @@ export const translateNotificationTexts = async (req, res) => {
     console.error('Notification translation error:', error.message);
     return res.status(200).json({ translations: texts, fallback: true });
   }
+};
+
+export const streamNotificationEvents = (req, res) => {
+  res.status(200);
+  res.set({
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache, no-transform',
+    Connection: 'keep-alive',
+    'X-Accel-Buffering': 'no',
+  });
+  res.flushHeaders?.();
+  res.write('event: ready\ndata: {"connected":true}\n\n');
+
+  const unsubscribe = subscribeNotificationEvents(req.user.userId, res);
+  const heartbeat = setInterval(() => {
+    try {
+      res.write(': ping\n\n');
+    } catch {
+      // The connection is closing; cleanup happens on the close event.
+    }
+  }, 25_000);
+  heartbeat.unref?.();
+
+  req.on('close', () => {
+    clearInterval(heartbeat);
+    unsubscribe();
+  });
 };
 
 export const listNotifications = async (req, res) => {
@@ -205,8 +233,17 @@ export const deleteAdminNotification = async (req, res) => {
     const notification = await Notification.findById(req.params.id).select('_id').lean();
     if (!notification) return res.status(404).json({ message: 'Notification not found.' });
 
+    const recipientUserIds = await NotificationRecipient.find({
+      notificationId: notification._id,
+    }).distinct('userId');
+
     await NotificationRecipient.deleteMany({ notificationId: notification._id });
     await Notification.deleteOne({ _id: notification._id });
+
+    publishNotificationEvent(recipientUserIds, {
+      type: 'notification-deleted',
+      notificationId: String(notification._id),
+    });
 
     return res.status(200).json({ deleted: true });
   } catch (error) {

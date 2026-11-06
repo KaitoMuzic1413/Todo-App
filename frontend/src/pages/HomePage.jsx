@@ -11,6 +11,7 @@ import { LayoutShell } from '@/components/LayoutShell';
 import StatsAndFilters from '@/components/StatsAndFilters';
 import TaskList from '@/components/TaskList';
 import TaskListPagination from '@/components/TaskListPagination';
+import SelectMenu from '@/components/ui/select-menu';
 import { createTask, deleteTask, fetchGamificationSummary, fetchTasks, toggleTaskStatus, updateTask } from '@/lib/api';
 import { getCreatedAtRange, isDateInRange } from '@/lib/dateFilters';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
@@ -467,15 +468,17 @@ const HomePage = ({ contentType = 'task' }) => {
 
           <div className='flex min-w-0 items-center gap-1.5 sm:gap-2'>
             <label htmlFor='task-sort' className='shrink-0 text-xs font-medium text-slate-500 dark:text-slate-400'>{t.sortBy}</label>
-            <select
+            <SelectMenu
               id='task-sort'
               value={preferences.sortBy}
-              onChange={(event) => void updatePreferences({ sortBy: event.target.value })}
-              className='h-9 w-24 min-w-0 rounded-3xl border border-slate-200 bg-white px-1.5 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 sm:w-auto sm:max-w-44 sm:px-2'
-            >
-              <option value='title'>{t.titleSort}</option>
-              <option value='createdAt'>{t.createdRecently}</option>
-            </select>
+              onChange={(value) => void updatePreferences({ sortBy: value })}
+              ariaLabel={t.sortBy}
+              options={[
+                { value: 'title', label: t.titleSort },
+                { value: 'createdAt', label: t.createdRecently },
+              ]}
+              className='h-9 w-24 min-w-0 px-2 sm:w-auto sm:max-w-44'
+            />
           </div>
         </div>
 

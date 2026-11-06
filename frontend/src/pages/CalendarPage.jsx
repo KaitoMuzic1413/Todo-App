@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -19,6 +19,7 @@ import {
 import { toast } from 'sonner';
 import { LayoutShell } from '@/components/LayoutShell';
 import Header from '@/components/Header';
+import SelectMenu from '@/components/ui/select-menu';
 import {
   fetchCalendarNotes,
   fetchCalendarTasks,
@@ -33,7 +34,6 @@ import {
   getCalendarRange,
   getDayWarnings,
   groupTasksByCalendarDay,
-  startOfDay,
 } from '@/lib/calendarUtils';
 
 const EMPTY_TASKS = [];
@@ -341,35 +341,25 @@ const CalendarPage = () => {
 
             {/* Month & Year Selectors */}
             <div className='hidden items-center gap-1.5 md:flex'>
-              <select
-                aria-label={t.selectMonth}
-                value={selectedDate.getMonth()}
-                onChange={(e) =>
-                  setSelectedDate(new Date(selectedDate.getFullYear(), Number(e.target.value), 1))
+              <SelectMenu
+                ariaLabel={t.selectMonth}
+                value={String(selectedDate.getMonth())}
+                onChange={(value) =>
+                  setSelectedDate(new Date(selectedDate.getFullYear(), Number(value), 1))
                 }
-                className='h-9 rounded-3xl border border-slate-200 bg-white px-2.5 text-xs font-semibold capitalize text-slate-700 outline-none transition hover:border-violet-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'
-              >
-                {monthOptions.map(({ value, label }) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
+                options={monthOptions.map(({ value, label }) => ({ value: String(value), label }))}
+                className='h-9 px-2.5 text-xs font-semibold capitalize'
+              />
 
-              <select
-                aria-label={t.selectYear}
-                value={selectedDate.getFullYear()}
-                onChange={(e) =>
-                  setSelectedDate(new Date(Number(e.target.value), selectedDate.getMonth(), 1))
+              <SelectMenu
+                ariaLabel={t.selectYear}
+                value={String(selectedDate.getFullYear())}
+                onChange={(value) =>
+                  setSelectedDate(new Date(Number(value), selectedDate.getMonth(), 1))
                 }
-                className='h-9 rounded-3xl border border-slate-200 bg-white px-2.5 text-xs font-semibold text-slate-700 outline-none transition hover:border-violet-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'
-              >
-                {yearOptions.map((year) => (
-                  <option key={year} value={year}>
-                    {year}
-                  </option>
-                ))}
-              </select>
+                options={yearOptions.map((year) => ({ value: String(year), label: String(year) }))}
+                className='h-9 px-2.5 text-xs font-semibold'
+              />
             </div>
 
             {/* View Mode Toggle (Pills) */}
@@ -1046,20 +1036,19 @@ const CalendarPage = () => {
                       <label htmlFor={scheduleTaskSelectId} className='mb-1.5 block text-xs font-bold text-slate-700 dark:text-slate-300'>
                         {language === 'vi' ? 'Chọn công việc' : 'Select Task'}
                       </label>
-                      <select
+                      <SelectMenu
                         id={scheduleTaskSelectId}
                         value={taskScheduleForm.taskId}
-                        onChange={(e) =>
-                          setTaskScheduleForm((prev) => ({ ...prev, taskId: e.target.value }))
+                        onChange={(value) =>
+                          setTaskScheduleForm((prev) => ({ ...prev, taskId: value }))
                         }
-                        className='h-10 w-full rounded-3xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 shadow-sm outline-none transition focus:border-violet-400 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200'
-                      >
-                        {allTasks.map((task) => (
-                          <option key={task._id} value={task._id}>
-                            {task.title} {task.status === 'complete' ? '✓' : ''}
-                          </option>
-                        ))}
-                      </select>
+                        ariaLabel={language === 'vi' ? 'Chọn công việc' : 'Select Task'}
+                        options={allTasks.map((task) => ({
+                          value: task._id,
+                          label: `${task.title}${task.status === 'complete' ? ' ✓' : ''}`,
+                        }))}
+                        className='h-10 w-full px-3 text-xs shadow-sm'
+                      />
                     </div>
 
                     <div className='grid grid-cols-2 gap-3'>

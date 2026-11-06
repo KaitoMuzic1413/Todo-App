@@ -11,6 +11,7 @@ import {
   listNotifications,
   markAllNotificationsRead,
   markNotificationRead,
+  streamNotificationEvents,
   updateNotificationState,
 } from '../controllers/notificationsController.js';
 
@@ -18,6 +19,7 @@ const router = express.Router();
 router.use(verifyToken);
 
 router.post('/translate', translateNotificationTexts);
+router.get('/events', streamNotificationEvents);
 router.get('/', listNotifications);
 router.get('/unread-count', getUnreadNotificationCount);
 router.get('/admin', requireAdmin, listAdminNotifications);

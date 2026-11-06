@@ -11,7 +11,7 @@ export const connectDB = async () => {
 
     try {
         await mongoose.connect(process.env.MONGODB_CONNECTIONSTRING);
-        console.log("MongoDB connected successfully");
+        console.log(`MongoDB connected successfully (database: ${mongoose.connection.name || "unknown"})`);
         return mongoose;
     } catch (error) {
         console.error("MongoDB connection error:", error);
