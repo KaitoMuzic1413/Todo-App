@@ -24,7 +24,7 @@ const getOrCreateTaskNotification = async ({ task, userId, language }) => {
     return await Notification.findOneAndUpdate(
       { seedKey },
       { $setOnInsert: notificationFields },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
+      { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
     );
   } catch (error) {
     if (error?.code !== 11000) throw error;
@@ -64,7 +64,7 @@ export const runDueTaskNotifications = async (now = new Date()) => {
           isDeleted: false,
         },
         { $set: { dueNotificationSentFor: dueAt } },
-        { new: true, select: '_id' }
+        { returnDocument: 'after', select: '_id' }
       );
       if (!claim) continue;
 

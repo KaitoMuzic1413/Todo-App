@@ -321,7 +321,7 @@ const SwipeableNotificationCard = ({
   };
 
   return (
-    <div ref={containerRef} className='group relative overflow-hidden rounded-3xl transition-shadow duration-300 ease-out group-hover:shadow-[0_12px_32px_rgba(124,58,237,0.18)] dark:group-hover:shadow-[0_12px_32px_rgba(76,29,149,0.35)]'>
+    <div ref={containerRef} data-swipeable-card='true' className='group relative overflow-hidden rounded-3xl transition-shadow duration-300 ease-out group-hover:shadow-[0_12px_32px_rgba(124,58,237,0.18)] dark:group-hover:shadow-[0_12px_32px_rgba(76,29,149,0.35)]'>
       {left ? (
         <SwipeActionBackground
           x={x}
@@ -468,12 +468,14 @@ const NotificationCenter = ({
     return () => controls.stop();
   }, [drawerOpen, isDraggingDrawer, drawerX]);
 
-  // Touch gesture to drag drawer open/closed
+  // Touch gesture to drag drawer open (right-to-left) and closed (left-to-right)
   useEffect(() => {
+    const isInsideSwipeableCard = (target) =>
+      Boolean(target?.closest?.('[data-swipeable-card]'));
+
     const onTouchStart = (event) => {
       if (
         navigationOpen ||
-        drawerOpen ||
         isDraggingDrawer ||
         selectedId ||
         !event.touches.length
@@ -482,13 +484,19 @@ const NotificationCenter = ({
         return;
       }
       const touch = event.touches[0];
-      swipeStart.current = { x: touch.clientX, y: touch.clientY, horizontal: false };
+      swipeStart.current = {
+        x: touch.clientX,
+        y: touch.clientY,
+        horizontal: false,
+        wasOpen: drawerOpen,
+        startOffset: drawerOpen ? 0 : getDrawerWidth(),
+        onCard: isInsideSwipeableCard(event.target),
+      };
     };
 
     const onTouchMove = (event) => {
       const start = swipeStart.current;
-      if (!start || navigationOpen || drawerOpen || selectedId || !event.touches.length)
-        return;
+      if (!start || navigationOpen || selectedId || !event.touches.length) return;
       const touch = event.touches[0];
       const dx = touch.clientX - start.x;
       const dy = touch.clientY - start.y;
@@ -498,13 +506,24 @@ const NotificationCenter = ({
           swipeStart.current = null;
           return;
         }
-        if (dx > -8) return;
+        if (Math.abs(dx) <= 8) return;
+        // Right-to-left opens the drawer; left-to-right closes it.
+        if ((!start.wasOpen && dx > 0) || (start.wasOpen && dx < 0)) {
+          swipeStart.current = null;
+          return;
+        }
+        // Notification cards handle their own horizontal swipe actions.
+        if (start.onCard) {
+          swipeStart.current = null;
+          return;
+        }
         start.horizontal = true;
         setIsDraggingDrawer(true);
-        setFilter('all');
+        if (!start.wasOpen) setFilter('all');
       }
       if (event.cancelable) event.preventDefault();
-      drawerX.set(Math.max(0, Math.min(getDrawerWidth(), getDrawerWidth() + dx)));
+      const width = getDrawerWidth();
+      drawerX.set(Math.max(0, Math.min(width, start.startOffset + dx)));
     };
 
     const onTouchEnd = (event) => {
@@ -512,25 +531,24 @@ const NotificationCenter = ({
       if (!start) return;
       swipeStart.current = null;
       if (!start.horizontal || !event.changedTouches.length) return;
-      const touch = event.changedTouches[0];
-      const dx = touch.clientX - start.x;
-      const dy = touch.clientY - start.y;
       const width = getDrawerWidth();
-      const openedDistance = width - drawerX.get();
-      const shouldOpen =
-        Math.abs(dx) > Math.abs(dy) * 1.2 && openedDistance >= width * 0.35;
+      const current = drawerX.get();
+      const shouldOpen = start.wasOpen
+        ? current < width * 0.3
+        : current < width * 0.7;
       setIsDraggingDrawer(false);
       setDrawerOpen(shouldOpen);
     };
 
     const onTouchCancel = () => {
-      if (!swipeStart.current?.horizontal) {
+      const start = swipeStart.current;
+      if (!start?.horizontal) {
         swipeStart.current = null;
         return;
       }
       swipeStart.current = null;
       setIsDraggingDrawer(false);
-      setDrawerOpen(false);
+      setDrawerOpen(start.wasOpen);
     };
 
     window.addEventListener('touchstart', onTouchStart, { passive: true });

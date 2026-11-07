@@ -472,7 +472,7 @@ export const resetPassword = async (req, res) => {
           resetPasswordOtpRequestedAt: null,
         },
       },
-      { new: true }
+      { returnDocument: 'after' }
     );
     if (!updatedUser) {
       return res.status(400).json({ message: invalidCodeMessage });
@@ -553,7 +553,7 @@ export const refreshSession = async (req, res) => {
           replacementTokenExpiresAt: candidateExpiresAt,
         },
       },
-      { new: true }
+      { returnDocument: 'after' }
     );
 
     let nextToken = candidateToken;

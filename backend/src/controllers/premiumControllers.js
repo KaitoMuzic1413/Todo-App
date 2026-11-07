@@ -112,7 +112,7 @@ export const redeemInviteCode = async (req, res) => {
         $inc: { usedCount: 1 },
         $push: { usedBy: { userId: user._id, redeemedAt: now } },
       },
-      { new: true }
+      { returnDocument: 'after' }
     );
 
     if (!invite || invite.usedCount > invite.maxUses) {
@@ -139,7 +139,7 @@ export const redeemInviteCode = async (req, res) => {
           'premium.expiresAt': expiresAt,
         },
       },
-      { new: true }
+      { returnDocument: 'after' }
     );
 
     if (!updatedUser) {

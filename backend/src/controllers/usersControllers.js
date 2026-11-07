@@ -32,7 +32,7 @@ export const updateUserPreferences = async (req, res) => {
     const user = await User.findByIdAndUpdate(
       req.user.userId,
       { $set: updates },
-      { new: true, runValidators: true, select: 'preferences' }
+      { returnDocument: 'after', runValidators: true, select: 'preferences' }
     );
     if (!user) return res.status(404).json({ message: 'User not found.' });
     return res.status(200).json({ preferences: user.preferences.toObject() });
@@ -53,7 +53,7 @@ export const updateCurrentUserAvatar = async (req, res) => {
     const user = await User.findByIdAndUpdate(
       req.user.userId,
       { $set: { avatarUrl } },
-      { new: true, runValidators: true, select: '_id email name avatarUrl' }
+      { returnDocument: 'after', runValidators: true, select: '_id email name avatarUrl' }
     );
     if (!user) return res.status(404).json({ message: 'User not found.' });
     return res.status(200).json({ user: { _id: user._id, email: user.email, name: user.name, avatarUrl: user.avatarUrl || '' } });
@@ -73,7 +73,7 @@ export const updateCurrentUserName = async (req, res) => {
     const user = await User.findByIdAndUpdate(
       req.user.userId,
       { $set: { name } },
-      { new: true, runValidators: true, select: '_id email name avatarUrl' }
+      { returnDocument: 'after', runValidators: true, select: '_id email name avatarUrl' }
     );
     if (!user) return res.status(404).json({ message: 'User not found.' });
     return res.status(200).json({ user: { _id: user._id, email: user.email, name: user.name, avatarUrl: user.avatarUrl || '' } });
@@ -115,7 +115,7 @@ export const cleanupInactiveUsers = async () => {
           $or: inactivityFilter,
         },
         { $set: { inactiveDeletionNoticeSentAt: claimedAt } },
-        { new: true }
+        { returnDocument: 'after' }
       );
       if (!claimedUser) continue;
 

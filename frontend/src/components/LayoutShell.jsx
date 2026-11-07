@@ -286,7 +286,7 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
               initial={false}
               exit={{ x: -getSidebarWidth(), opacity: 0 }}
               transition={SIDEBAR_TRANSITION}
-              className='fixed left-0 top-0 z-30 flex h-[100dvh] min-h-0 w-[min(320px,88vw)] flex-col border-r border-slate-200/80 bg-white/95 dark:border-slate-800 dark:bg-slate-950/95 md:bg-white/80 md:backdrop-blur-xl md:dark:bg-slate-950/80'
+              className='fixed left-0 top-0 z-30 flex h-[100dvh] min-h-0 w-[min(320px,88vw)] flex-col overflow-hidden rounded-r-3xl border-r border-slate-200/80 bg-white/95 dark:border-slate-800 dark:bg-slate-950/95 md:bg-white/80 md:backdrop-blur-xl md:dark:bg-slate-950/80'
               style={{ x: sidebarX, touchAction: 'none' }}
             >
               <div className='flex shrink-0 items-center justify-between border-b border-slate-200/80 bg-white/60 p-4 dark:border-slate-800 dark:bg-slate-950/60'>

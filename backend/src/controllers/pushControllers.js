@@ -48,7 +48,7 @@ export const subscribeToPush = async (req, res) => {
           failureCount: 0,
         },
       },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
+      { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
     );
     return res.status(201).json({ subscribed: true });
   } catch (error) {

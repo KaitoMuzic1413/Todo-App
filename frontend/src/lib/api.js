@@ -39,6 +39,8 @@ const clearStoredSession = () => {
   }
 };
 
+const isDefinitiveAuthFailure = (error) => error?.response?.status === 401;
+
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
@@ -86,8 +88,10 @@ api.interceptors.response.use(
           if (data?.token) localStorage.setItem('token', data.token);
           if (data?.user) localStorage.setItem('todo-user', JSON.stringify(data.user));
           return api({ ...error.config, __retriedAfterRefresh: true });
-        } catch {
-          clearStoredSession();
+        } catch (refreshError) {
+          // Only end the session when the refresh token itself was rejected.
+          // Transient network/timeout/server errors must not sign the user out.
+          if (isDefinitiveAuthFailure(refreshError)) clearStoredSession();
           return Promise.reject(error);
         }
       }

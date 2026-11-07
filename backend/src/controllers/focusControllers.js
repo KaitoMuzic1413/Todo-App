@@ -77,7 +77,7 @@ export const getActiveFocusSession = async (req, res) => {
           },
           $unset: { activeUserId: 1, endsAt: 1, segmentStartedAt: 1 },
         },
-        { new: true }
+        { returnDocument: 'after' }
       );
       if (!completedSession) {
         completedSession = await FocusSession.findOne({ _id: session._id, userId, status: 'completed' });
@@ -127,7 +127,7 @@ export const updateFocusSession = async (req, res) => {
         {
           $set: { status: 'paused', elapsedSeconds, remainingSeconds, pausedAt: now, segmentStartedAt: null, endsAt: null },
         },
-        { new: true }
+        { returnDocument: 'after' }
       );
       return res.status(200).json({ session: updatedSession });
     }
@@ -138,7 +138,7 @@ export const updateFocusSession = async (req, res) => {
       const updatedSession = await FocusSession.findOneAndUpdate(
         { _id: session._id, userId, activeUserId: userId, status: 'paused' },
         { $set: { status: 'running', segmentStartedAt: now, endsAt, pausedAt: null } },
-        { new: true }
+        { returnDocument: 'after' }
       );
       return res.status(200).json({ session: updatedSession });
     }
@@ -156,7 +156,7 @@ export const updateFocusSession = async (req, res) => {
         },
         $unset: { activeUserId: 1, endsAt: 1, segmentStartedAt: 1 },
       },
-      { new: true }
+      { returnDocument: 'after' }
     );
     return res.status(200).json({ session: updatedSession });
   } catch (error) {

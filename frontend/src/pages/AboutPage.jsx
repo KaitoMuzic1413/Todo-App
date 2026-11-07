@@ -1,8 +1,8 @@
 import { ArrowUpRight, Code2, Download, GraduationCap, Heart, Laptop2, Mail, MessageSquareText, Phone, Terminal } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import Header from '@/components/Header';
 import { LayoutShell } from '@/components/LayoutShell';
 import { useLanguage } from '@/lib/i18n';
+import { GITHUB_RELEASES_URL } from '@/lib/desktopReleases';
 
 const contactMethods = [
   { icon: Phone, label: 'Phone', value: '+84 793 903 870', href: 'tel:+84793903870' },
@@ -98,7 +98,7 @@ const AboutPage = () => {
               <article className='group rounded-3xl border border-slate-200/80 bg-slate-50 p-5 shadow-sm transition-all hover:-translate-y-1 hover:border-violet-300 hover:bg-violet-50/50 hover:shadow-lg dark:border-slate-800 dark:bg-slate-950/50 dark:hover:border-violet-700 dark:hover:bg-slate-900/80 sm:p-6 motion-reduce:transition-none'>
                 <div className='flex items-start justify-between gap-3'><div><h3 className='text-lg font-semibold text-slate-900 dark:text-white'>{t.aboutDesktopProject}</h3><p className='mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300'>{t.aboutDesktopProjectDescription}</p></div><span className='flex h-10 w-10 shrink-0 items-center justify-center rounded-3xl bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-200'><Laptop2 className='h-5 w-5' aria-hidden='true' /></span></div>
                 <div className='mt-4 flex flex-wrap gap-1.5'>{['React', 'Tauri', 'Remote API'].map((tech) => <span key={tech} className='rounded-3xl bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300'>{tech}</span>)}</div>
-                <Link to='/download' className='mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-violet-700 transition-colors hover:text-violet-900 dark:text-violet-300 dark:hover:text-violet-100'>{t.desktopDownloadButton}<Download className='h-4 w-4' aria-hidden='true' /></Link>
+                <a href={GITHUB_RELEASES_URL} target='_blank' rel='noopener noreferrer' className='mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-violet-700 transition-colors hover:text-violet-900 dark:text-violet-300 dark:hover:text-violet-100'>{t.desktopDownloadButton}<Download className='h-4 w-4' aria-hidden='true' /></a>
               </article>
             </div>
           </section>
