@@ -1,7 +1,7 @@
 import cors from 'cors';
 import express from 'express';
 import { allowedOrigins, env, isAllowedOrigin } from './config/env.js';
-import { connectDB } from './config/db.js';
+import { connectDB, ensureConnected } from './config/db.js';
 import { cleanupExpiredTrashTasks } from './controllers/tasksControllers.js';
 import { cleanupInactiveUsers } from './controllers/usersControllers.js';
 import { cleanupExpiredTrashAttachments } from './controllers/attachmentsControllers.js';
@@ -145,10 +145,11 @@ if (!process.env.VERCEL) {
     setInterval(runDueTaskNotifications, 60 * 1000);
   };
 
-  app.listen(PORT, "0.0.0.0", async () => {
+  app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on port ${PORT}`);
-    await connectDB();
-    startMaintenanceJobs();
+    // Retry with backoff instead of crashing the process when MongoDB is
+    // unreachable; maintenance jobs start once the database connects.
+    ensureConnected(startMaintenanceJobs);
   });
 }
 

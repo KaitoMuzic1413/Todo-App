@@ -403,8 +403,8 @@ const ArchivePage = () => {
                         <IconOf kind={kind} />
                       </div>
                       <div className='min-w-0 flex-1'>
-                        <p className='max-w-full whitespace-normal break-words [overflow-wrap:anywhere] text-sm font-medium text-slate-800 dark:text-slate-100'>{titleOf(attachment)}</p>
-                        <p className='mt-1 max-w-full whitespace-normal break-words [overflow-wrap:anywhere] text-xs text-slate-400'>{attachment.description || attachment.originalName}</p>
+                        <p title={titleOf(attachment)} className='line-clamp-2 max-w-full whitespace-normal break-words [overflow-wrap:anywhere] text-sm font-medium text-slate-800 dark:text-slate-100'>{titleOf(attachment)}</p>
+                        <p title={attachment.description || attachment.originalName} className='line-clamp-3 mt-1 max-w-full whitespace-normal break-words [overflow-wrap:anywhere] text-xs text-slate-400'>{attachment.description || attachment.originalName}</p>
                         <p className='mt-2 max-w-full whitespace-normal break-words [overflow-wrap:anywhere] text-xs leading-relaxed text-slate-400'>{t.uploadedLabel} {formatUploadedAt(attachment.createdAt, language)} · {formatSize(attachment.size)} · {kind === 'document' || kind === 'other' ? t.document : t.tapToView}{attachment.taskId ? ` · ${t.linkedTask}` : ''}</p>
                       </div>
                       <div className='flex shrink-0 flex-col gap-2 sm:flex-row sm:gap-1'>
@@ -534,7 +534,7 @@ const ArchivePage = () => {
                     }}
                     placeholder={t.captionPlaceholder}
                     rows={3}
-                    className='mt-1 w-full resize-y rounded-3xl border border-slate-200 bg-transparent p-2.5 text-sm text-slate-800 dark:border-slate-700 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500'
+                    className='scrollable-content mt-1 max-h-48 w-full resize-y rounded-3xl border border-slate-200 bg-transparent p-2.5 text-sm text-slate-800 dark:border-slate-700 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500'
                   />
                 </div>
                 {selectedFile && (
@@ -680,7 +680,7 @@ const ArchivePage = () => {
               <div className='w-full border-t border-slate-800 pt-4 text-left'>
                 <h4 className='font-bold text-base truncate text-white'>{titleOf(preview.attachment)}</h4>
                 {preview.attachment.description && (
-                  <p className='mt-1 text-xs text-slate-400 whitespace-pre-wrap'>{preview.attachment.description}</p>
+                  <p className='scrollable-content mt-1 max-h-32 whitespace-pre-wrap break-words pr-1 text-xs text-slate-400' tabIndex={0} role='region' aria-label={t.description || 'Description'}>{preview.attachment.description}</p>
                 )}
               </div>
 

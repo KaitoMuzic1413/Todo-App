@@ -6,7 +6,9 @@ export const sortTasks = (tasks, { sortBy = 'createdAt', sortDirection, language
     } else if (sortBy === 'important') {
       comparison = Number(Boolean(left.important)) - Number(Boolean(right.important));
     } else {
-      comparison = new Date(left.createdAt || 0).getTime() - new Date(right.createdAt || 0).getTime();
+      const leftRecentAt = left.lastUsedAt || left.createdAt || 0;
+      const rightRecentAt = right.lastUsedAt || right.createdAt || 0;
+      comparison = new Date(leftRecentAt).getTime() - new Date(rightRecentAt).getTime();
     }
     const direction = sortDirection || (sortBy === 'title' ? 'asc' : 'desc');
     if (direction !== 'asc') comparison *= -1;

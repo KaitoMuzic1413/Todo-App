@@ -18,3 +18,12 @@ test('sorts title and importance in the requested direction', () => {
   assert.deepEqual(sortTasks(sampleTasks, { sortBy: 'title', sortDirection: 'asc' }).map(({ title }) => title), ['Alpha', 'Beta', 'Zeta']);
   assert.deepEqual(sortTasks(sampleTasks, { sortBy: 'important', sortDirection: 'desc' }).map(({ title }) => title), ['Alpha', 'Zeta', 'Beta']);
 });
+
+test('moves a reused task ahead of older tasks using its last-used time', () => {
+  const tasks = [
+    { title: 'Walk', createdAt: '2026-10-12T12:00:00.000Z', lastUsedAt: '2026-11-13T12:00:00.000Z' },
+    { title: 'Read', createdAt: '2026-11-12T13:00:00.000Z', lastUsedAt: null },
+  ];
+
+  assert.deepEqual(sortTasks(tasks).map(({ title }) => title), ['Walk', 'Read']);
+});

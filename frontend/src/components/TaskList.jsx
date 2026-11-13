@@ -225,7 +225,7 @@ const TaskList = ({
                         if (event.button === 0 && isSelectMode) handleToggleSelectTask(task._id);
                       }}
                       onContextMenu={(event) => event.preventDefault()}
-                      className={`flex min-h-[72px] items-center justify-between gap-4 rounded-3xl border p-4 shadow-sm transition-all duration-300 hover:border-violet-300 hover:shadow-md dark:hover:border-violet-700 will-change-transform ${
+                      className={`flex min-h-[72px] min-w-0 items-center justify-between gap-4 overflow-hidden rounded-3xl border p-4 shadow-sm transition-all duration-300 hover:border-violet-300 hover:shadow-md dark:hover:border-violet-700 will-change-transform ${
                         isSelectMode ? 'cursor-pointer hover:border-violet-300 dark:hover:border-violet-700' : ''
                       } ${
                         isSelected
@@ -287,6 +287,7 @@ const TaskList = ({
                           ) : (
                             <>
                               <p
+                                title={task.title}
                                 className={`task-content truncate text-sm font-medium ${
                                   done ? 'text-slate-400 line-through dark:text-slate-500' : 'text-slate-800 dark:text-slate-100'
                                 }`}
@@ -294,12 +295,22 @@ const TaskList = ({
                                 {task.title}
                               </p>
                               {task.contentType === 'note' && task.content ? (
-                                <p className='mt-2 whitespace-pre-wrap text-sm leading-6 text-slate-600 dark:text-slate-300'>
+                                <p
+                                  tabIndex={0}
+                                  role='region'
+                                  aria-label={t.noteContent || 'Task note'}
+                                  className='scrollable-content mt-2 max-h-24 whitespace-pre-wrap break-words [overflow-wrap:anywhere] pr-1 text-sm leading-6 text-slate-600 dark:text-slate-300'
+                                >
                                   {task.content}
                                 </p>
                               ) : null}
                               {task.contentType === 'list' && Array.isArray(task.items) ? (
-                                <div className='mt-2 space-y-1.5'>
+                                <div
+                                  tabIndex={0}
+                                  role='region'
+                                  aria-label={t.listItems || 'Task list'}
+                                  className='scrollable-content mt-2 max-h-32 space-y-1.5 pr-1'
+                                >
                                   {task.items.map((item, index) => (
                                     <button
                                       key={`${task._id}-item-${index}`}
@@ -311,12 +322,12 @@ const TaskList = ({
                                         ));
                                         onUpdate?.(task._id, undefined, { items });
                                       }}
-                                      className='flex w-full items-center gap-2 text-left text-sm text-slate-600 dark:text-slate-300'
+                                      className='flex w-full min-w-0 items-center gap-2 text-left text-sm text-slate-600 dark:text-slate-300'
                                     >
                                       <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-3xl border ${item.completed ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-slate-300 dark:border-slate-600'}`}>
                                         {item.completed ? <Check className='h-3 w-3' /> : null}
                                       </span>
-                                      <span className={item.completed ? 'line-through opacity-60' : ''}>{item.text}</span>
+                                      <span className={`min-w-0 flex-1 break-words [overflow-wrap:anywhere] ${item.completed ? 'line-through opacity-60' : ''}`}>{item.text}</span>
                                     </button>
                                   ))}
                                 </div>
@@ -329,7 +340,6 @@ const TaskList = ({
                               {scheduledDateStr ? (
                                 <p className='mt-0.5 text-xs text-violet-600 dark:text-violet-300'>
                                   {task.startAt ? t.startTime : t.dueDate}: {scheduledDateStr}
-                                  {task.estimatedMinutes ? ` · ${task.estimatedMinutes} min` : ''}
                                 </p>
                               ) : null}
                             </>

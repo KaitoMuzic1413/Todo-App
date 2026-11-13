@@ -3,7 +3,11 @@ import Task from '../models/Task.js';
 import User from '../models/User.js';
 import Attachment from '../models/Attachment.js';
 import { deleteAttachmentRecords } from './attachmentsControllers.js';
-import { hasScheduleInput, validateTaskSchedule } from '../utils/taskSchedule.js';
+import { validateTaskSchedule } from '../utils/taskSchedule.js';
+import {
+  getSingleUnmergedSchedule,
+  replaceCalendarOccurrenceSegments,
+} from '../utils/calendarOccurrences.js';
 import GamificationEvent from '../models/GamificationEvent.js';
 import { checkTaskQuota, getQuotaSnapshot } from '../utils/premium.js';
 import {
@@ -164,7 +168,7 @@ export const getAllTasks = async (req, res) => {
       ...userFilter,
       isDeleted: false,
       ...typeFilter,
-    }).sort({ createdAt: -1 });
+    }).sort({ lastUsedAt: -1, createdAt: -1 });
     return res.status(200).json(tasks);
   } catch (error) {
     console.error('Error getAllTasks:', error);
@@ -197,6 +201,16 @@ export const getCalendarTasks = async (req, res) => {
           $or: [
             { startAt: { $gte: scheduleLookback, $lt: rangeEnd } },
             { dueAt: { $gte: rangeStart, $lt: rangeEnd } },
+            {
+              calendarOccurrences: {
+                $elemMatch: {
+                  $or: [
+                    { startAt: { $gte: scheduleLookback, $lt: rangeEnd } },
+                    { dueAt: { $gte: rangeStart, $lt: rangeEnd } },
+                  ],
+                },
+              },
+            },
             { startAt: null, dueAt: null },
           ],
         },
@@ -226,9 +240,33 @@ export const getUserQuota = async (req, res) => {
   }
 };
 
+const appendCalendarOccurrence = async (task, schedule) => {
+  const { startAt, dueAt, estimatedMinutes, timeZone } = schedule;
+  if ((!startAt && !dueAt) || (startAt && dueAt && dueAt <= startAt)) {
+    return { error: 'A calendar occurrence must have a valid schedule.' };
+  }
+
+  task.calendarOccurrences.push({
+    startAt: startAt || null,
+    dueAt: dueAt || null,
+    estimatedMinutes: estimatedMinutes ?? null,
+    timeZone: timeZone || null,
+  });
+  const addedOccurrence = task.calendarOccurrences.at(-1);
+  return { occurrenceId: String(addedOccurrence._id) };
+};
+
 export const createTask = async (req, res) => {
   try {
-    const { title, contentType = 'task', content = '', items = [], important = false, parentTaskId = null } = req.body;
+    const {
+      title,
+      contentType = 'task',
+      content = '',
+      items = [],
+      important = false,
+      parentTaskId = null,
+      createdFromCalendar = false,
+    } = req.body;
     const userId = getAuthenticatedUserId(req);
 
     if (!title || !title.trim()) {
@@ -271,24 +309,44 @@ export const createTask = async (req, res) => {
 
     const trimmedTitle = title.trim();
 
-    const startOfToday = new Date();
-    startOfToday.setHours(0, 0, 0, 0);
+    if (contentType === 'task') {
+      const existingTask = await Task.findOne({
+        userId,
+        title: trimmedTitle,
+        isDeleted: false,
+        $or: [{ contentType: 'task' }, { contentType: { $exists: false } }],
+      }).sort({ lastUsedAt: -1, createdAt: -1 });
 
-    const existingPendingTaskToday = parentTaskId || hasScheduleInput(req.body) ? null : await Task.findOne({
-      userId,
-      isDeleted: false,
-      contentType,
-      status: 'active',
-      createdAt: { $gte: startOfToday },
-      title: { $regex: new RegExp(`^${trimmedTitle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') },
-    });
+      if (existingTask) {
+        existingTask.lastUsedAt = new Date();
+        let addedOccurrenceId = null;
+        if (schedule.updates.startAt || schedule.updates.dueAt) {
+          const scheduleUpdates = schedule.updates;
+          const hasPrimarySchedule = Boolean(existingTask.startAt || existingTask.dueAt);
+          const hasOccurrences = existingTask.calendarOccurrences?.length > 0;
+          if (!hasPrimarySchedule && !hasOccurrences) {
+            Object.assign(existingTask, scheduleUpdates);
+          } else {
+            const occurrenceInput = {
+              startAt: scheduleUpdates.startAt ?? null,
+              dueAt: scheduleUpdates.dueAt ?? null,
+              estimatedMinutes: scheduleUpdates.estimatedMinutes ?? null,
+              timeZone: scheduleUpdates.timeZone ?? null,
+            };
+            const result = await appendCalendarOccurrence(existingTask, occurrenceInput);
+            if (result.error) return res.status(400).json({ message: result.error });
+            addedOccurrenceId = result.occurrenceId;
+          }
+        }
 
-    if (existingPendingTaskToday) {
-      existingPendingTaskToday.createdAt = new Date();
-      await existingPendingTaskToday.save();
-      await touchUserActivity(userId);
-
-      return res.status(200).json(existingPendingTaskToday);
+        const reusedTask = await existingTask.save();
+        await touchUserActivity(userId);
+        return res.status(200).json({
+          ...reusedTask.toObject(),
+          reusedExistingTask: true,
+          addedOccurrenceId,
+        });
+      }
     }
 
     const { snapshot, exceeded } = await checkTaskQuota(userId);
@@ -308,6 +366,7 @@ export const createTask = async (req, res) => {
       title: trimmedTitle,
       contentType,
       content: contentType === 'note' ? String(content).trim() : '',
+      createdFromCalendar: contentType === 'task' && createdFromCalendar === true,
       items: contentType === 'list'
         ? items.map((item) => ({ text: String(item.text || item).trim(), completed: !!item.completed }))
         : undefined,
@@ -326,6 +385,49 @@ export const createTask = async (req, res) => {
   }
 };
 
+// Snapshot entries for calendar-merged tasks. `null` clears the snapshot.
+const sanitizeMergedTasks = (input) => {
+  if (input === null) return { entries: [] };
+  if (!Array.isArray(input)) return { error: 'mergedTasks must be an array.' };
+  if (input.length > 100) return { error: 'mergedTasks supports up to 100 entries.' };
+
+  const entries = [];
+  for (const entry of input) {
+    if (!entry || typeof entry !== 'object') return { error: 'Invalid merged task entry.' };
+    const taskId = String(entry.taskId || '');
+    if (!mongoose.isValidObjectId(taskId)) return { error: 'Invalid merged task id.' };
+
+    const parseDate = (value) => {
+      if (value === null || value === undefined || value === '') return null;
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? undefined : date;
+    };
+    const startAt = parseDate(entry.startAt);
+    const dueAt = parseDate(entry.dueAt);
+    if (startAt === undefined || dueAt === undefined) {
+      return { error: 'Invalid merged task schedule.' };
+    }
+
+    const rawMinutes = entry.estimatedMinutes;
+    const estimatedMinutes = rawMinutes === null || rawMinutes === undefined || rawMinutes === ''
+      ? null
+      : Number(rawMinutes);
+    if (estimatedMinutes !== null
+      && (!Number.isInteger(estimatedMinutes) || estimatedMinutes < 1 || estimatedMinutes > 1440)) {
+      return { error: 'Invalid merged task duration.' };
+    }
+
+    entries.push({
+      taskId,
+      title: String(entry.title || '').slice(0, 300),
+      startAt,
+      dueAt,
+      estimatedMinutes,
+    });
+  }
+  return { entries };
+};
+
 export const updateTask = async (req, res) => {
   try {
     const { title, status, completedAt, content, items } = req.body;
@@ -334,6 +436,184 @@ export const updateTask = async (req, res) => {
 
     if (!task) {
       return res.status(404).json({ message: 'Task not found' });
+    }
+
+    if (req.body.replaceCalendarOccurrenceSegments !== undefined) {
+      const replacement = req.body.replaceCalendarOccurrenceSegments;
+      if (
+        !replacement
+        || typeof replacement !== 'object'
+        || Array.isArray(replacement)
+        || !Array.isArray(replacement.segments)
+        || replacement.segments.length > 2
+      ) {
+        return res.status(400).json({ message: 'Provide up to two valid calendar segments.' });
+      }
+
+      const occurrenceId = String(replacement.occurrenceId || 'primary');
+      const target = occurrenceId === 'primary'
+        ? task
+        : task.calendarOccurrences.id(occurrenceId);
+      if (!target || (!target.startAt && !target.dueAt)) {
+        return res.status(404).json({ message: 'Calendar occurrence not found.' });
+      }
+
+      const schedules = [];
+      for (const segment of replacement.segments) {
+        if (!segment || typeof segment !== 'object' || Array.isArray(segment)) {
+          return res.status(400).json({ message: 'Each calendar segment must be an object.' });
+        }
+        const schedule = validateTaskSchedule(segment);
+        if (schedule.error) return res.status(400).json({ message: schedule.error });
+        const { startAt, dueAt } = schedule.updates;
+        if (!startAt || !dueAt || dueAt <= startAt) {
+          return res.status(400).json({ message: 'Each calendar segment needs a valid start and end.' });
+        }
+        schedules.push(schedule.updates);
+      }
+      if (
+        schedules.length === 2
+        && schedules[1].startAt <= schedules[0].dueAt
+      ) {
+        return res.status(400).json({ message: 'Split calendar segments must not overlap or touch.' });
+      }
+
+      if (!replaceCalendarOccurrenceSegments(task, occurrenceId, schedules)) {
+        return res.status(404).json({ message: 'Calendar occurrence not found.' });
+      }
+
+      const updatedTask = await task.save();
+      await touchUserActivity(userId);
+      return res.status(200).json(updatedTask);
+    }
+
+    if (req.body.addCalendarOccurrence !== undefined) {
+      const occurrenceInput = req.body.addCalendarOccurrence;
+      if (!occurrenceInput || typeof occurrenceInput !== 'object' || Array.isArray(occurrenceInput)) {
+        return res.status(400).json({ message: 'A valid calendar occurrence is required.' });
+      }
+      const occurrenceSchedule = validateTaskSchedule(occurrenceInput);
+      if (occurrenceSchedule.error) return res.status(400).json({ message: occurrenceSchedule.error });
+      const result = await appendCalendarOccurrence(task, occurrenceSchedule.updates);
+      if (result.error) return res.status(400).json({ message: result.error });
+      task.lastUsedAt = new Date();
+      const updatedTask = await task.save();
+      await touchUserActivity(userId);
+      return res.status(200).json({
+        ...updatedTask.toObject(),
+        addedOccurrenceId: result.occurrenceId,
+      });
+    }
+
+    if (req.body.removeCalendarOccurrenceId) {
+      const occurrence = task.calendarOccurrences.id(req.body.removeCalendarOccurrenceId);
+      if (!occurrence) return res.status(404).json({ message: 'Calendar occurrence not found.' });
+      occurrence.deleteOne();
+      const updatedTask = await task.save();
+      await touchUserActivity(userId);
+      return res.status(200).json(updatedTask);
+    }
+
+    if (req.body.mergeCalendarOccurrenceIds !== undefined) {
+      const occurrenceIds = req.body.mergeCalendarOccurrenceIds;
+      if (!Array.isArray(occurrenceIds) || occurrenceIds.length < 2 || occurrenceIds.length > 100) {
+        return res.status(400).json({ message: 'Select at least two calendar occurrences to merge.' });
+      }
+      const uniqueIds = [...new Set(occurrenceIds.map(String))];
+      if (uniqueIds.length !== occurrenceIds.length) {
+        return res.status(400).json({ message: 'Calendar occurrences must be unique.' });
+      }
+      const schedule = validateTaskSchedule(req.body);
+      if (schedule.error) return res.status(400).json({ message: schedule.error });
+      const { startAt, dueAt, estimatedMinutes, timeZone } = schedule.updates;
+      if (!startAt || !dueAt || dueAt <= startAt) {
+        return res.status(400).json({ message: 'A merged occurrence needs a valid start and end time.' });
+      }
+
+      const selectedOccurrences = uniqueIds.map((occurrenceId) => {
+        const source = occurrenceId === 'primary' ? task : task.calendarOccurrences.id(occurrenceId);
+        if (!source || (!source.startAt && !source.dueAt)) return null;
+        const nestedSnapshots = Array.isArray(source.mergedOccurrences) ? source.mergedOccurrences : [];
+        return nestedSnapshots.length
+          ? nestedSnapshots.map((entry) => (entry.toObject ? entry.toObject() : { ...entry }))
+          : [{
+              occurrenceId,
+              startAt: source.startAt || null,
+              dueAt: source.dueAt || null,
+              estimatedMinutes: source.estimatedMinutes ?? null,
+              timeZone: source.timeZone || null,
+            }];
+      });
+      if (selectedOccurrences.some((entry) => !entry)) {
+        return res.status(404).json({ message: 'One or more calendar occurrences were not found.' });
+      }
+      const snapshots = selectedOccurrences.flat();
+      const survivorId = uniqueIds.includes('primary')
+        ? 'primary'
+        : uniqueIds[0];
+      const mergedSchedule = {
+        startAt,
+        dueAt,
+        estimatedMinutes: estimatedMinutes ?? Math.max(1, Math.round((dueAt - startAt) / 60000)),
+        timeZone: timeZone || null,
+        mergedOccurrences: snapshots,
+      };
+
+      if (survivorId === 'primary') {
+        Object.assign(task, mergedSchedule);
+      } else {
+        const survivor = task.calendarOccurrences.id(survivorId);
+        if (!survivor) return res.status(404).json({ message: 'Calendar occurrence not found.' });
+        Object.assign(survivor, mergedSchedule);
+      }
+      for (const occurrenceId of uniqueIds) {
+        if (occurrenceId !== 'primary' && occurrenceId !== survivorId) {
+          task.calendarOccurrences.id(occurrenceId)?.deleteOne();
+        }
+      }
+      const updatedTask = await task.save();
+      await touchUserActivity(userId);
+      return res.status(200).json(updatedTask);
+    }
+
+    if (req.body.unmergeCalendarOccurrenceId) {
+      const occurrenceId = String(req.body.unmergeCalendarOccurrenceId);
+      const target = occurrenceId === 'primary' ? task : task.calendarOccurrences.id(occurrenceId);
+      if (!target) return res.status(404).json({ message: 'Calendar occurrence not found.' });
+      const snapshots = Array.isArray(target.mergedOccurrences) ? target.mergedOccurrences : [];
+      if (!snapshots.length) return res.status(400).json({ message: 'This occurrence is not merged.' });
+
+      const schedule = getSingleUnmergedSchedule(target);
+      if (!schedule) return res.status(400).json({ message: 'The merged occurrence has no valid start time.' });
+      Object.assign(target, {
+        ...schedule,
+        mergedOccurrences: undefined,
+      });
+      const updatedTask = await task.save();
+      await touchUserActivity(userId);
+      return res.status(200).json(updatedTask);
+    }
+
+    if (req.body.calendarOccurrenceId) {
+      const occurrenceId = String(req.body.calendarOccurrenceId);
+      const occurrence = occurrenceId === 'primary' ? task : task.calendarOccurrences.id(occurrenceId);
+      if (!occurrence) return res.status(404).json({ message: 'Calendar occurrence not found.' });
+      const occurrenceSchedule = validateTaskSchedule(req.body, occurrence);
+      if (occurrenceSchedule.error) return res.status(400).json({ message: occurrenceSchedule.error });
+      Object.assign(occurrence, occurrenceSchedule.updates);
+      if (req.body.clearMergedOccurrences) {
+        occurrence.mergedOccurrences = [];
+      }
+      if (occurrenceSchedule.updates.dueAt !== undefined) {
+        task.dueEmailReminderSentFor = null;
+        task.dueEmailReminderRetryAfter = null;
+        task.dueNotificationSentFor = null;
+      }
+      const updatedTask = await task.save();
+      await touchUserActivity(userId);
+      return res.status(200).json({
+        ...updatedTask.toObject(),
+      });
     }
 
     const schedule = validateTaskSchedule(req.body, task);
@@ -347,11 +627,20 @@ export const updateTask = async (req, res) => {
       ? (allItemsCompleted ? 'complete' : 'active')
       : status;
 
+    let mergedTasksUpdate;
+    if (Object.hasOwn(req.body, 'mergedTasks')) {
+      const sanitizedMerges = sanitizeMergedTasks(req.body.mergedTasks);
+      if (sanitizedMerges.error) return res.status(400).json({ message: sanitizedMerges.error });
+      mergedTasksUpdate = sanitizedMerges.entries;
+    }
+
     const nextData = {
       ...schedule.updates,
       ...(title ? { title: title.trim() } : {}),
       ...(nextStatus ? { status: nextStatus } : {}),
       ...(normalizedItems ? { items: normalizedItems } : {}),
+      ...(mergedTasksUpdate !== undefined ? { mergedTasks: mergedTasksUpdate } : {}),
+      ...(req.body.clearMergedOccurrences === true ? { mergedOccurrences: [] } : {}),
       ...(normalizedItems && task.contentType === 'list'
         ? { completedAt: allItemsCompleted ? new Date() : null }
         : (completedAt !== undefined ? { completedAt } : {})),
@@ -360,6 +649,7 @@ export const updateTask = async (req, res) => {
 
     if (Object.hasOwn(schedule.updates, 'dueAt')) {
       nextData.dueEmailReminderSentFor = null;
+      nextData.dueEmailReminderRetryAfter = null;
       nextData.dueNotificationSentFor = null;
     }
 
@@ -550,8 +840,3 @@ export const getTrashTasks = async (req, res) => {
     return res.status(500).json({ message: 'Server error' });
   }
 };
-
-
-
-
-

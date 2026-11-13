@@ -1,5 +1,27 @@
 import mongoose from "mongoose";
 
+const calendarOccurrenceSchema = new mongoose.Schema(
+  {
+    startAt: { type: Date, default: null },
+    dueAt: { type: Date, default: null },
+    estimatedMinutes: { type: Number, min: 1, max: 1440, default: null },
+    timeZone: { type: String, trim: true, maxlength: 64, default: null },
+    mergedOccurrences: {
+      type: [
+        {
+          occurrenceId: { type: String, required: true },
+          startAt: { type: Date, default: null },
+          dueAt: { type: Date, default: null },
+          estimatedMinutes: { type: Number, min: 1, max: 1440, default: null },
+          timeZone: { type: String, trim: true, maxlength: 64, default: null },
+        },
+      ],
+      default: undefined,
+    },
+  },
+  { timestamps: false }
+);
+
 const taskSchema = new mongoose.Schema(
   {
     userId: {
@@ -18,6 +40,15 @@ const taskSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
+    },
+    lastUsedAt: {
+      type: Date,
+      default: null,
+      index: true,
+    },
+    createdFromCalendar: {
+      type: Boolean,
+      default: false,
     },
     contentType: {
       type: String,
@@ -56,7 +87,15 @@ const taskSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    calendarOccurrences: {
+      type: [calendarOccurrenceSchema],
+      default: [],
+    },
     dueEmailReminderSentFor: {
+      type: Date,
+      default: null,
+    },
+    dueEmailReminderRetryAfter: {
       type: Date,
       default: null,
     },
@@ -69,6 +108,36 @@ const taskSchema = new mongoose.Schema(
       min: 1,
       max: 1440,
       default: null,
+    },
+    mergedOccurrences: {
+      type: [
+        {
+          occurrenceId: { type: String, required: true },
+          startAt: { type: Date, default: null },
+          dueAt: { type: Date, default: null },
+          estimatedMinutes: { type: Number, min: 1, max: 1440, default: null },
+          timeZone: { type: String, trim: true, maxlength: 64, default: null },
+        },
+      ],
+      default: undefined,
+    },
+    // Snapshot of the tasks absorbed by a calendar "merge & center" action,
+    // kept so the merged block can be previewed and unmerged later.
+    mergedTasks: {
+      type: [
+        {
+          taskId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Task",
+            required: true,
+          },
+          title: { type: String, default: "", trim: true },
+          startAt: { type: Date, default: null },
+          dueAt: { type: Date, default: null },
+          estimatedMinutes: { type: Number, min: 1, max: 1440, default: null },
+        },
+      ],
+      default: [],
     },
     timeZone: {
       type: String,

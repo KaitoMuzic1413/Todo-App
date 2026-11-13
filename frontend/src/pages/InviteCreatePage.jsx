@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { LayoutShell } from '@/components/LayoutShell';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import DateTimePicker from '@/components/ui/date-time-picker';
 import { useLanguage } from '@/lib/i18n';
 import { createPremiumInvite, deletePremiumInvite, fetchPremiumInvites } from '@/lib/api';
 
@@ -152,15 +153,16 @@ const InviteCreatePage = () => {
                 className='mt-2 h-11 w-full rounded-3xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-800 outline-none focus:border-violet-400 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100'
               />
             </label>
-            <label className='block text-sm font-medium text-slate-700 dark:text-slate-200'>
-              Expires at (optional)
-              <input
-                type='datetime-local'
+            <div className='block text-sm font-medium text-slate-700 dark:text-slate-200'>
+              <span>Expires at (optional)</span>
+              <DateTimePicker
                 value={form.expiresAt}
-                onChange={(event) => setForm({ ...form, expiresAt: event.target.value })}
-                className='mt-2 h-11 w-full rounded-3xl border border-slate-200 bg-slate-50 px-3 text-sm text-slate-800 outline-none focus:border-violet-400 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100'
+                onChange={(nextValue) => setForm({ ...form, expiresAt: nextValue })}
+                ariaLabel='Expires at'
+                placeholder='Select date and time'
+                className='mt-2 h-11 bg-slate-50'
               />
-            </label>
+            </div>
             <button
               type='submit'
               disabled={creating}

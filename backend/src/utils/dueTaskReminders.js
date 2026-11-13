@@ -1,6 +1,8 @@
 import Task from '../models/Task.js';
 import { sendEmail } from './email.js';
 
+const EMAIL_RETRY_DELAY_MS = 60 * 60 * 1000;
+
 const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (character) => ({
   '&': '&amp;',
   '<': '&lt;',
@@ -31,7 +33,15 @@ export const runDueTaskEmailReminders = async (now = new Date()) => {
       status: 'active',
       dueAt: { $gt: now, $lte: upperBound },
       dueEmailReminderSentFor: null,
-      $or: [{ contentType: 'task' }, { contentType: { $exists: false } }],
+      $and: [
+        {
+          $or: [
+            { dueEmailReminderRetryAfter: null },
+            { dueEmailReminderRetryAfter: { $lte: now } },
+          ],
+        },
+        { $or: [{ contentType: 'task' }, { contentType: { $exists: false } }] },
+      ],
     }).populate('userId', 'email preferences.language').limit(100);
 
     let sent = 0;
@@ -57,13 +67,25 @@ export const runDueTaskEmailReminders = async (now = new Date()) => {
 
       try {
         await sendEmail({ to: task.userId.email, subject, html });
+        await Task.updateOne(
+          { _id: task._id, dueAt: task.dueAt, dueEmailReminderSentFor: task.dueAt },
+          { $set: { dueEmailReminderRetryAfter: null } }
+        );
         sent += 1;
       } catch (error) {
         await Task.updateOne(
           { _id: task._id, dueAt: task.dueAt, dueEmailReminderSentFor: task.dueAt },
-          { $set: { dueEmailReminderSentFor: null } }
+          {
+            $set: {
+              dueEmailReminderSentFor: null,
+              dueEmailReminderRetryAfter: new Date(now.getTime() + EMAIL_RETRY_DELAY_MS),
+            },
+          }
         );
-        console.error(`Could not send due reminder for task ${task._id}:`, error);
+        console.error(
+          `Could not send due reminder for task ${task._id}; will retry after `
+          + `${new Date(now.getTime() + EMAIL_RETRY_DELAY_MS).toISOString()}: ${error.message}`
+        );
       }
     }
 

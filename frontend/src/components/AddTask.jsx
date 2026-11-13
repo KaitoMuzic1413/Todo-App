@@ -3,6 +3,7 @@ import { Plus } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n';
 import { Card } from './ui/card';
 import { Input } from './ui/input';
+import DateTimePicker from './ui/date-time-picker';
 import { keepTextareaContentVisible } from '@/lib/textareaSizing';
 
 const AddTask = ({ onAdd, contentType = 'task' }) => {
@@ -11,7 +12,6 @@ const AddTask = ({ onAdd, contentType = 'task' }) => {
   const [content, setContent] = useState('');
   const [startAt, setStartAt] = useState('');
   const [dueAt, setDueAt] = useState('');
-  const [estimatedMinutes, setEstimatedMinutes] = useState('');
 
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -22,7 +22,6 @@ const AddTask = ({ onAdd, contentType = 'task' }) => {
     const schedule = {};
     if (startAt) schedule.startAt = new Date(startAt).toISOString();
     if (dueAt) schedule.dueAt = new Date(dueAt).toISOString();
-    if (estimatedMinutes) schedule.estimatedMinutes = Number(estimatedMinutes);
     if (Object.keys(schedule).length) {
       schedule.timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     }
@@ -40,7 +39,6 @@ const AddTask = ({ onAdd, contentType = 'task' }) => {
     setContent('');
     setStartAt('');
     setDueAt('');
-    setEstimatedMinutes('');
   };
 
   const handleContentChange = (event) => {
@@ -91,8 +89,8 @@ const AddTask = ({ onAdd, contentType = 'task' }) => {
             value={content}
             onChange={handleContentChange}
             placeholder={contentType === 'note' ? t.noteContent : t.listItems}
-            rows={contentType === 'note' ? 5 : Math.max(4, content.split('\n').length)}
-            className='w-full resize-y rounded-3xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm leading-6 text-slate-700 outline-none focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:ring-violet-900/40'
+            rows={contentType === 'note' ? 5 : Math.min(12, Math.max(4, content.split('\n').length))}
+            className='scrollable-content max-h-64 w-full resize-y rounded-3xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm leading-6 text-slate-700 outline-none focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:ring-violet-900/40'
           />
         ) : null}
         {contentType === 'task' ? (
@@ -100,19 +98,25 @@ const AddTask = ({ onAdd, contentType = 'task' }) => {
             <summary className='cursor-pointer font-medium text-slate-600 dark:text-slate-300'>
               {t.scheduleTask}
             </summary>
-            <div className='mt-3 grid gap-3 sm:grid-cols-3'>
-              <label className='grid gap-1 text-xs text-slate-500 dark:text-slate-400'>
-                {t.startTime}
-                <input type='datetime-local' value={startAt} onChange={(event) => setStartAt(event.target.value)} className='h-10 min-w-0 rounded-3xl border border-slate-200 bg-white px-2 text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100' />
-              </label>
-              <label className='grid gap-1 text-xs text-slate-500 dark:text-slate-400'>
-                {t.dueDate}
-                <input type='datetime-local' value={dueAt} onChange={(event) => setDueAt(event.target.value)} className='h-10 min-w-0 rounded-3xl border border-slate-200 bg-white px-2 text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100' />
-              </label>
-              <label className='grid gap-1 text-xs text-slate-500 dark:text-slate-400'>
-                {t.estimatedDuration}
-                <input type='number' min='1' max='1440' step='1' value={estimatedMinutes} onChange={(event) => setEstimatedMinutes(event.target.value)} placeholder='30' className='h-10 min-w-0 rounded-3xl border border-slate-200 bg-white px-2 text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100' />
-              </label>
+            <div className='mt-3 grid gap-3 sm:grid-cols-2'>
+              <div className='grid gap-1 text-xs text-slate-500 dark:text-slate-400'>
+                <span>{t.startTime}</span>
+                <DateTimePicker
+                  value={startAt}
+                  onChange={setStartAt}
+                  ariaLabel={t.startTime}
+                  placeholder={t.startTime}
+                />
+              </div>
+              <div className='grid gap-1 text-xs text-slate-500 dark:text-slate-400'>
+                <span>{t.dueDate}</span>
+                <DateTimePicker
+                  value={dueAt}
+                  onChange={setDueAt}
+                  ariaLabel={t.dueDate}
+                  placeholder={t.dueDate}
+                />
+              </div>
             </div>
           </details>
         ) : null}

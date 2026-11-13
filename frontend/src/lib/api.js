@@ -158,10 +158,13 @@ export const fetchCalendarTasks = ({ start, endExclusive }) =>
 export const fetchCalendarNotes = (dates) =>
   api.get('/calendar-notes', { params: { dates: dates.join(',') } });
 
-export const saveCalendarNote = (dateKey, content) =>
-  api.put(`/calendar-notes/${encodeURIComponent(dateKey)}`, { content });
+export const saveCalendarNote = (dateKey, content, merges) =>
+  api.put(`/calendar-notes/${encodeURIComponent(dateKey)}`, {
+    ...(content !== undefined ? { content } : {}),
+    ...(merges !== undefined ? { merges } : {}),
+  });
 
-export const createTask = ({ userId, title, contentType, content, items, important, parentTaskId, startAt, dueAt, estimatedMinutes, timeZone }) => api.post('/tasks', {
+export const createTask = ({ userId, title, contentType, content, items, important, parentTaskId, startAt, dueAt, estimatedMinutes, timeZone, createdFromCalendar }) => api.post('/tasks', {
   userId,
   title,
   contentType,
@@ -173,6 +176,7 @@ export const createTask = ({ userId, title, contentType, content, items, importa
   dueAt,
   estimatedMinutes,
   timeZone,
+  createdFromCalendar,
 });
 
 export const updateTask = (taskId, userId, payload) => api.put(`/tasks/${taskId}`, { userId, ...payload });

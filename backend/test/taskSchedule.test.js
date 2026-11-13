@@ -8,7 +8,17 @@ test('legacy tasks remain valid without schedule fields', async () => {
   assert.equal(task.startAt, null);
   assert.equal(task.dueAt, null);
   assert.equal(task.estimatedMinutes, null);
+  assert.equal(task.createdFromCalendar, false);
   await task.validate();
+});
+
+test('preserves the calendar origin marker on tasks created from the calendar', () => {
+  const task = new Task({
+    userId: '507f1f77bcf86cd799439011',
+    title: 'Calendar-created task',
+    createdFromCalendar: true,
+  });
+  assert.equal(task.createdFromCalendar, true);
 });
 
 test('accepts valid schedule fields and normalizes dates and duration', () => {

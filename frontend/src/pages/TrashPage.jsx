@@ -382,6 +382,7 @@ const TrashPage = () => {
                   >
                     <div className='min-w-0 flex-1'>
                       <p
+                        title={task.title}
                         className={`truncate font-medium ${
                           task.status === 'complete'
                             ? 'text-slate-400 line-through dark:text-slate-500'

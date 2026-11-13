@@ -78,13 +78,13 @@ const DashboardPage = () => {
                 { label: t.statusCompleted, value: data.summary.completed, Icon: CheckCircle2, tone: 'emerald' },
                 { label: t.overdueTasks, value: data.summary.overdue, Icon: AlertTriangle, tone: 'rose' },
               ].map(({ label, value, Icon, tone }) => (
-                <article key={label} className='flex items-center gap-3 rounded-3xl border border-slate-200 bg-white/80 p-4 shadow-md dark:border-slate-800 dark:bg-slate-900/70'>
-                  <span className={`flex h-10 w-10 items-center justify-center rounded-3xl ${tone === 'violet' ? 'bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-200' : tone === 'sky' ? 'bg-sky-100 text-sky-600 dark:bg-sky-500/15 dark:text-sky-200' : tone === 'emerald' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-200' : 'bg-rose-100 text-rose-600 dark:bg-rose-500/15 dark:text-rose-200'}`}>
+                <article key={label} className='flex min-w-0 items-center gap-3 rounded-3xl border border-slate-200 bg-white/80 p-4 shadow-md dark:border-slate-800 dark:bg-slate-900/70'>
+                  <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-3xl ${tone === 'violet' ? 'bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-200' : tone === 'sky' ? 'bg-sky-100 text-sky-600 dark:bg-sky-500/15 dark:text-sky-200' : tone === 'emerald' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-200' : 'bg-rose-100 text-rose-600 dark:bg-rose-500/15 dark:text-rose-200'}`}>
                     <Icon className='h-5 w-5' />
                   </span>
-                  <div>
+                  <div className='min-w-0'>
                     <p className='text-xl font-bold text-slate-900 dark:text-white'>{numberFormat.format(value)}</p>
-                    <p className='text-xs text-slate-500 dark:text-slate-400'>{label}</p>
+                    <p className='break-words text-xs text-slate-500 dark:text-slate-400'>{label}</p>
                   </div>
                 </article>
               ))}
@@ -127,15 +127,6 @@ const DashboardPage = () => {
                 </div>
                 <div className='mt-3 h-2 overflow-hidden rounded-3xl bg-slate-100 dark:bg-slate-800'>
                   <div className='h-full rounded-3xl bg-emerald-500 transition-[width]' style={{ width: `${data.summary.completionRate}%` }} />
-                </div>
-                <div className='mt-6 border-t border-slate-200 pt-4 dark:border-slate-800'>
-                  <h3 className='text-sm font-medium text-slate-800 dark:text-slate-200'>{t.estimatedVsActual}</h3>
-                  {data.duration.tasks ? (
-                    <div className='mt-3 grid grid-cols-2 gap-3'>
-                      <div><p className='text-lg font-semibold text-slate-900 dark:text-white'>{numberFormat.format(data.duration.estimatedMinutes)} {t.minutes}</p><p className='text-xs text-slate-500 dark:text-slate-400'>{t.estimated}</p></div>
-                      <div><p className='text-lg font-semibold text-slate-900 dark:text-white'>{numberFormat.format(Math.round(data.duration.actualSeconds / 60))} {t.minutes}</p><p className='text-xs text-slate-500 dark:text-slate-400'>{t.actual}</p></div>
-                    </div>
-                  ) : <p className='mt-2 text-xs text-slate-500 dark:text-slate-400'>{t.noDurationData}</p>}
                 </div>
               </article>
             </section>

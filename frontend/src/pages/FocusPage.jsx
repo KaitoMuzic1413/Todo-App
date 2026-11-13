@@ -355,7 +355,7 @@ const FocusPage = () => {
               </div>
             </div>
           ) : linkedTask ? (
-            <p className='mx-auto max-w-md truncate rounded-3xl bg-violet-50 px-3 py-2 text-sm text-violet-700 dark:bg-violet-950/40 dark:text-violet-200'>{linkedTask.title}</p>
+            <p title={linkedTask.title} className='mx-auto max-w-md truncate rounded-3xl bg-violet-50 px-3 py-2 text-sm text-violet-700 dark:bg-violet-950/40 dark:text-violet-200'>{linkedTask.title}</p>
           ) : null}
 
           <div className='flex flex-wrap justify-center gap-2'>

@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Check, ChevronDown } from 'lucide-react';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import AnchoredPopover from '@/components/ui/anchored-popover';
 import { cn } from '@/lib/utils';
 
 const SelectMenu = ({
@@ -15,19 +15,24 @@ const SelectMenu = ({
   disabled = false,
 }) => {
   const [open, setOpen] = useState(false);
+  const triggerRef = useRef(null);
   const selected = options.find((option) => String(option.value) === String(value ?? ''));
   const selectOption = (nextValue) => {
-    onChange?.(nextValue);
     setOpen(false);
+    onChange?.(nextValue);
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger
+    <>
+      <button
+        ref={triggerRef}
         id={id}
         type='button'
         disabled={disabled}
         aria-label={ariaLabel}
+        aria-haspopup='listbox'
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
         className={cn(
           'flex items-center justify-between gap-1.5 rounded-3xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 outline-none transition hover:border-violet-300 focus-visible:border-violet-400 focus-visible:ring-4 focus-visible:ring-violet-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:border-violet-500/60 dark:focus-visible:ring-violet-900/30',
           className
@@ -35,13 +40,19 @@ const SelectMenu = ({
       >
         <span className='truncate'>{selected?.label ?? placeholder}</span>
         <ChevronDown className='h-3.5 w-3.5 shrink-0 opacity-60' />
-      </PopoverTrigger>
-      <PopoverContent
-        align='start'
-        sideOffset={6}
-        className={cn('w-[var(--anchor-width)] min-w-40 gap-0.5 rounded-3xl p-1.5', contentClassName)}
+      </button>
+
+      <AnchoredPopover
+        open={open}
+        onOpenChange={setOpen}
+        triggerRef={triggerRef}
+        matchTriggerWidth
+        className={cn(
+          'min-w-40 rounded-3xl bg-popover p-1.5 text-sm text-popover-foreground shadow-md ring-1 ring-foreground/10',
+          contentClassName
+        )}
       >
-        <div role='listbox' aria-label={ariaLabel} className='flex flex-col gap-0.5'>
+        <div role='listbox' aria-label={ariaLabel} className='flex max-h-64 flex-col gap-0.5 overflow-y-auto'>
           {options.map((option) => {
             const isSelected = String(option.value) === String(value ?? '');
             return (
@@ -64,8 +75,8 @@ const SelectMenu = ({
             );
           })}
         </div>
-      </PopoverContent>
-    </Popover>
+      </AnchoredPopover>
+    </>
   );
 };
 

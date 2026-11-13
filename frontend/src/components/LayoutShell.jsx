@@ -245,7 +245,7 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
   const userInitial = displayName ? displayName.slice(0, 2).toUpperCase() : 'G';
 
   return (
-    <div ref={shellRef} className='min-h-screen overflow-x-hidden bg-[#f5f7fb] text-slate-900 transition-colors duration-500 dark:bg-[#0f172a] dark:text-slate-50'>
+    <div ref={shellRef} className='min-h-screen overflow-x-hidden bg-[#f5f7fb] text-slate-900 transition-colors duration-500 dark:bg-[#172136] dark:text-slate-50'>
       <div className={`fixed left-0 top-0 z-40 m-3 flex items-center gap-2 transition-opacity duration-[240ms] ease-[cubic-bezier(0.2,0.8,0.2,1)] ${isSidebarOpen ? 'pointer-events-none opacity-0' : 'opacity-100'}`} style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <button
           type='button'
@@ -291,8 +291,8 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
             >
               <div className='flex shrink-0 items-center justify-between border-b border-slate-200/80 bg-white/60 p-4 dark:border-slate-800 dark:bg-slate-950/60'>
                 <div className='flex items-center gap-3 rounded-3xl border border-violet-200/80 bg-violet-50/70 px-3 py-3 shadow-sm dark:border-violet-500/20 dark:bg-violet-500/10'>
-                  <span className='rounded-2xl bg-gradient-to-br from-violet-400 via-violet-600 to-violet-800 p-[2px] shadow-md shadow-violet-500/20'>
-                    <img src='/Logo.jpg' alt='Redhat logo' draggable={false} onDragStart={(event) => event.preventDefault()} className='h-12 w-12 select-none rounded-[14px] border border-white/70 object-cover dark:border-slate-900 [-webkit-touch-callout:none]' />
+                  <span draggable={false} onDragStart={(event) => event.preventDefault()} className='select-none rounded-2xl bg-gradient-to-br from-violet-400 via-violet-600 to-violet-800 p-[2px] shadow-md shadow-violet-500/20'>
+                    <img src='/Logo.jpg' alt='Redhat logo' draggable={false} onDragStart={(event) => event.preventDefault()} className='pointer-events-none h-12 w-12 select-none rounded-[14px] border border-white/70 object-cover [-webkit-touch-callout:none] [-webkit-user-drag:none] dark:border-slate-900' />
                   </span>
                   <div className='min-w-0'>
                     <p className='truncate text-xl font-bold tracking-tight text-slate-900 dark:text-white'>Redhat</p>
@@ -364,7 +364,7 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
                     className={`group flex h-12 w-12 cursor-pointer items-center justify-center overflow-hidden rounded-2xl transition hover:opacity-75 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-500/30 ${location.pathname === '/settings' ? 'ring-2 ring-violet-500/70' : ''}`}
                   >
                     {currentUser.avatarUrl ? (
-                      <img src={currentUser.avatarUrl} alt='' className='h-full w-full object-cover transition-opacity group-hover:opacity-60' />
+                      <img src={currentUser.avatarUrl} alt='' draggable={false} onDragStart={(event) => event.preventDefault()} className='pointer-events-none h-full w-full select-none object-cover transition-opacity group-hover:opacity-60 [-webkit-touch-callout:none] [-webkit-user-drag:none]' />
                     ) : (
                       <span className='flex h-full w-full items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-500 text-sm font-bold text-white transition-opacity group-hover:opacity-60'>
                         {userInitial}
