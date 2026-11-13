@@ -343,6 +343,40 @@ export const buildCalendarMergeSegments = (intervals) => {
   return { valid: true, conflicts: [], segments };
 };
 
+// Join consecutive same-title display blocks without changing the underlying tasks.
+// Overlapping blocks with other titles remain separate lanes (for example AB vs AC).
+export const mergeAdjacentSameTitleBlocks = (blocks) => {
+  const ordered = [...blocks].sort((left, right) => (
+    left.startMs - right.startMs
+    || left.memberIndex - right.memberIndex
+    || left.endMs - right.endMs
+  ));
+  const merged = [];
+  for (const block of ordered) {
+    const title = String(block.task?.title || '').trim().toLocaleLowerCase();
+    const previous = merged.at(-1);
+    const previousTitle = String(previous?.task?.title || '').trim().toLocaleLowerCase();
+    const canJoin = previous
+      && title
+      && title === previousTitle
+      && block.memberCount === 1
+      && previous.memberCount === 1
+      && block.memberIndex === previous.memberIndex
+      && previous.endMs === block.startMs;
+    if (!canJoin) {
+      merged.push({ ...block, members: block.members || [{ identity: block.identity, task: block.task }] });
+      continue;
+    }
+    previous.endMs = block.endMs;
+    previous.identity = [...new Set([...(previous.identity || '').split('+'), ...(block.identity || '').split('+')].filter(Boolean))].join('+');
+    previous.members = [...previous.members, ...(block.members || [{ identity: block.identity, task: block.task }])];
+    previous.isSameTitleMerge = true;
+    previous.isAutoAdjacentMerge = true;
+    previous.isTaskEnd = block.isTaskEnd;
+  }
+  return merged;
+};
+
 export const planCalendarTaskPlacement = (
   tasks,
   candidate,
