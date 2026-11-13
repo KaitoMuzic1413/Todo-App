@@ -8,6 +8,8 @@ const minutes = (value) => new Date(origin).getTime() + value * 60_000;
 const task = (id, title, offsetMinutes, durationMinutes) => ({
   _id: id,
   title,
+  contentType: 'task',
+  status: 'active',
   startAt: new Date(minutes(offsetMinutes)).toISOString(),
   estimatedMinutes: durationMinutes,
   dueAt: null,
