@@ -10,6 +10,7 @@ import {
   getCalendarEventKey,
   getCalendarTaskIdentity,
   groupCalendarMergeMembersByTitle,
+  mergeAdjacentSameTitleBlocks,
   getDayWarnings,
   findSameSizeCalendarCollision,
   getCalendarTaskMergeRange,
@@ -25,6 +26,35 @@ import {
   splitCalendarTaskRange,
   toggleCalendarCellMerge,
 } from '../src/lib/calendarUtils.js';
+
+test('automatically joins adjacent same-title calendar blocks but keeps different titles separate', () => {
+  const taskA1 = { _id: 'a1', title: 'A' };
+  const taskA2 = { _id: 'a2', title: 'A' };
+  const taskB = { _id: 'b', title: 'B' };
+  const joined = mergeAdjacentSameTitleBlocks([
+    { identity: 'a1:primary', task: taskA1, startMs: 9, endMs: 12, memberIndex: 0, memberCount: 1, isTaskStart: true, isTaskEnd: true },
+    { identity: 'a2:primary', task: taskA2, startMs: 12, endMs: 14, memberIndex: 0, memberCount: 1, isTaskStart: true, isTaskEnd: true },
+    { identity: 'b:primary', task: taskB, startMs: 14, endMs: 15, memberIndex: 0, memberCount: 1, isTaskStart: true, isTaskEnd: true },
+  ]);
+  assert.equal(joined.length, 2);
+  assert.deepEqual([joined[0].startMs, joined[0].endMs], [9, 14]);
+  assert.equal(joined[0].identity, 'a1:primary+a2:primary');
+  assert.equal(joined[0].isAutoAdjacentMerge, true);
+  assert.equal(joined[0].members.length, 2);
+  assert.equal(joined[1].task.title, 'B');
+});
+
+test('does not join same-title blocks across a gap or across a different-title lane', () => {
+  const taskA = { _id: 'a', title: 'A' };
+  const taskB = { _id: 'b', title: 'B' };
+  const blocks = mergeAdjacentSameTitleBlocks([
+    { identity: 'a1', task: taskA, startMs: 9, endMs: 10, memberIndex: 0, memberCount: 1 },
+    { identity: 'a2', task: taskA, startMs: 11, endMs: 12, memberIndex: 0, memberCount: 1 },
+    { identity: 'b1', task: taskB, startMs: 12, endMs: 13, memberIndex: 0, memberCount: 2 },
+    { identity: 'a3', task: taskA, startMs: 12, endMs: 13, memberIndex: 1, memberCount: 2 },
+  ]);
+  assert.equal(blocks.length, 4);
+});
 
 test('week calendar starts on Monday and spans seven local dates', () => {
   const days = getCalendarDays('week', new Date(2026, 9, 10, 15));
