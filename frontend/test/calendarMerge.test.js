@@ -79,6 +79,8 @@ test('unmerge restores each original task identity and schedule snapshot', () =>
     {
       taskId: 'A',
       title: 'A',
+      contentType: 'task',
+      status: 'active',
       startAt: base.startAt,
       dueAt: null,
       estimatedMinutes: 270,
@@ -86,6 +88,8 @@ test('unmerge restores each original task identity and schedule snapshot', () =>
     {
       taskId: 'B',
       title: 'B',
+      contentType: 'task',
+      status: 'active',
       startAt: other.startAt,
       dueAt: null,
       estimatedMinutes: 60,
