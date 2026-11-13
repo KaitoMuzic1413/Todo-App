@@ -51,6 +51,7 @@ import {
   getCalendarEventKey,
   getTaskCalendarOccurrences,
   groupCalendarMergeMembersByTitle,
+  mergeAdjacentSameTitleBlocks,
   planCalendarTaskPlacement,
   getTaskCalendarDisplay,
   resolveCellDragRange,
@@ -2973,35 +2974,39 @@ const CalendarPage = () => {
                     const scheduledRangeByIdentity = new Map(
                       scheduledIntervals.map((interval) => [interval.identity, interval])
                     );
-                    const scheduledTaskBlocks = taskSegments.valid
-                      ? taskSegments.segments.flatMap((segment) => {
-                          const groups = groupCalendarMergeMembersByTitle(segment.members);
-                          return groups.map((group, memberIndex) => ({
-                            identity: group.members.map(({ identity }) => identity).join('+'),
-                            task: group.task,
-                            startMs: segment.startMs,
-                            endMs: segment.endMs,
-                            memberIndex,
-                            memberCount: groups.length,
-                            isTaskStart: group.members.length === 1
-                              && segment.startMs === scheduledRangeByIdentity.get(
-                                group.members[0].identity
-                              )?.startMs,
-                            isTaskEnd: group.members.length === 1
-                              && segment.endMs === scheduledRangeByIdentity.get(
-                                group.members[0].identity
-                              )?.endMs,
-                            isSameTitleMerge: group.members.length > 1,
-                          }));
-                        })
-                      : scheduledIntervals.map((interval) => ({
-                          ...interval,
-                          memberIndex: 0,
-                          memberCount: 1,
-                          isTaskStart: true,
-                          isTaskEnd: true,
-                          isSameTitleMerge: false,
-                        }));
+                    const scheduledTaskBlocks = mergeAdjacentSameTitleBlocks(
+                      taskSegments.valid
+                        ? taskSegments.segments.flatMap((segment) => {
+                            const groups = groupCalendarMergeMembersByTitle(segment.members);
+                            return groups.map((group, memberIndex) => ({
+                              identity: group.members.map(({ identity }) => identity).join('+'),
+                              task: group.task,
+                              members: group.members,
+                              startMs: segment.startMs,
+                              endMs: segment.endMs,
+                              memberIndex,
+                              memberCount: groups.length,
+                              isTaskStart: group.members.length === 1
+                                && segment.startMs === scheduledRangeByIdentity.get(
+                                  group.members[0].identity
+                                )?.startMs,
+                              isTaskEnd: group.members.length === 1
+                                && segment.endMs === scheduledRangeByIdentity.get(
+                                  group.members[0].identity
+                                )?.endMs,
+                              isSameTitleMerge: group.members.length > 1,
+                            }));
+                          })
+                        : scheduledIntervals.map((interval) => ({
+                            ...interval,
+                            members: [{ identity: interval.identity, task: interval.task }],
+                            memberIndex: 0,
+                            memberCount: 1,
+                            isTaskStart: true,
+                            isTaskEnd: true,
+                            isSameTitleMerge: false,
+                          }))
+                    );
                     const deadlineTaskBlocks = dayTasks.flatMap((task) => {
                       const display = getTaskCalendarDisplay(task, date);
                       if (display?.kind !== 'deadline') return [];
