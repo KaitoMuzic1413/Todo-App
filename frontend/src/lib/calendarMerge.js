@@ -1,4 +1,18 @@
 const DEFAULT_SLOT_MINUTES = 30;
+const SNAPSHOT_FIELDS = [
+  'title',
+  'contentType',
+  'content',
+  'items',
+  'status',
+  'completedAt',
+  'startAt',
+  'dueAt',
+  'estimatedMinutes',
+  'timeZone',
+  'important',
+  'parentTaskId',
+];
 
 const getTaskId = (task) => String(task?._id ?? task?.id ?? '');
 const normalizeTitle = (title) => String(title ?? '').trim().toLocaleLowerCase();
@@ -15,10 +29,9 @@ const getTaskInterval = (task, fallbackDurationMinutes = DEFAULT_SLOT_MINUTES) =
 
 const snapshotTask = (task) => ({
   taskId: getTaskId(task),
-  title: String(task.title ?? ''),
-  startAt: task.startAt ?? null,
-  dueAt: task.dueAt ?? null,
-  estimatedMinutes: task.estimatedMinutes ?? null,
+  taskData: Object.fromEntries(SNAPSHOT_FIELDS
+    .filter((field) => Object.hasOwn(task, field))
+    .map((field) => [field, task[field]])),
 });
 
 /**
@@ -106,7 +119,7 @@ export const buildCellMergeSegments = ({
   return segments.map(({ signature: _signature, ...segment }) => segment);
 };
 
-/** Returns original task snapshots for a merge segment without mutating it. */
+/** Restores full original task snapshots without mutating the merge segment. */
 export const restoreMergeMembers = (mergeSegment) => {
   if (!Array.isArray(mergeSegment?.members)) {
     throw new TypeError('mergeSegment.members must be an array.');
@@ -114,9 +127,6 @@ export const restoreMergeMembers = (mergeSegment) => {
 
   return mergeSegment.members.map((member) => ({
     taskId: String(member.taskId),
-    title: String(member.title ?? ''),
-    startAt: member.startAt ?? null,
-    dueAt: member.dueAt ?? null,
-    estimatedMinutes: member.estimatedMinutes ?? null,
+    ...structuredClone(member.taskData ?? {}),
   }));
 };
