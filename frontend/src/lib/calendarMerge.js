@@ -31,7 +31,7 @@ const snapshotTask = (task) => ({
   taskId: getTaskId(task),
   taskData: Object.fromEntries(SNAPSHOT_FIELDS
     .filter((field) => Object.hasOwn(task, field))
-    .map((field) => [field, task[field]])),
+    .map((field) => [field, structuredClone(task[field])])),
 });
 
 /**
