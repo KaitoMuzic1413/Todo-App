@@ -50,7 +50,6 @@ import {
   getSequentialUnmergeSchedule,
   getCalendarEventKey,
   getTaskCalendarOccurrences,
-  groupCalendarMergeMembersByTitle,
   mergeAdjacentSameTitleBlocks,
   planCalendarTaskPlacement,
   getTaskCalendarDisplay,
@@ -1130,8 +1129,10 @@ const CalendarPage = () => {
     if (
       event.button !== 0
       || nowMs() - longPressAtRef.current < 800
-      || !task.startAt
-      || dateKey(new Date(task.startAt)) !== dateKey(date)
+      || (blockMembers.length <= 1 && (
+        !task.startAt
+        || dateKey(new Date(task.startAt)) !== dateKey(date)
+      ))
     ) return;
 
     beginCellDrag(event, dayIndex, startHour, endHour);
@@ -2320,10 +2321,11 @@ const CalendarPage = () => {
           : activeModal.task;
       })()
     : null;
-  const rawPreviewMergedEntries = Array.isArray(previewTask?.mergedOccurrences)
-    && previewTask.mergedOccurrences.length
-    ? previewTask.mergedOccurrences
-    : (previewTask && Array.isArray(previewTask.mergedTasks) ? previewTask.mergedTasks : []);
+  const rawPreviewMergedEntries = Array.isArray(activeModal?.task?.virtualMembers)
+    ? activeModal.task.virtualMembers
+    : (Array.isArray(previewTask?.mergedOccurrences) && previewTask.mergedOccurrences.length
+      ? previewTask.mergedOccurrences
+      : (previewTask && Array.isArray(previewTask.mergedTasks) ? previewTask.mergedTasks : []));
   const previewMergedEntries = rawPreviewMergedEntries;
   const selectedScheduleTask = taskScheduleForm.taskId === NEW_TASK_ID
     ? null
@@ -3037,8 +3039,14 @@ const CalendarPage = () => {
                             memberIndex: 0,
                             memberCount: 1,
                             isVirtualGroup: segment.members.length > 1,
-                            isTaskStart: false,
-                            isTaskEnd: false,
+                            isTaskStart: segment.members.length === 1
+                              && segment.startMs === scheduledRangeByIdentity.get(
+                                segment.members[0].identity
+                              )?.startMs,
+                            isTaskEnd: segment.members.length === 1
+                              && segment.endMs === scheduledRangeByIdentity.get(
+                                segment.members[0].identity
+                              )?.endMs,
                             isSameTitleMerge: segment.members.length > 1
                               && segment.members.every(({ task }) => task?.title === segment.members[0]?.task?.title),
                           }))
