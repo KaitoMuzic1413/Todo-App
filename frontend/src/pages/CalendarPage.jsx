@@ -3380,7 +3380,7 @@ const CalendarPage = () => {
                                 <Clock className='h-2.5 w-2.5 shrink-0' />
                                 <span className='truncate'>
                                   {isContinuation ? '↳ ' : ''}
-                                  {formatTimeOnly(display.startMs, locale)}
+                                  {formatTimeOnly(block.startMs, locale)}
                                 </span>
                               </p>
                             </div>
