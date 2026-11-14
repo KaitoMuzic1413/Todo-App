@@ -44,6 +44,31 @@ test('automatically joins adjacent same-title calendar blocks but keeps differen
   assert.equal(joined[1].task.title, 'B');
 });
 
+test('keeps adjacent virtual overlap segments separate even when their labels match', () => {
+  const taskA = { _id: 'a', title: 'A' };
+  const taskB = { _id: 'b', title: 'A' };
+  const blocks = mergeAdjacentSameTitleBlocks([
+    { identity: 'a:primary', task: taskA, startMs: 1, endMs: 2, memberIndex: 0, memberCount: 1 },
+    {
+      identity: 'a:primary+b:primary',
+      task: taskA,
+      members: [
+        { identity: 'a:primary', task: taskA },
+        { identity: 'b:primary', task: taskB },
+      ],
+      startMs: 2,
+      endMs: 3,
+      memberIndex: 0,
+      memberCount: 1,
+      isVirtualGroup: true,
+    },
+    { identity: 'a:primary', task: taskA, startMs: 3, endMs: 4, memberIndex: 0, memberCount: 1 },
+  ]);
+
+  assert.equal(blocks.length, 3);
+  assert.equal(blocks[1].isVirtualGroup, true);
+});
+
 test('does not join same-title blocks across a gap or across a different-title lane', () => {
   const taskA = { _id: 'a', title: 'A' };
   const taskB = { _id: 'b', title: 'B' };
