@@ -709,7 +709,26 @@ const CalendarPage = () => {
       mergesByDate,
       sourceMerge,
       timeZone,
+      groupMembers,
+      groupStartMs,
     }) => {
+      if (Array.isArray(groupMembers) && groupMembers.length > 1) {
+        const deltaMs = startMs - groupStartMs;
+        await Promise.all(groupMembers.map(({ task }) => {
+          const originalStartMs = new Date(task.startAt).getTime();
+          const durationMinutes = getTaskDurationMinutes(task);
+          const shiftedStartMs = originalStartMs + deltaMs;
+          return updateTask(task._id, currentUser._id, {
+            startAt: new Date(shiftedStartMs).toISOString(),
+            dueAt: new Date(shiftedStartMs + durationMinutes * 60000).toISOString(),
+            estimatedMinutes: durationMinutes,
+            timeZone,
+            calendarOccurrenceId: task.calendarOccurrenceId || 'primary',
+          });
+        }));
+        return { movedGroup: true, moveKey: sourceEventKey };
+      }
+
       const currentCalendarTasks = calendarRange
         ? (await fetchCalendarTasks(calendarRange)).data || []
         : tasks;
@@ -892,7 +911,10 @@ const CalendarPage = () => {
       };
     },
     onSuccess: (response) => {
-      if (response?.dropped) {
+      if (response?.movedGroup) {
+        movingTaskRef.current = null;
+        setMovingTask(null);
+      } else if (response?.dropped) {
         movingTaskRef.current = null;
         setMovingTask(null);
         toast.info(language === 'vi'
@@ -1101,7 +1123,10 @@ const CalendarPage = () => {
     setResizingTask(next);
   }, []);
 
-  const beginTaskCellDrag = (event, task, dayIndex, date, startHour, endHour, sourceMerge) => {
+  const beginTaskCellDrag = (
+    event, task, dayIndex, date, startHour, endHour, sourceMerge,
+    blockMembers = [], blockStartMs = null, blockEndMs = null
+  ) => {
     if (
       event.button !== 0
       || nowMs() - longPressAtRef.current < 800
@@ -1112,6 +1137,31 @@ const CalendarPage = () => {
     beginCellDrag(event, dayIndex, startHour, endHour);
 
     moveDragStartRef.current = { x: event.clientX, y: event.clientY };
+    if (blockMembers.length > 1 && Number.isFinite(blockStartMs) && Number.isFinite(blockEndMs)) {
+      const spanHours = Math.max(1, Math.ceil((blockEndMs - blockStartMs) / 3600000));
+      const blockStartHour = Math.floor((blockStartMs - startOfDay(date).getTime()) / 3600000);
+      const gridRect = calendarGridRef.current?.getBoundingClientRect();
+      const pointerHour = gridRect?.height
+        ? Math.floor(((event.clientY - gridRect.top) / gridRect.height) * 24)
+        : blockStartHour;
+      moveTaskCandidateRef.current = {
+        taskId: task._id,
+        calendarOccurrenceId: task.calendarOccurrenceId || 'primary',
+        title: task.title,
+        createdAt: task.createdAt,
+        status: task.status,
+        dayIndex,
+        startHour: blockStartHour,
+        endHour: blockStartHour + spanHours - 1,
+        spanHours,
+        grabOffsetHours: Math.max(0, Math.min(spanHours - 1, pointerHour - blockStartHour)),
+        durationMinutes: spanHours * 60,
+        sourceMerge: null,
+        groupStartMs: blockStartMs,
+        groupMembers: blockMembers,
+      };
+      return;
+    }
     const durationMinutes = getTaskDurationMinutes(task);
     const initialSpan = Math.max(1, Math.ceil(durationMinutes / 60));
     const taskStartHour = new Date(task.startAt).getHours();
@@ -1347,6 +1397,8 @@ const CalendarPage = () => {
       mergesByDate: calendarNotesQuery.data || {},
       sourceMerge: move.sourceMerge,
       timeZone,
+      groupMembers: move.groupMembers,
+      groupStartMs: move.groupStartMs,
       targetTask: {
         _id: move.taskId,
         title: move.title,
@@ -2976,27 +3028,20 @@ const CalendarPage = () => {
                     );
                     const scheduledTaskBlocks = mergeAdjacentSameTitleBlocks(
                       taskSegments.valid
-                        ? taskSegments.segments.flatMap((segment) => {
-                            const groups = groupCalendarMergeMembersByTitle(segment.members);
-                            return groups.map((group, memberIndex) => ({
-                              identity: group.members.map(({ identity }) => identity).join('+'),
-                              task: group.task,
-                              members: group.members,
-                              startMs: segment.startMs,
-                              endMs: segment.endMs,
-                              memberIndex,
-                              memberCount: groups.length,
-                              isTaskStart: group.members.length === 1
-                                && segment.startMs === scheduledRangeByIdentity.get(
-                                  group.members[0].identity
-                                )?.startMs,
-                              isTaskEnd: group.members.length === 1
-                                && segment.endMs === scheduledRangeByIdentity.get(
-                                  group.members[0].identity
-                                )?.endMs,
-                              isSameTitleMerge: group.members.length > 1,
-                            }));
-                          })
+                        ? taskSegments.segments.map((segment) => ({
+                            identity: segment.identityKeys.join('+'),
+                            task: segment.members[0]?.task,
+                            members: segment.members,
+                            startMs: segment.startMs,
+                            endMs: segment.endMs,
+                            memberIndex: 0,
+                            memberCount: 1,
+                            isVirtualGroup: segment.members.length > 1,
+                            isTaskStart: false,
+                            isTaskEnd: false,
+                            isSameTitleMerge: segment.members.length > 1
+                              && segment.members.every(({ task }) => task?.title === segment.members[0]?.task?.title),
+                          }))
                         : scheduledIntervals.map((interval) => ({
                             ...interval,
                             members: [{ identity: interval.identity, task: interval.task }],
@@ -3153,6 +3198,7 @@ const CalendarPage = () => {
                           const {
                             identity,
                             task,
+                            members = [{ identity, task }],
                             memberIndex,
                             memberCount,
                             isSameTitleMerge,
@@ -3172,13 +3218,8 @@ const CalendarPage = () => {
                           );
                           const topPx = blockStartHour * 56 + 4;
                           const heightPx = Math.max(40, (blockEndHour - blockStartHour) * 56 - 8);
-                          const taskStartHour = Math.floor(
-                            (display.startMs - dayStartMs) / 3600000
-                          );
-                          const taskEndHour = Math.min(
-                            24,
-                            Math.ceil((display.endMs - dayStartMs) / 3600000)
-                          );
+                          const taskStartHour = blockStartHour;
+                          const taskEndHour = blockEndHour;
                           const isDeadline = display.kind === 'deadline';
                           const isContinuation = !isDeadline
                             && display.originalStartMs < startOfDay(date).getTime();
@@ -3265,7 +3306,18 @@ const CalendarPage = () => {
                                 e.stopPropagation();
                                 if (consumeSuppressedClick()) return;
                                 if (isMovingThisTask) return;
-                                openTaskPreviewModal(date, task);
+                                openTaskPreviewModal(date, {
+                                   ...task,
+                                   virtualMembers: members.map(({ identity: memberIdentity, task: memberTask }) => ({
+                                     identity: memberIdentity,
+                                     taskId: memberTask._id,
+                                     occurrenceId: memberTask.calendarOccurrenceId || 'primary',
+                                     title: memberTask.title,
+                                     startAt: memberTask.startAt,
+                                     dueAt: memberTask.dueAt,
+                                     estimatedMinutes: getTaskDurationMinutes(memberTask),
+                                   })),
+                                 });
                               }}
                               onMouseDown={(event) => {
                                 if (isMovingThisTask) {
@@ -3279,7 +3331,10 @@ const CalendarPage = () => {
                                   date,
                                   dragStartHour,
                                   dragEndHour,
-                                  overlappingMerge
+                                  overlappingMerge,
+                                  members,
+                                  block.startMs,
+                                  block.endMs
                                 );
                               }}
                               onTouchStart={(event) => startLongPress(event, dayIndex, menuStartHour, menuEndHour)}
@@ -3299,9 +3354,20 @@ const CalendarPage = () => {
                                   : 'border-violet-300 bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-600 shadow-violet-500/20 dark:border-violet-400'
                               }`}
                             >
-                              <p className='w-full whitespace-pre-line break-words text-xs font-bold leading-tight'>
-                                {task.title}
-                              </p>
+                              {(() => {
+                                const memberTitles = members.map(({ task: memberTask }) => memberTask?.title || '').filter(Boolean);
+                                const stackedTitleCapacity = Math.max(1, Math.floor((heightPx - 30) / 14));
+                                const showStackedTitles = memberTitles.length > 1 && memberTitles.length <= stackedTitleCapacity;
+                                return (
+                                  <div className='flex w-full min-w-0 flex-col items-center justify-center gap-0.5 overflow-hidden text-xs font-bold leading-tight'>
+                                    {showStackedTitles
+                                      ? memberTitles.map((memberTitle, index) => (
+                                          <span key={identity + ':' + index} className='w-full truncate'>{memberTitle}</span>
+                                        ))
+                                      : <span className='w-full break-words'>{memberTitles.join(' • ')}</span>}
+                                  </div>
+                                );
+                              })()}
                               <p className='flex min-w-0 items-center gap-1 text-[10px] font-semibold opacity-90'>
                                 <Clock className='h-2.5 w-2.5 shrink-0' />
                                 <span className='truncate'>
