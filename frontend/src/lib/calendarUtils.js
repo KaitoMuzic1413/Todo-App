@@ -359,6 +359,8 @@ export const mergeAdjacentSameTitleBlocks = (blocks) => {
     const canJoin = previous
       && title
       && title === previousTitle
+      && !block.isVirtualGroup
+      && !previous.isVirtualGroup
       && block.memberCount === 1
       && previous.memberCount === 1
       && block.memberIndex === previous.memberIndex
