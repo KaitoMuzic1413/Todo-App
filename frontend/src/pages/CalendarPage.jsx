@@ -3363,7 +3363,7 @@ const CalendarPage = () => {
                               }`}
                             >
                               {(() => {
-                                const memberTitles = members.map(({ task: memberTask }) => memberTask?.title || '').filter(Boolean);
+                                const memberTitles = [...new Set(members.map(({ task: memberTask }) => memberTask?.title || '').filter(Boolean))];
                                 const stackedTitleCapacity = Math.max(1, Math.floor((heightPx - 30) / 14));
                                 const showStackedTitles = memberTitles.length > 1 && memberTitles.length <= stackedTitleCapacity;
                                 return (
