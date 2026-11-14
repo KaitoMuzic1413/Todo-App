@@ -713,18 +713,44 @@ const CalendarPage = () => {
     }) => {
       if (Array.isArray(groupMembers) && groupMembers.length > 1) {
         const deltaMs = startMs - groupStartMs;
-        await Promise.all(groupMembers.map(({ task }) => {
+        const schedules = groupMembers.map(({ task }) => {
           const originalStartMs = new Date(task.startAt).getTime();
           const durationMinutes = getTaskDurationMinutes(task);
-          const shiftedStartMs = originalStartMs + deltaMs;
-          return updateTask(task._id, currentUser._id, {
-            startAt: new Date(shiftedStartMs).toISOString(),
-            dueAt: new Date(shiftedStartMs + durationMinutes * 60000).toISOString(),
-            estimatedMinutes: durationMinutes,
+          return {
+            task,
+            originalStartAt: task.startAt,
+            originalDueAt: task.dueAt,
+            originalDuration: durationMinutes,
+            shiftedStartMs: originalStartMs + deltaMs,
+            durationMinutes,
+          };
+        });
+        const results = await Promise.allSettled(schedules.map((schedule) => updateTask(
+          schedule.task._id,
+          currentUser._id,
+          {
+            startAt: new Date(schedule.shiftedStartMs).toISOString(),
+            dueAt: new Date(schedule.shiftedStartMs + schedule.durationMinutes * 60000).toISOString(),
+            estimatedMinutes: schedule.durationMinutes,
             timeZone,
-            calendarOccurrenceId: task.calendarOccurrenceId || 'primary',
-          });
-        }));
+            calendarOccurrenceId: schedule.task.calendarOccurrenceId || 'primary',
+          }
+        )));
+        const failedUpdate = results.find((result) => result.status === 'rejected');
+        if (failedUpdate) {
+          await Promise.allSettled(schedules.map((schedule) => updateTask(
+            schedule.task._id,
+            currentUser._id,
+            {
+              startAt: schedule.originalStartAt,
+              dueAt: schedule.originalDueAt,
+              estimatedMinutes: schedule.originalDuration,
+              timeZone,
+              calendarOccurrenceId: schedule.task.calendarOccurrenceId || 'primary',
+            }
+          )));
+          throw failedUpdate.reason;
+        }
         return { movedGroup: true, moveKey: sourceEventKey };
       }
 
