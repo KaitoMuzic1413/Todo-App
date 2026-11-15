@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { LayoutShell } from '@/components/LayoutShell';
 import SelectMenu from '@/components/ui/select-menu';
 import { deleteAdminNotification, fetchAdminNotifications, sendAdminNotification } from '@/lib/api';
+import useScrollLock from '@/hooks/useScrollLock';
 import { useLanguage } from '@/lib/i18n';
 import { sanitizeNotificationHtml } from '@/lib/notificationHtml';
 import { keepTextareaContentVisible } from '@/lib/textareaSizing';
@@ -32,6 +33,9 @@ const AdminNotificationsPage = () => {
   const [history, setHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [historyError, setHistoryError] = useState('');
+  useScrollLock(Boolean(
+    isPreviewOpen || notificationToView || notificationToDelete
+  ));
 
   const loadHistory = useCallback(async () => {
     setHistoryLoading(true);
@@ -116,10 +120,10 @@ const AdminNotificationsPage = () => {
       <div className='space-y-6'>
         <header className='rounded-3xl bg-gradient-to-br from-[#0e1939] via-[#172550] to-[#273d78] p-5 text-white shadow-[0_22px_55px_rgba(15,23,42,0.25)] sm:p-7'>
           <div className='flex items-center gap-4'>
-            <span className='flex h-12 w-12 items-center justify-center rounded-3xl bg-white/10 text-violet-200'><BellRing className='h-5 w-5' /></span>
-            <div>
+            <span className='flex h-12 w-12 shrink-0 items-center justify-center rounded-3xl bg-white/10 text-violet-200'><BellRing className='h-5 w-5' /></span>
+            <div className='min-w-0'>
               <p className='text-xs font-semibold uppercase tracking-[0.17em] text-blue-200'>Todo App</p>
-              <h1 className='mt-1 text-2xl font-bold sm:text-3xl'>{t.adminNotifications}</h1>
+              <h1 className='mt-1 break-words text-2xl font-bold sm:text-3xl'>{t.adminNotifications}</h1>
             </div>
           </div>
         </header>
@@ -202,7 +206,7 @@ const AdminNotificationsPage = () => {
         </section>
 
         <section className='rounded-3xl border border-slate-200/80 bg-white/90 p-5 shadow-sm sm:p-7 dark:border-slate-800 dark:bg-slate-900/80'>
-          <div className='flex items-center justify-between gap-3'>
+          <div className='flex flex-wrap items-center justify-between gap-3'>
             <h2 className='text-lg font-bold text-slate-900 dark:text-white'>{t.sentNotifications}</h2>
             <button type='button' onClick={() => void loadHistory()} className='min-h-10 rounded-3xl px-3 text-sm font-semibold text-violet-700 hover:bg-violet-50 dark:text-violet-300 dark:hover:bg-violet-500/10'>{t.retry}</button>
           </div>
@@ -224,7 +228,7 @@ const AdminNotificationsPage = () => {
                     <p className='notification-rich-content mt-1 line-clamp-2 break-words text-xs leading-5 text-slate-500 dark:text-slate-400' dangerouslySetInnerHTML={{ __html: sanitizeNotificationHtml(notification.content) }} />
                     <p className='mt-2 text-[11px] text-slate-400 dark:text-slate-500'>{formatDate(notification.createdAt)} · {notification.targetType === 'all' ? t.allUsers : (notification.targetType === 'new-users' ? t.newAccounts : t.oneUser)}</p>
                   </div>
-                  <div className='flex shrink-0 items-center gap-3 text-xs text-slate-500 dark:text-slate-400'>
+                  <div className='flex shrink-0 flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400'>
                     <span>{notification.recipients} {t.recipients.toLowerCase()}</span>
                     <span className='rounded-3xl bg-emerald-50 px-2.5 py-1.5 font-semibold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300'>{notification.read}/{notification.recipients} {t.readCount.toLowerCase()}</span>
                     <button type='button' onClick={() => setNotificationToView(notification)} className='min-h-8 rounded-3xl bg-violet-50 px-3 text-[11px] font-semibold text-violet-700 transition hover:bg-violet-100 dark:bg-violet-500/10 dark:text-violet-200 dark:hover:bg-violet-500/20'>{t.viewNotification}</button>

@@ -1,5 +1,7 @@
 import mongoose from "mongoose";
 
+export const TASK_TITLE_MAX_LENGTH = 200;
+
 const calendarOccurrenceSchema = new mongoose.Schema(
   {
     startAt: { type: Date, default: null },

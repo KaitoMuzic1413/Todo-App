@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import useScrollLock from '@/hooks/useScrollLock';
 import { useLanguage } from '@/lib/i18n';
 import { Check, ShieldCheck, X } from 'lucide-react';
 import { getLocalizedPolicies } from '@/pages/LegalPoliciesPage';
@@ -9,10 +10,10 @@ const PolicyConsentModal = ({ open, onAccept, onDecline }) => {
   const policies = getLocalizedPolicies(language);
   const contentRef = useRef(null);
   const [reachedEnd, setReachedEnd] = useState(false);
+  useScrollLock(open);
 
   useEffect(() => {
-    if (!open) return;
-    document.body.style.overflow = 'hidden';
+    if (!open) return undefined;
 
     const frame = window.requestAnimationFrame(() => {
       setReachedEnd(false);
@@ -24,7 +25,6 @@ const PolicyConsentModal = ({ open, onAccept, onDecline }) => {
 
     return () => {
       window.cancelAnimationFrame(frame);
-      document.body.style.overflow = '';
     };
   }, [open]);
 

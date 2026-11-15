@@ -303,7 +303,7 @@ const TrashPage = () => {
               {tasks.length} {t.total || 'Total'}
             </span>
 
-            <div className='flex items-center gap-2'>
+            <div className='flex flex-wrap items-center justify-end gap-2'>
               {isSelectMode ? (
                 <>
                   <button
@@ -383,7 +383,7 @@ const TrashPage = () => {
                     <div className='min-w-0 flex-1'>
                       <p
                         title={task.title}
-                        className={`truncate font-medium ${
+                        className={`line-clamp-2 break-words [overflow-wrap:anywhere] font-medium sm:line-clamp-1 ${
                           task.status === 'complete'
                             ? 'text-slate-400 line-through dark:text-slate-500'
                             : 'text-slate-800 dark:text-slate-100'
@@ -472,12 +472,12 @@ const TrashPage = () => {
                 {group.map((attachment) => (
                 <div key={attachment._id} className='flex flex-col gap-3 rounded-3xl border border-slate-200 bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-700 dark:bg-slate-950/50'>
                   <div className='min-w-0'>
-                    <p className='truncate font-medium text-slate-800 dark:text-slate-100'>{attachment.originalName}</p>
+                    <p className='line-clamp-2 break-words [overflow-wrap:anywhere] font-medium text-slate-800 sm:line-clamp-1 dark:text-slate-100'>{attachment.originalName}</p>
                     <p className='mt-1 text-xs text-rose-500 dark:text-rose-400'>
                       Deleted at: {formatDate(attachment.deletedAt)}
                     </p>
                   </div>
-                  <div className='flex shrink-0 gap-2'>
+                  <div className='flex shrink-0 flex-wrap gap-2'>
                     <button type='button' onClick={() => handleRestoreAttachment(attachment._id)} className='rounded-3xl bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-600'>
                       {t.restore || 'Restore'}
                     </button>

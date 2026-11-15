@@ -2,6 +2,7 @@ import { Dialog as SheetPrimitive } from "@base-ui/react/dialog"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import useScrollLock from "@/hooks/useScrollLock"
 import { XIcon } from "lucide-react"
 
 function Sheet({
@@ -50,6 +51,8 @@ function SheetContent({
   showCloseButton = true,
   ...props
 }) {
+  useScrollLock(true);
+
   return (
     <SheetPortal>
       <SheetOverlay />

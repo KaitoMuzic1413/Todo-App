@@ -50,7 +50,7 @@ const VerifyEmailPage = () => {
 
   return (
     <AuthLayout>
-      <div className='w-full max-w-md rounded-3xl border border-slate-200/80 bg-white/80 p-8 shadow-[0_30px_80px_rgba(15,23,42,0.12)] backdrop-blur-sm dark:border-slate-700 dark:bg-slate-900/80'>
+      <div className='w-full max-w-md rounded-3xl border border-slate-200/80 bg-white/80 p-5 shadow-[0_30px_80px_rgba(15,23,42,0.12)] backdrop-blur-sm dark:border-slate-700 dark:bg-slate-900/80 sm:p-8'>
         <div className='mb-6 text-center'>
           <div className='mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-200'>
             {isLoading ? <LoaderCircle className='h-8 w-8 animate-spin' /> : isSuccess ? <CheckCircle2 className='h-8 w-8' /> : status === 'error' || status === 'missing' ? <CircleAlert className='h-8 w-8' /> : <MailCheck className='h-8 w-8' />}

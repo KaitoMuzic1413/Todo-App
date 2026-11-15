@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import useScrollLock from '@/hooks/useScrollLock';
 import { cn } from '@/lib/utils';
 
 const VIEWPORT_PADDING = 8;
@@ -15,6 +16,7 @@ const AnchoredPopover = ({
   children,
 }) => {
   const panelRef = useRef(null);
+  useScrollLock(open);
 
   useLayoutEffect(() => {
     if (!open) return undefined;

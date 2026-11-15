@@ -7,6 +7,7 @@ import StatsAndFilters from '@/components/StatsAndFilters';
 import TaskListPagination from '@/components/TaskListPagination';
 import DateTimeFilter from '@/components/DateTimeFilter';
 import { deleteAttachment, downloadAttachment, fetchAttachments, updateAttachment, uploadAttachment } from '@/lib/api';
+import useScrollLock from '@/hooks/useScrollLock';
 import { useLanguage } from '@/lib/i18n';
 import { keepTextareaContentVisible } from '@/lib/textareaSizing';
 import { getCreatedAtRange, isDateInRange } from '@/lib/dateFilters';
@@ -58,6 +59,7 @@ const ArchivePage = () => {
   const [downloadedIds, setDownloadedIds] = useState(new Set());
 
   const [confirmDownloadItem, setConfirmDownloadItem] = useState(null);
+  useScrollLock(Boolean(confirmDownloadItem || selectedFile || editing || preview));
 
   const imageContainerRef = useRef(null);
 

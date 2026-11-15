@@ -1,6 +1,7 @@
 import { Popover as PopoverPrimitive } from "@base-ui/react/popover"
 
 import { cn } from "@/lib/utils"
+import useScrollLock from "@/hooks/useScrollLock"
 
 function Popover({
   ...props
@@ -22,6 +23,8 @@ function PopoverContent({
   sideOffset = 4,
   ...props
 }) {
+  useScrollLock(true);
+
   return (
     <PopoverPrimitive.Portal>
       <PopoverPrimitive.Positioner

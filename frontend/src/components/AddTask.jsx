@@ -5,6 +5,7 @@ import { Card } from './ui/card';
 import { Input } from './ui/input';
 import DateTimePicker from './ui/date-time-picker';
 import { keepTextareaContentVisible } from '@/lib/textareaSizing';
+import { TASK_TITLE_MAX_LENGTH } from '@/lib/utils';
 
 const AddTask = ({ onAdd, contentType = 'task' }) => {
   const { t } = useLanguage();
@@ -15,7 +16,7 @@ const AddTask = ({ onAdd, contentType = 'task' }) => {
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    const nextTitle = title.trim();
+    const nextTitle = title.trim().slice(0, TASK_TITLE_MAX_LENGTH);
 
     if (!nextTitle || !onAdd) return;
 
@@ -56,6 +57,7 @@ const AddTask = ({ onAdd, contentType = 'task' }) => {
       id='new-task-title'
       type='text'
       value={title}
+      maxLength={TASK_TITLE_MAX_LENGTH}
       onChange={(event) => setTitle(event.target.value)}
       placeholder={contentType === 'note' ? t.noteTitle : contentType === 'list' ? t.listTitle : t.addNewTask}
       className='h-12 rounded-3xl border-slate-200 bg-slate-50 text-base text-slate-700 shadow-sm placeholder:text-slate-400 focus:border-violet-400 focus:ring-4 focus:ring-violet-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:ring-violet-900/40 sm:flex-1'

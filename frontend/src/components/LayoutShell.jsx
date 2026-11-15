@@ -4,6 +4,7 @@ import { AnimatePresence, animate, motion, useMotionValue } from 'framer-motion'
 import { ChevronLeft, Archive, BarChart3, CalendarDays, ClipboardList, FileText, Mail, Timer, X, Home, Trash2, Menu } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
+import useScrollLock from '@/hooks/useScrollLock';
 import NotificationCenter from '@/components/NotificationCenter';
 
 const SIDEBAR_WIDTH = 320;
@@ -43,7 +44,11 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
   const [isNotificationDrawerOpen, setIsNotificationDrawerOpen] = useState(false);
   const navigationTimer = useRef(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [isCompactViewport, setIsCompactViewport] = useState(
+    () => typeof window !== 'undefined' && window.innerWidth < 1024
+  );
   const sidebarX = useMotionValue(-getSidebarWidth());
+  useScrollLock(isCompactViewport && (isSidebarOpen || isDragging));
 
   const [currentUser, setCurrentUser] = useState(getStoredUser);
   const { preferences, hasLoadedPreferences } = useUserPreferences(currentUser?._id);
@@ -116,19 +121,12 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
   }, [isSidebarOpen, isDragging, sidebarX]);
 
   useEffect(() => {
-    if ((isSidebarOpen || isDragging) && window.innerWidth < 1024) {
-      document.body.style.overflow = 'hidden';
-      document.body.style.touchAction = 'none';
-    } else {
-      document.body.style.overflow = '';
-      document.body.style.touchAction = '';
-    }
-
-    return () => {
-      document.body.style.overflow = '';
-      document.body.style.touchAction = '';
-    };
-  }, [isSidebarOpen, isDragging]);
+    const mediaQuery = window.matchMedia('(max-width: 1023px)');
+    const syncViewport = () => setIsCompactViewport(mediaQuery.matches);
+    syncViewport();
+    mediaQuery.addEventListener('change', syncViewport);
+    return () => mediaQuery.removeEventListener('change', syncViewport);
+  }, []);
 
   useEffect(() => {
     const shell = shellRef.current;
@@ -138,8 +136,9 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
       const touchX = event.touches[0].clientX;
       const touchY = event.touches[0].clientY;
 
-      // Navigation drawer gestures are disabled while notifications are open.
-      if (isNotificationDrawerOpen) {
+      // Navigation drawer gestures are disabled while notifications are open
+      // or when the gesture begins inside the calendar time grid.
+      if (isNotificationDrawerOpen || event.target?.closest?.('[data-calendar-gesture-zone]')) {
         isEligibleSwipe.current = false;
         return;
       }

@@ -127,18 +127,18 @@ const LegalPoliciesPage = () => {
         </div>
         <div className='mt-7 flex items-start gap-4'>
           <span className='flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300'><Icon className='h-6 w-6' /></span>
-          <div>
+          <div className='min-w-0'>
             <p className='text-xs font-bold uppercase tracking-[0.16em] text-violet-600 dark:text-violet-300'>Kaito Todo · {t.publicPolicies}</p>
-            <h1 className='mt-2 text-2xl font-bold tracking-tight sm:text-3xl'>{policy.title}</h1>
+            <h1 className='mt-2 break-words text-2xl font-bold tracking-tight sm:text-3xl'>{policy.title}</h1>
             <p className='mt-2 text-xs text-slate-500 dark:text-slate-400'>{t.lastUpdated}: {policy.updated}</p>
           </div>
         </div>
-        <p className='mt-7 rounded-2xl bg-slate-50 p-4 text-sm leading-7 text-slate-700 dark:bg-slate-800/70 dark:text-slate-200'>{policy.intro}</p>
+        <p className='mt-7 rounded-2xl bg-slate-50 p-4 break-words [overflow-wrap:anywhere] text-sm leading-7 text-slate-700 dark:bg-slate-800/70 dark:text-slate-200'>{policy.intro}</p>
         <div className='mt-8 space-y-7'>
           {policy.sections.map(([heading, body]) => (
             <section key={heading}>
-              <h2 className='text-lg font-semibold'>{heading}</h2>
-              <p className='mt-2 whitespace-pre-line text-sm leading-7 text-slate-600 dark:text-slate-300'>{body}</p>
+              <h2 className='break-words text-lg font-semibold'>{heading}</h2>
+              <p className='mt-2 whitespace-pre-line break-words [overflow-wrap:anywhere] text-sm leading-7 text-slate-600 dark:text-slate-300'>{body}</p>
             </section>
           ))}
         </div>
@@ -149,7 +149,7 @@ const LegalPoliciesPage = () => {
             <Link to='/policies/terms' className='text-violet-600 underline dark:text-violet-400'>{t.termsOfUse}</Link>
             <Link to='/policies/cookies' className='text-violet-600 underline dark:text-violet-400'>{t.cookiePolicy}</Link>
           </div>
-          <p className='mt-6 text-xs leading-6 text-slate-500 dark:text-slate-400'>{t.policyDisclaimer}</p>
+          <p className='mt-6 break-words [overflow-wrap:anywhere] text-xs leading-6 text-slate-500 dark:text-slate-400'>{t.policyDisclaimer}</p>
         </div>
       </article>
     </main>

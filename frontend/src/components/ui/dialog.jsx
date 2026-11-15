@@ -4,6 +4,7 @@ import { Dialog as DialogPrimitive } from "@base-ui/react/dialog"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import useScrollLock from "@/hooks/useScrollLock"
 import { XIcon } from "lucide-react"
 
 function Dialog({
@@ -51,6 +52,8 @@ function DialogContent({
   showCloseButton = true,
   ...props
 }) {
+  useScrollLock(true);
+
   return (
     <DialogPortal>
       <DialogOverlay />

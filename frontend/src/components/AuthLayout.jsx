@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Globe, Mail, Menu, Moon, SunMedium, X } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import useScrollLock from '@/hooks/useScrollLock';
 import { useLanguage } from '@/lib/i18n';
 
 const AuthLayout = ({ children }) => {
@@ -10,6 +11,7 @@ const AuthLayout = ({ children }) => {
   const location = useLocation();
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('todo-theme') !== 'light');
   const [isOpen, setIsOpen] = useState(false);
+  useScrollLock(isOpen);
 
   useEffect(() => {
     if (!document.documentElement.dataset.accent) {
@@ -75,7 +77,7 @@ const AuthLayout = ({ children }) => {
               animate={{ x: 0, opacity: 1, filter: 'blur(0px)' }}
               exit={{ x: -320, opacity: 0, filter: 'blur(5px)' }}
               transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-              className='fixed left-0 top-0 z-50 flex h-[100dvh] w-[320px] flex-col border-r border-slate-200/80 bg-white/95 p-4 shadow-2xl dark:border-slate-800 dark:bg-slate-950/95'
+              className='fixed left-0 top-0 z-50 flex h-[100dvh] w-[min(320px,88vw)] flex-col border-r border-slate-200/80 bg-white/95 p-4 shadow-2xl dark:border-slate-800 dark:bg-slate-950/95'
             >
               <div className='flex items-center justify-between border-b border-slate-200/80 pb-4 dark:border-slate-800'>
                 <div>
@@ -129,7 +131,7 @@ const AuthLayout = ({ children }) => {
         ) : null}
       </AnimatePresence>
 
-      <main className='flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(168,85,247,0.22),transparent_40%),linear-gradient(135deg,#f5f7fb,#eef2ff)] p-6 dark:bg-[radial-gradient(circle_at_top,_rgba(168,85,247,0.2),transparent_38%),linear-gradient(135deg,#0f172a,#111827)]'>
+      <main className='flex min-h-screen items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(168,85,247,0.22),transparent_40%),linear-gradient(135deg,#f5f7fb,#eef2ff)] px-4 pb-6 pt-20 dark:bg-[radial-gradient(circle_at_top,_rgba(168,85,247,0.2),transparent_38%),linear-gradient(135deg,#0f172a,#111827)] sm:p-6'>
         <div className='flex w-full justify-center'>
           {children}
         </div>

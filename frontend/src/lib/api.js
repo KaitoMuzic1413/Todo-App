@@ -41,14 +41,23 @@ const clearStoredSession = () => {
 
 const isDefinitiveAuthFailure = (error) => error?.response?.status === 401;
 
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+const getTokenExpiryMs = (token) => {
+  try {
+    const payload = token.split('.')[1];
+    if (!payload) return 0;
+    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const decoded = JSON.parse(window.atob(normalized));
+    const expiry = Number(decoded?.exp) * 1000;
+    return Number.isFinite(expiry) ? expiry : 0;
+  } catch {
+    return 0;
   }
-  config.headers['X-Requested-With'] = 'XMLHttpRequest';
-  return config;
-});
+};
+
+const isTokenExpiringSoon = (token) => {
+  const expiry = getTokenExpiryMs(token);
+  return !expiry || expiry - Date.now() <= 60 * 1000;
+};
 
 let refreshRequest = null;
 
@@ -68,6 +77,32 @@ const refreshAccessToken = async () => {
   }
   return refreshRequest;
 };
+
+api.interceptors.request.use(async (config) => {
+  const requestUrl = config.url || '';
+  const isAuthEndpoint = AUTH_PATHS_WITHOUT_REFRESH.some((path) => requestUrl.includes(path));
+  let token = localStorage.getItem('token');
+  const hasStoredUser = Boolean(localStorage.getItem('todo-user'));
+
+  if (!isAuthEndpoint && (token ? isTokenExpiringSoon(token) : hasStoredUser)) {
+    try {
+      const { data } = await refreshAccessToken();
+      if (data?.token) {
+        token = data.token;
+        localStorage.setItem('token', token);
+      }
+      if (data?.user) localStorage.setItem('todo-user', JSON.stringify(data.user));
+    } catch {
+      // Keep the existing token; the response interceptor handles rejected refreshes.
+    }
+  }
+
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  config.headers['X-Requested-With'] = 'XMLHttpRequest';
+  return config;
+});
 
 api.interceptors.response.use(
   (response) => {

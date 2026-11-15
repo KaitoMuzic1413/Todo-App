@@ -1,5 +1,10 @@
 export const DEFAULT_TASK_DURATION_MINUTES = 30;
 
+export const getTaskDragIntent = (deltaX, deltaY, threshold = 8) => {
+  if (Math.hypot(deltaX, deltaY) < threshold) return null;
+  return Math.abs(deltaX) > Math.abs(deltaY) ? 'move' : 'select';
+};
+
 export const startOfDay = (date) => new Date(date.getFullYear(), date.getMonth(), date.getDate());
 
 export const startOfWeek = (date) => {
@@ -379,6 +384,105 @@ export const mergeAdjacentSameTitleBlocks = (blocks) => {
   return merged;
 };
 
+export const getCalendarSegmentDaySpan = (segment) => {
+  if (
+    !Number.isFinite(segment?.startMs)
+    || !Number.isFinite(segment?.endMs)
+    || segment.endMs <= segment.startMs
+  ) return null;
+  const start = new Date(segment.startMs);
+  const occupiedEnd = new Date(segment.endMs - 1);
+  if (dateKey(start) !== dateKey(occupiedEnd)) return null;
+  const dayStart = startOfDay(start).getTime();
+  const startHour = start.getHours();
+  const endHour = Math.min(23, Math.ceil(
+    (segment.endMs - dayStart) / 3600000
+  ) - 1);
+  if (endHour <= startHour) return null;
+  return { dayKey: dateKey(start), startHour, endHour };
+};
+
+const getCalendarTitleNames = (title) => String(title || '')
+  .split('\n')
+  .map((name) => name.trim())
+  .filter(Boolean);
+
+export const buildCalendarMergedTitle = (members) => {
+  const names = [];
+  const seen = new Set();
+  for (const { task } of members || []) {
+    for (const name of getCalendarTitleNames(task?.title)) {
+      if (seen.has(name)) continue;
+      seen.add(name);
+      names.push(name);
+    }
+  }
+  return names.join('\n');
+};
+
+const orderMergedPieceMembers = (members, candidateIdentity) => {
+  const candidateIndex = members.findIndex(
+    ({ identity }) => identity === candidateIdentity
+  );
+  if (candidateIndex < 0) return members;
+  const candidateNames = new Set(
+    getCalendarTitleNames(members[candidateIndex].task?.title)
+  );
+  const hasDuplicateName = members.some((member, index) => (
+    index !== candidateIndex
+    && getCalendarTitleNames(member.task?.title).some((name) => candidateNames.has(name))
+  ));
+  if (!hasDuplicateName) {
+    return [
+      members[candidateIndex],
+      ...members.slice(0, candidateIndex),
+      ...members.slice(candidateIndex + 1),
+    ];
+  }
+  return [
+    ...members.slice(0, candidateIndex),
+    ...members.slice(candidateIndex + 1),
+    members[candidateIndex],
+  ];
+};
+
+const clipCalendarPiece = (piece, startMs, endMs) => {
+  const clippedStart = Math.max(piece.startMs, startMs);
+  const clippedEnd = Math.min(piece.endMs, endMs);
+  if (clippedEnd <= clippedStart) return null;
+  return {
+    startMs: clippedStart,
+    endMs: clippedEnd,
+    estimatedMinutes: Math.max(1, Math.round((clippedEnd - clippedStart) / 60000)),
+  };
+};
+
+const subtractCalendarRanges = (startMs, endMs, cuts = []) => {
+  const sortedCuts = cuts
+    .filter((cut) => cut.endMs > startMs && cut.startMs < endMs)
+    .sort((left, right) => left.startMs - right.startMs);
+  const pieces = [];
+  let cursor = startMs;
+  for (const cut of sortedCuts) {
+    if (cut.startMs > cursor) {
+      pieces.push({ startMs: cursor, endMs: Math.min(cut.startMs, endMs) });
+    }
+    cursor = Math.max(cursor, cut.endMs);
+    if (cursor >= endMs) break;
+  }
+  if (cursor < endMs) pieces.push({ startMs: cursor, endMs });
+  return pieces
+    .filter((piece) => piece.endMs > piece.startMs)
+    .map((piece) => ({
+      ...piece,
+      estimatedMinutes: Math.max(1, Math.round((piece.endMs - piece.startMs) / 60000)),
+    }));
+};
+
+// Moving or pasting a task onto occupied cells splits the collision into
+// independent pieces: the unshared cells keep belonging to their original
+// task, and every shared range becomes its own merged task. Each returned
+// segment can then be moved without touching the other pieces.
 export const planCalendarTaskPlacement = (
   tasks,
   candidate,
@@ -424,40 +528,92 @@ export const planCalendarTaskPlacement = (
   const durationMinutes = Math.min(1440, Math.max(1, Math.round(candidateDuration)));
   const candidateEndMs = startMs + durationMinutes * 60000;
   const candidateRange = cellRange(startMs, candidateEndMs);
-  const engineIntervals = [
-    ...occurrences.map((task) => {
-      const range = getTaskRange(task);
-      return range ? { task, startMs: range.startMs, endMs: range.endMs } : null;
-    }).filter(Boolean),
+  const candidateIdentity = getCalendarTaskIdentity(candidate)
+    || '__calendar-placement-candidate__';
+
+  const occurrenceIntervals = occurrences.map((task) => {
+    const range = getTaskRange(task);
+    if (!range) return null;
+    const taskStartMs = new Date(task.startAt).getTime();
+    const taskEndMs = taskStartMs + getTaskDurationMinutes(task) * 60000;
+    return {
+      task,
+      identity: getCalendarTaskIdentity(task),
+      startMs: range.startMs,
+      endMs: range.endMs,
+      taskStartMs,
+      taskEndMs,
+    };
+  }).filter(Boolean);
+
+  const overlappingIntervals = occurrenceIntervals.filter((interval) => (
+    interval.startMs < candidateRange.endMs
+    && interval.endMs > candidateRange.startMs
+  ));
+
+  const mergePlan = buildCalendarMergeSegments([
+    ...overlappingIntervals,
     {
       task: candidate,
-      identity: getCalendarTaskIdentity(candidate) || '__calendar-placement-candidate__',
+      identity: candidateIdentity,
       startMs: candidateRange.startMs,
       endMs: candidateRange.endMs,
     },
-  ];
-  const mergePlan = buildCalendarMergeSegments(engineIntervals);
+  ]);
   if (!mergePlan.valid) return null;
-  const candidateIdentity = getCalendarTaskIdentity(candidate) || '__calendar-placement-candidate__';
-  const overlappingTasks = occurrences.filter((task) => (
-    mergePlan.segments.some((segment) => (
-      segment.identityKeys.includes(candidateIdentity)
-      && segment.identityKeys.includes(getCalendarTaskIdentity(task))
-    ))
-  ));
+
+  const mergedPieces = mergePlan.segments
+    .filter((segment) => segment.identityKeys.length > 1)
+    .map((segment) => {
+      const clipped = clipCalendarPiece(segment, startMs, candidateEndMs);
+      return clipped
+        ? {
+            ...clipped,
+            identityKeys: segment.identityKeys,
+            members: orderMergedPieceMembers(segment.members, candidateIdentity),
+          }
+        : null;
+    })
+    .filter(Boolean)
+    .sort((left, right) => left.startMs - right.startMs);
+
+  const segments = subtractCalendarRanges(startMs, candidateEndMs, mergedPieces);
+
+  const splitTasks = [];
+  const absorbedTasks = [];
+  const seenIdentities = new Set();
+  for (const interval of overlappingIntervals) {
+    if (seenIdentities.has(interval.identity)) continue;
+    seenIdentities.add(interval.identity);
+    const cuts = mergedPieces.filter(
+      (piece) => piece.identityKeys.includes(interval.identity)
+    );
+    const remainingSegments = subtractCalendarRanges(
+      interval.taskStartMs,
+      interval.taskEndMs,
+      cuts
+    );
+    if (!remainingSegments.length) {
+      absorbedTasks.push(interval.task);
+      continue;
+    }
+    const unchanged = remainingSegments.length === 1
+      && remainingSegments[0].startMs === interval.taskStartMs
+      && remainingSegments[0].endMs === interval.taskEndMs;
+    if (!unchanged) {
+      splitTasks.push({ task: interval.task, segments: remainingSegments });
+    }
+  }
 
   return {
     durationMinutes,
-    segments: [{
-      startMs,
-      endMs: candidateEndMs,
-      estimatedMinutes: durationMinutes,
-    }],
+    segments,
     compositeSegments: mergePlan.segments,
-    splitTasks: [],
+    mergedPieces,
+    splitTasks,
     sameTitleTasks: [],
-    overlappingTasks,
-    absorbedTasks: [],
+    overlappingTasks: overlappingIntervals.map(({ task }) => task),
+    absorbedTasks,
     survivor: candidate,
   };
 };
@@ -521,7 +677,7 @@ export const buildCalendarTaskMerge = (tasks, startMs, endMs) => {
   return {
     survivor,
     others,
-    title: [...new Set(ordered.map((task) => task.title))].join('\n'),
+    title: buildCalendarMergedTitle(ordered.map((task) => ({ task }))),
     snapshot,
     durationMinutes: Math.min(1440, Math.max(1, Math.round((endMs - startMs) / 60000))),
   };

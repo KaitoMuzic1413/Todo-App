@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import Task from '../models/Task.js';
+import Task, { TASK_TITLE_MAX_LENGTH } from '../models/Task.js';
 import User from '../models/User.js';
 import Attachment from '../models/Attachment.js';
 import { deleteAttachmentRecords } from './attachmentsControllers.js';
@@ -273,6 +273,10 @@ export const createTask = async (req, res) => {
       return res.status(400).json({ message: 'Task title is required.' });
     }
 
+    if (title.trim().length > TASK_TITLE_MAX_LENGTH) {
+      return res.status(400).json({ message: `Task title must be ${TASK_TITLE_MAX_LENGTH} characters or fewer.` });
+    }
+
     if (!userId) {
       return res.status(400).json({ message: 'userId is required.' });
     }
@@ -419,7 +423,7 @@ const sanitizeMergedTasks = (input) => {
 
     entries.push({
       taskId,
-      title: String(entry.title || '').slice(0, 300),
+      title: String(entry.title || '').slice(0, TASK_TITLE_MAX_LENGTH),
       startAt,
       dueAt,
       estimatedMinutes,
@@ -432,6 +436,9 @@ export const updateTask = async (req, res) => {
   try {
     const { title, status, completedAt, content, items } = req.body;
     const userId = getAuthenticatedUserId(req);
+    if (title !== undefined && String(title).trim().length > TASK_TITLE_MAX_LENGTH) {
+      return res.status(400).json({ message: `Task title must be ${TASK_TITLE_MAX_LENGTH} characters or fewer.` });
+    }
     const task = await Task.findOne({ _id: req.params.id, userId, isDeleted: false });
 
     if (!task) {

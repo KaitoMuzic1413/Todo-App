@@ -105,7 +105,7 @@ const SignInPage = () => {
 
   return (
     <AuthLayout>
-      <div className='w-full max-w-md rounded-3xl border border-violet-200/70 bg-white/85 p-8 shadow-accent-ring backdrop-blur-sm dark:border-violet-500/20 dark:bg-slate-900/85 dark:shadow-accent-ring'>
+      <div className='w-full max-w-md rounded-3xl border border-violet-200/70 bg-white/85 p-5 shadow-accent-ring backdrop-blur-sm dark:border-violet-500/20 dark:bg-slate-900/85 dark:shadow-accent-ring sm:p-8'>
         <div className='mb-6 text-center'>
           <div className='mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-200'>
             <LogIn className='h-8 w-8' />

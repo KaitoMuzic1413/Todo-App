@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import SwipeActionBackground from '@/components/SwipeActionBackground';
+import useScrollLock from '@/hooks/useScrollLock';
 import {
   fetchNotification,
   fetchNotifications,
@@ -433,6 +434,7 @@ const NotificationCenter = ({
   const [newArrivalIds, setNewArrivalIds] = useState(new Set());
   const [activeSwipeId, setActiveSwipeId] = useState(null);
   const [isDraggingDrawer, setIsDraggingDrawer] = useState(false);
+  useScrollLock(drawerOpen || isDraggingDrawer || Boolean(selectedId));
 
   const notificationButtonRef = useRef(null);
   const drawerRef = useRef(null);
@@ -478,7 +480,8 @@ const NotificationCenter = ({
         navigationOpen ||
         isDraggingDrawer ||
         selectedId ||
-        !event.touches.length
+        !event.touches.length ||
+        event.target?.closest?.('[data-calendar-gesture-zone]')
       ) {
         swipeStart.current = null;
         return;
@@ -912,20 +915,6 @@ const NotificationCenter = ({
     };
   }, [detail, language]);
 
-  // Prevent background scroll when drawer or detail modal is active
-  useEffect(() => {
-    if (!drawerOpen && !selectedId) return undefined;
-    const prevOverflow = document.body.style.overflow;
-    const prevTouchAction = document.body.style.touchAction;
-    document.body.style.overflow = 'hidden';
-    document.body.style.touchAction = 'none';
-
-    return () => {
-      document.body.style.overflow = prevOverflow;
-      document.body.style.touchAction = prevTouchAction;
-    };
-  }, [drawerOpen, selectedId]);
-
   // Accessibility keyboard focus trap & Escape handling
   useEffect(() => {
     if (!drawerOpen && !selectedId) return undefined;
@@ -1001,7 +990,8 @@ const NotificationCenter = ({
       await updateNotificationState(notification.id, action);
 
       if (action === 'trash') {
-        toast(t.notificationMovedToTrash || 'Đã chuyển vào thùng rác', {
+        toast.success(t.notificationMovedToTrash || 'Đã chuyển vào thùng rác', {
+          className: 'rounded-3xl',
           action: {
             label: t.undoAction || 'Hoàn tác',
             onClick: async () => {

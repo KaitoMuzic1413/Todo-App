@@ -2,6 +2,7 @@ import { Check, CheckCircle2, Circle, Star, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/lib/i18n';
+import { TASK_TITLE_MAX_LENGTH } from '@/lib/utils';
 
 const MAX_TASKS_PER_PAGE = 5;
 
@@ -73,7 +74,7 @@ const TaskList = ({
 
   const startEditing = (task) => {
     setEditingTaskId(task._id);
-    setDraftValue(task.title);
+    setDraftValue(task.title.slice(0, TASK_TITLE_MAX_LENGTH));
   };
 
   const cancelEditing = () => {
@@ -82,7 +83,7 @@ const TaskList = ({
   };
 
   const saveEditing = async (taskId) => {
-    const nextTitle = draftValue.trim();
+    const nextTitle = draftValue.trim().slice(0, TASK_TITLE_MAX_LENGTH);
     if (!nextTitle) return;
 
     await onUpdate?.(taskId, nextTitle);
@@ -133,11 +134,11 @@ const TaskList = ({
   const isAllSelected = tasks.length > 0 && selectedTaskIds.length === tasks.length;
 
   return (
-    <div className='relative flex flex-col overflow-hidden rounded-3xl border border-slate-200/80 bg-white/80 p-5 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/70'>
+    <div className='relative flex flex-col overflow-hidden rounded-3xl border border-slate-200/80 bg-white/80 p-3 shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur-sm sm:p-5 dark:border-slate-800 dark:bg-slate-900/70'>
       <div className='mb-4 flex flex-wrap items-center justify-between gap-2'>
-        <h3 className='text-xl font-semibold text-slate-900 dark:text-white'>{title || t.todayTasks}</h3>
+        <h3 className='min-w-0 break-words text-lg font-semibold text-slate-900 sm:text-xl dark:text-white'>{title || t.todayTasks}</h3>
 
-        <div className='flex items-center gap-2'>
+        <div className='flex flex-wrap items-center justify-end gap-2'>
           {isSelectMode ? (
             <>
               <button
@@ -225,7 +226,7 @@ const TaskList = ({
                         if (event.button === 0 && isSelectMode) handleToggleSelectTask(task._id);
                       }}
                       onContextMenu={(event) => event.preventDefault()}
-                      className={`flex min-h-[72px] min-w-0 items-center justify-between gap-4 overflow-hidden rounded-3xl border p-4 shadow-sm transition-all duration-300 hover:border-violet-300 hover:shadow-md dark:hover:border-violet-700 will-change-transform ${
+                      className={`flex min-h-[72px] min-w-0 flex-col gap-3 overflow-hidden rounded-3xl border p-3 shadow-sm transition-all duration-300 hover:border-violet-300 hover:shadow-md sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:p-4 dark:hover:border-violet-700 will-change-transform ${
                         isSelectMode ? 'cursor-pointer hover:border-violet-300 dark:hover:border-violet-700' : ''
                       } ${
                         isSelected
@@ -256,6 +257,7 @@ const TaskList = ({
                               <input
                                 type='text'
                                 value={draftValue}
+                                maxLength={TASK_TITLE_MAX_LENGTH}
                                 onChange={(event) => setDraftValue(event.target.value)}
                                 onKeyDown={(e) => {
                                   if (e.key === 'Enter') {
@@ -288,7 +290,7 @@ const TaskList = ({
                             <>
                               <p
                                 title={task.title}
-                                className={`task-content truncate text-sm font-medium ${
+                                className={`task-content line-clamp-2 min-w-0 whitespace-normal break-words [overflow-wrap:anywhere] text-sm font-medium sm:line-clamp-1 ${
                                   done ? 'text-slate-400 line-through dark:text-slate-500' : 'text-slate-800 dark:text-slate-100'
                                 }`}
                               >
@@ -347,7 +349,7 @@ const TaskList = ({
                         </div>
                       </div>
 
-                      <div className='flex shrink-0 items-center gap-2'>
+                      <div className='flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto sm:flex-nowrap'>
                         {isSelectMode ? (
                           <button
                             type='button'

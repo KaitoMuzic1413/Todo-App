@@ -2,12 +2,14 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   buildCalendarMergeSegments,
+  buildCalendarMergedTitle,
   buildCalendarTaskMerge,
   dateKey,
   DEFAULT_TASK_DURATION_MINUTES,
   getCalendarDays,
   getCalendarRange,
   getCalendarEventKey,
+  getCalendarSegmentDaySpan,
   getCalendarTaskIdentity,
   groupCalendarMergeMembersByTitle,
   mergeAdjacentSameTitleBlocks,
@@ -17,6 +19,7 @@ import {
   getOverlappingCellMerge,
   getSequentialUnmergeSchedule,
   getTaskCalendarDisplay,
+  getTaskDragIntent,
   getTaskDurationMinutes,
   getCalendarTaskBlockRange,
   isCalendarMergeOccupied,
@@ -520,11 +523,196 @@ test('placement preserves both task records when their ranges overlap', () => {
   assert.deepEqual(plan.segments.map(({ startMs, endMs }) => [
     new Date(startMs).getHours(),
     new Date(endMs).getHours(),
-  ]), [[1, 8]]);
+  ]), [[1, 3], [6, 8]]);
   assert.deepEqual(plan.overlappingTasks.map(({ _id }) => _id), ['task-a']);
   assert.deepEqual(plan.compositeSegments.map(({ identityKeys }) => identityKeys.length), [1, 2, 1]);
-  assert.deepEqual(plan.absorbedTasks, []);
+  assert.deepEqual(plan.absorbedTasks.map(({ _id }) => _id), ['task-a']);
   assert.equal(plan.splitTasks.length, 0);
+  assert.deepEqual(plan.mergedPieces.map(({ startMs, endMs }) => [
+    new Date(startMs).getHours(),
+    new Date(endMs).getHours(),
+  ]), [[3, 6]]);
+});
+
+test('placement splits both tasks into independent non-overlap and merged pieces', () => {
+  const taskA = {
+    _id: 'task-a',
+    title: 'A',
+    startAt: new Date(2026, 9, 10, 1).toISOString(),
+    estimatedMinutes: 180,
+  };
+  const taskB = {
+    _id: 'task-b',
+    title: 'B',
+    startAt: new Date(2026, 9, 10, 2).toISOString(),
+    estimatedMinutes: 180,
+  };
+  const plan = planCalendarTaskPlacement(
+    [taskA, taskB],
+    {
+      _id: 'task-a',
+      title: 'A',
+      startAt: new Date(2026, 9, 10, 1).toISOString(),
+      estimatedMinutes: 180,
+    },
+    {},
+    'task-a:primary'
+  );
+
+  assert.deepEqual(plan.segments.map(({ startMs, endMs }) => [
+    new Date(startMs).getHours(),
+    new Date(endMs).getHours(),
+  ]), [[1, 2]]);
+  assert.deepEqual(plan.splitTasks.map(({ task, segments }) => [
+    task._id,
+    segments.map(({ startMs, endMs }) => [
+      new Date(startMs).getHours(),
+      new Date(endMs).getHours(),
+    ]),
+  ]), [['task-b', [[4, 5]]]]);
+  assert.deepEqual(plan.absorbedTasks, []);
+  assert.deepEqual(plan.mergedPieces.map(({ startMs, endMs, members }) => [
+    new Date(startMs).getHours(),
+    new Date(endMs).getHours(),
+    members.map(({ task }) => task._id),
+  ]), [[2, 4, ['task-a', 'task-b']]]);
+});
+
+test('placement keeps unshared cells of a fully absorbed task out of the merged piece', () => {
+  const taskA = {
+    _id: 'task-a',
+    title: 'A',
+    startAt: new Date(2026, 9, 10, 1).toISOString(),
+    estimatedMinutes: 120,
+  };
+  const taskB = {
+    _id: 'task-b',
+    title: 'B',
+    startAt: new Date(2026, 9, 10, 2).toISOString(),
+    estimatedMinutes: 120,
+  };
+  const plan = planCalendarTaskPlacement(
+    [taskA, taskB],
+    {
+      _id: 'task-a',
+      title: 'A',
+      startAt: new Date(2026, 9, 10, 1).toISOString(),
+      estimatedMinutes: 120,
+    },
+    {},
+    'task-a:primary'
+  );
+
+  assert.deepEqual(plan.segments.map(({ startMs, endMs }) => [
+    new Date(startMs).getHours(),
+    new Date(endMs).getHours(),
+  ]), [[1, 2]]);
+  assert.deepEqual(plan.splitTasks.map(({ task, segments }) => [
+    task._id,
+    segments.map(({ startMs, endMs }) => [
+      new Date(startMs).getHours(),
+      new Date(endMs).getHours(),
+    ]),
+  ]), [['task-b', [[3, 4]]]]);
+  assert.deepEqual(plan.mergedPieces.map(({ startMs, endMs }) => [
+    new Date(startMs).getHours(),
+    new Date(endMs).getHours(),
+  ]), [[2, 3]]);
+});
+
+test('placement clips a fully covered candidate to its real duration', () => {
+  const taskB = {
+    _id: 'task-b',
+    title: 'B',
+    startAt: new Date(2026, 9, 10, 2).toISOString(),
+    estimatedMinutes: 120,
+  };
+  const plan = planCalendarTaskPlacement(
+    [taskB],
+    {
+      title: 'C',
+      startAt: new Date(2026, 9, 10, 2, 30).toISOString(),
+      estimatedMinutes: 30,
+    },
+    {},
+    'candidate-c'
+  );
+
+  assert.deepEqual(plan.segments, []);
+  assert.deepEqual(plan.absorbedTasks, []);
+  assert.deepEqual(plan.splitTasks.map(({ task, segments }) => [
+    task._id,
+    segments.map(({ startMs, endMs }) => [
+      new Date(startMs).getHours(),
+      new Date(startMs).getMinutes(),
+      new Date(endMs).getHours(),
+      new Date(endMs).getMinutes(),
+    ]),
+  ]), [['task-b', [[2, 0, 2, 30], [3, 0, 4, 0]]]]);
+  assert.deepEqual(plan.mergedPieces.map(({ startMs, endMs, estimatedMinutes }) => [
+    new Date(startMs).getHours(),
+    new Date(startMs).getMinutes(),
+    new Date(endMs).getHours(),
+    new Date(endMs).getMinutes(),
+    estimatedMinutes,
+  ]), [[2, 30, 3, 0, 30]]);
+});
+
+test('merged titles keep each task name only once', () => {
+  assert.equal(buildCalendarMergedTitle([
+    { task: { title: 'B\nC' } },
+    { task: { title: 'C' } },
+  ]), 'B\nC');
+  assert.equal(buildCalendarMergedTitle([
+    { task: { title: 'A' } },
+    { task: { title: 'B' } },
+    { task: { title: 'A' } },
+  ]), 'A\nB');
+});
+
+test('placement merging a C piece into a BC piece keeps the title BC', () => {
+  const taskBC = {
+    _id: 'task-bc',
+    title: 'B\nC',
+    startAt: new Date(2026, 9, 10, 3).toISOString(),
+    estimatedMinutes: 60,
+  };
+  const taskC = {
+    _id: 'task-c',
+    title: 'C',
+    startAt: new Date(2026, 9, 10, 4).toISOString(),
+    estimatedMinutes: 60,
+  };
+  const plan = planCalendarTaskPlacement(
+    [taskBC, taskC],
+    {
+      _id: 'task-c',
+      title: 'C',
+      startAt: new Date(2026, 9, 10, 3).toISOString(),
+      estimatedMinutes: 60,
+    },
+    {},
+    'task-c:primary'
+  );
+
+  assert.equal(plan.mergedPieces.length, 1);
+  assert.equal(buildCalendarMergedTitle(plan.mergedPieces[0].members), 'B\nC');
+  assert.deepEqual(
+    plan.mergedPieces[0].members.map(({ task }) => task.title),
+    ['B\nC', 'C']
+  );
+});
+
+test('calendar segment day span returns whole-hour merge frames', () => {
+  const span = getCalendarSegmentDaySpan({
+    startMs: new Date(2026, 9, 10, 2).getTime(),
+    endMs: new Date(2026, 9, 10, 5).getTime(),
+  });
+  assert.deepEqual(span, { dayKey: '2026-10-10', startHour: 2, endHour: 4 });
+  assert.equal(getCalendarSegmentDaySpan({
+    startMs: new Date(2026, 9, 10, 22).getTime(),
+    endMs: new Date(2026, 9, 11, 2).getTime(),
+  }), null);
 });
 
 test('sweep-line merge uses half-open ranges for shared and exclusive areas', () => {
@@ -692,4 +880,13 @@ test('expands one selected task to cover the union of its cells and the selectio
       durationMinutes: 300,
     }
   );
+});
+
+test('classifies task drag intent by dominant axis', () => {
+  assert.equal(getTaskDragIntent(3, 3), null);
+  assert.equal(getTaskDragIntent(0, -20), 'select');
+  assert.equal(getTaskDragIntent(0, 20), 'select');
+  assert.equal(getTaskDragIntent(-20, 4), 'move');
+  assert.equal(getTaskDragIntent(20, 4), 'move');
+  assert.equal(getTaskDragIntent(8, 8), 'select');
 });

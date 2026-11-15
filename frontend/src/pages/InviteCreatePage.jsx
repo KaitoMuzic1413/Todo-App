@@ -109,12 +109,12 @@ const InviteCreatePage = () => {
       <div className='space-y-6'>
         <Header />
 
-        <section className='rounded-3xl border border-slate-200/80 bg-white/85 p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/75'>
+        <section className='rounded-3xl border border-slate-200/80 bg-white/85 p-4 shadow-sm sm:p-6 dark:border-slate-800 dark:bg-slate-900/75'>
           <div className='flex items-center gap-3'>
-            <span className='flex h-11 w-11 items-center justify-center rounded-3xl bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-200'><KeyRound className='h-5 w-5' /></span>
-            <div>
-              <h1 className='text-xl font-bold text-slate-900 dark:text-white'>Create Premium invite</h1>
-              <p className='text-sm text-slate-500 dark:text-slate-400'>Generate controlled codes that grant premium task and file limits.</p>
+            <span className='flex h-11 w-11 shrink-0 items-center justify-center rounded-3xl bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-200'><KeyRound className='h-5 w-5' /></span>
+            <div className='min-w-0'>
+              <h1 className='break-words text-xl font-bold text-slate-900 dark:text-white'>Create Premium invite</h1>
+              <p className='break-words text-sm text-slate-500 dark:text-slate-400'>Generate controlled codes that grant premium task and file limits.</p>
             </div>
           </div>
 
@@ -174,7 +174,7 @@ const InviteCreatePage = () => {
           </form>
         </section>
 
-        <section className='rounded-3xl border border-slate-200/80 bg-white/85 p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/75'>
+        <section className='rounded-3xl border border-slate-200/80 bg-white/85 p-4 shadow-sm sm:p-6 dark:border-slate-800 dark:bg-slate-900/75'>
           <h2 className='text-lg font-semibold text-slate-900 dark:text-white'>Recent invite codes</h2>
           {loading ? (
             <div className='mt-4 flex items-center gap-2 text-sm text-slate-500'><LoaderCircle className='h-4 w-4 animate-spin' /> Loading...</div>
@@ -185,12 +185,12 @@ const InviteCreatePage = () => {
               {invites.map((invite) => (
                 <article key={invite._id} className='flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950/50 sm:flex-row sm:items-center sm:justify-between'>
                   <div className='min-w-0'>
-                    <p className='font-mono text-sm font-bold tracking-wider text-slate-900 dark:text-white'>{invite.code}</p>
-                    <p className='mt-1 text-xs text-slate-500 dark:text-slate-400'>
+                    <p className='break-all font-mono text-sm font-bold tracking-wider text-slate-900 dark:text-white'>{invite.code}</p>
+                    <p className='mt-1 break-words [overflow-wrap:anywhere] text-xs text-slate-500 dark:text-slate-400'>
                       {invite.usedCount}/{invite.maxUses} used · {invite.planDays} days · expires {formatDate(invite.expiresAt)} · {invite.isActive ? 'active' : 'inactive'}
                     </p>
                   </div>
-                  <div className='flex shrink-0 gap-2'>
+                  <div className='flex shrink-0 flex-wrap gap-2'>
                     <button
                       type='button'
                       onClick={() => void handleCopy(invite.code)}
