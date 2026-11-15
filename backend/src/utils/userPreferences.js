@@ -1,6 +1,6 @@
 export const PREFERENCE_OPTIONS = {
   theme: ['light', 'dark'],
-  accent: ['violet', 'rose', 'emerald', 'amber'],
+  accent: ['violet', 'rose', 'emerald', 'amber', 'cyan', 'fuchsia'],
   language: ['en', 'vi'],
   taskView: ['list', 'grid', 'kanban'],
   sortBy: ['createdAt', 'title', 'important'],

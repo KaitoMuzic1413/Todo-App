@@ -64,7 +64,7 @@ const userSchema = new mongoose.Schema(
     },
     preferences: {
       theme: { type: String, enum: ['light', 'dark'], default: 'dark' },
-      accent: { type: String, enum: ['violet', 'rose', 'emerald', 'amber'], default: 'violet' },
+      accent: { type: String, enum: ['violet', 'rose', 'emerald', 'amber', 'cyan', 'fuchsia'], default: 'violet' },
       language: { type: String, enum: ['en', 'vi'], default: 'en' },
       taskView: { type: String, enum: ['list', 'grid', 'kanban'], default: 'list' },
       sortBy: { type: String, enum: ['createdAt', 'title', 'important'], default: 'createdAt' },

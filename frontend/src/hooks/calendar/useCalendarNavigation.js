@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { dateKey, getCalendarDays, getCalendarRange } from '@/lib/calendarUtils';
 
 const useCalendarNavigation = ({
@@ -28,7 +28,7 @@ const useCalendarNavigation = ({
   const calendarDateKeys = useMemo(() => calendarDays.map(dateKey), [calendarDays]);
   const calendarRange = useMemo(() => getCalendarRange(calendarDays), [calendarDays]);
 
-  const changePeriod = (direction) => {
+  const changePeriod = useCallback((direction) => {
     setSelectedDate((current) => {
       const next = new Date(current);
       if (viewMode === 'month') next.setMonth(next.getMonth() + direction);
@@ -37,11 +37,11 @@ const useCalendarNavigation = ({
       else next.setDate(next.getDate() + direction);
       return next;
     });
-  };
+  }, [setSelectedDate, viewMode]);
 
-  const jumpToToday = () => {
+  const jumpToToday = useCallback(() => {
     setSelectedDate(new Date());
-  };
+  }, [setSelectedDate]);
 
   const periodLabel = useMemo(() => {
     if (viewMode === 'month') {

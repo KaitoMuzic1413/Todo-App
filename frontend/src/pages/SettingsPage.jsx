@@ -277,12 +277,14 @@ const SettingsPage = () => {
               <span className='flex h-10 w-10 items-center justify-center rounded-3xl bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-200'><Palette className='h-5 w-5' /></span>
               <h2 className='text-lg font-semibold text-slate-900 dark:text-white'>{t.accentColor}</h2>
             </div>
-            <div className='mt-6 grid grid-cols-2 gap-3'>
+            <div className='relative mt-6 grid grid-cols-3 gap-1 rounded-3xl border border-slate-200 bg-slate-100 p-1 dark:border-slate-700 dark:bg-slate-950'>
               {[
                 { key: 'violet', color: '#8b5cf6' },
                 { key: 'rose', color: '#f43f5e' },
                 { key: 'emerald', color: '#10b981' },
                 { key: 'amber', color: '#f59e0b' },
+                { key: 'cyan', color: '#06b6d4' },
+                { key: 'fuchsia', color: '#d946ef' },
               ].map(({ key, color }) => (
                 <button
                   key={key}
@@ -290,11 +292,19 @@ const SettingsPage = () => {
                   aria-label={`${t.accentColor}: ${t[key] || key}`}
                   aria-pressed={selectedAccent === key}
                   onClick={() => void selectAccent(key)}
-                  className={`flex items-center gap-3 rounded-3xl border p-3 text-left text-sm font-medium transition-colors ${selectedAccent === key ? 'border-violet-400 bg-violet-50 text-slate-900 dark:border-violet-500 dark:bg-violet-500/10 dark:text-white' : 'border-slate-200 bg-slate-50 text-slate-700 hover:border-slate-300 dark:border-slate-700 dark:bg-slate-950/40 dark:text-slate-200 dark:hover:border-slate-600'}`}
+                  className={`relative z-10 flex items-center justify-center gap-2 rounded-3xl border px-2 py-3 text-xs font-semibold transition-colors sm:text-sm ${selectedAccent === key ? 'border-transparent text-slate-900 dark:text-white' : 'border-slate-200/70 bg-slate-50 text-slate-700 hover:text-slate-900 dark:border-slate-700 dark:bg-slate-950/40 dark:text-slate-200 dark:hover:text-white'}`}
                 >
-                  <span className='h-7 w-7 rounded-3xl shadow-inner' style={{ backgroundColor: color }} />
-                  <span className='flex-1'>{t[key] || key}</span>
-                  {selectedAccent === key ? <Check className='h-4 w-4 text-violet-600 dark:text-violet-300' /> : null}
+                  {selectedAccent === key ? (
+                    <motion.span
+                      aria-hidden='true'
+                      layoutId='accent-indicator'
+                      className='absolute inset-0 -z-10 rounded-3xl border-2 bg-white shadow-sm dark:bg-slate-800'
+                      style={{ borderColor: color }}
+                      transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+                    />
+                  ) : null}
+                  <span className='h-4 w-4 shrink-0 rounded-3xl shadow-inner sm:h-5 sm:w-5' style={{ backgroundColor: color }} />
+                  <span className='truncate'>{t[key] || key}</span>
                 </button>
               ))}
             </div>
@@ -308,13 +318,27 @@ const SettingsPage = () => {
             <div className='mt-6 space-y-5'>
               <div>
                 <p className='mb-2 text-sm font-medium text-slate-700 dark:text-slate-200'>{t.theme}</p>
-                <div className='grid grid-cols-2 gap-2'>
+                <div className='relative grid grid-cols-2 gap-1 rounded-3xl border border-slate-200 bg-slate-100 p-1 dark:border-slate-700 dark:bg-slate-950'>
                   {[
                     { key: 'light', label: t.lightMode, Icon: Sun },
                     { key: 'dark', label: t.darkMode, Icon: Moon },
                   ].map(({ key, label, Icon }) => (
-                    <button key={key} type='button' aria-pressed={preferences.theme === key} onClick={() => void selectTheme(key)} className={`flex items-center justify-center gap-2 rounded-3xl border px-3 py-3 text-sm font-medium transition-colors ${preferences.theme === key ? 'border-violet-400 bg-violet-50 text-violet-700 dark:border-violet-500 dark:bg-violet-500/10 dark:text-violet-200' : 'border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300 dark:border-slate-700 dark:bg-slate-950/40 dark:text-slate-300 dark:hover:border-slate-600'}`}>
-                      <Icon className='h-4 w-4' />{label}
+                    <button
+                      key={key}
+                      type='button'
+                      aria-pressed={preferences.theme === key}
+                      onClick={() => void selectTheme(key)}
+                      className={`relative z-10 flex items-center justify-center gap-2 rounded-3xl border px-3 py-3 text-sm font-medium transition-colors ${preferences.theme === key ? 'border-transparent text-violet-700 dark:text-violet-100' : 'border-slate-200/70 bg-slate-50 text-slate-600 hover:text-violet-700 dark:border-slate-700 dark:bg-slate-950/40 dark:text-slate-300 dark:hover:text-violet-200'}`}
+                    >
+                      {preferences.theme === key ? (
+                        <motion.span
+                          aria-hidden='true'
+                          layoutId='theme-indicator'
+                          className='absolute inset-0 -z-10 rounded-3xl border border-violet-300 bg-white shadow-sm dark:border-violet-500/60 dark:bg-violet-500/20'
+                          transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+                        />
+                      ) : null}
+                      <Icon className='relative h-4 w-4' />{label}
                     </button>
                   ))}
                 </div>
@@ -322,13 +346,26 @@ const SettingsPage = () => {
               <div>
                 <p className='mb-2 text-sm font-medium text-slate-700 dark:text-slate-200'>{t.language}</p>
                 <div className='relative grid grid-cols-2 gap-1 rounded-3xl border border-slate-200 bg-slate-100 p-1 dark:border-slate-700 dark:bg-slate-950'>
-                  <motion.span aria-hidden='true' className='absolute bottom-1 top-1 w-[calc(50%-4px)] rounded-3xl bg-violet-100 shadow-sm dark:bg-violet-500/20' initial={false} animate={{ x: language === 'vi' ? 0 : '100%' }} transition={{ type: 'spring', stiffness: 420, damping: 32 }} />
                   {[
                     { key: 'vi', label: 'VI' },
                     { key: 'en', label: 'EN' },
                   ].map(({ key, label }) => (
-                    <button key={key} type='button' aria-pressed={language === key} onClick={() => void selectLanguage(key)} className={`relative z-10 rounded-3xl px-3 py-3 text-sm font-bold transition-colors ${language === key ? 'text-violet-700 dark:text-violet-100' : 'text-slate-500 hover:text-violet-700 dark:text-slate-300 dark:hover:text-violet-200'}`}>
-                      {label}
+                    <button
+                      key={key}
+                      type='button'
+                      aria-pressed={language === key}
+                      onClick={() => void selectLanguage(key)}
+                      className={`relative z-10 rounded-3xl border px-3 py-3 text-sm font-bold transition-colors ${language === key ? 'border-transparent text-violet-700 dark:text-violet-100' : 'border-slate-200/70 bg-slate-50 text-slate-500 hover:text-violet-700 dark:border-slate-700 dark:bg-slate-950/40 dark:text-slate-300 dark:hover:text-violet-200'}`}
+                    >
+                      {language === key ? (
+                        <motion.span
+                          aria-hidden='true'
+                          layoutId='language-indicator'
+                          className='absolute inset-0 -z-10 rounded-3xl border border-violet-300 bg-white shadow-sm dark:border-violet-500/60 dark:bg-violet-500/20'
+                          transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+                        />
+                      ) : null}
+                      <span className='relative'>{label}</span>
                     </button>
                   ))}
                 </div>

@@ -938,7 +938,7 @@ const CalendarPage = () => {
 
   // Mobile has no right click: long-press starts a cell selection, then
   // dragging expands it and releasing opens the mini menu.
-  const startLongPress = (event, dayIndex, startHour, endHour) => {
+  const startLongPress = useCallback((event, dayIndex, startHour, endHour) => {
     const touch = event.touches?.[0];
     if (!touch) return;
     clearLongPress();
@@ -962,18 +962,18 @@ const CalendarPage = () => {
       setCellMenu(null);
       setCellSelection({ anchorDay: dayIndex, anchorHour: startHour, focusDay: dayIndex, focusHour: endHour });
     }, 450);
-  };
+  }, [clearLongPress]);
 
   // Consume the "this click came right after a long press / drag" window.
-  const consumeSuppressedClick = () => {
+  const consumeSuppressedClick = useCallback(() => {
     if (nowMs() >= suppressClickUntilRef.current) return false;
     suppressClickUntilRef.current = 0;
     return true;
-  };
+  }, []);
 
   // Start a cell drag. `endHour` lets a merged region act as one big cell:
   // pressing anywhere inside it selects the whole region immediately.
-  const beginCellDrag = (event, dayIndex, hour, endHour = hour) => {
+  const beginCellDrag = useCallback((event, dayIndex, hour, endHour = hour) => {
     if (event.button !== 0 || nowMs() - longPressAtRef.current < 800) return;
     moveTaskCandidateRef.current = null;
     if (movingTaskRef.current) {
@@ -992,9 +992,9 @@ const CalendarPage = () => {
     cellDragFocusRef.current = { dayIndex, hour: endHour, anchorHour: hour };
     cellDragStartFocusRef.current = { dayIndex, hour: endHour };
     setCellSelection({ anchorDay: dayIndex, anchorHour: hour, focusDay: dayIndex, focusHour: endHour });
-  };
+  }, []);
 
-  const beginMoveTaskDrag = (event) => {
+  const beginMoveTaskDrag = useCallback((event) => {
     const isMousePointer = event.pointerType === 'mouse' || event.pointerType === 'pen';
     if (isMousePointer && event.button !== 0) return;
     if (!isMousePointer && typeof event.button === 'number' && event.button !== 0) return;
@@ -1005,9 +1005,9 @@ const CalendarPage = () => {
     moveDragMovedRef.current = false;
     moveDragStartRef.current = { x: point.clientX, y: point.clientY };
     setCellsSelecting(true);
-  };
+  }, []);
 
-  const beginTaskResize = (event, task, dayIndex, edge) => {
+  const beginTaskResize = useCallback((event, task, dayIndex, edge) => {
     if (event.button !== 0 || !task.startAt) return;
     event.preventDefault();
     event.stopPropagation();
@@ -1037,9 +1037,9 @@ const CalendarPage = () => {
     cancelCellDrag();
     setCellsSelecting(true);
     moveTaskCandidateRef.current = null;
-  };
+  }, [cancelCellDrag, clearLongPress]);
 
-  const getTaskResizeEdgeAtPoint = (event) => {
+  const getTaskResizeEdgeAtPoint = useCallback((event) => {
     const wrapper = event.currentTarget;
     const card = wrapper.querySelector('[data-task-card]');
     if (!card) return null;
@@ -1081,7 +1081,7 @@ const CalendarPage = () => {
     return corner && normalizedX ** 2 + normalizedY ** 2 > 1
       ? (corner === 'top' ? 'start' : 'end')
       : null;
-  };
+  }, []);
 
   const updateResizingTaskFromPoint = useCallback((clientX, clientY) => {
     const current = resizingTaskRef.current;
@@ -1102,7 +1102,7 @@ const CalendarPage = () => {
     setResizingTask(next);
   }, []);
 
-  const createMoveTaskCandidate = (
+  const createMoveTaskCandidate = useCallback((
     task, dayIndex, date, sourceMerge, blockMembers, blockStartMs, blockEndMs, clientY,
     isSameTitleMerge = false
   ) => {
@@ -1233,9 +1233,9 @@ const CalendarPage = () => {
           }
         : null,
     };
-  };
+  }, []);
 
-  const beginTaskPointerDrag = (
+  const beginTaskPointerDrag = useCallback((
     event, task, dayIndex, date, sourceMerge,
     blockMembers = [], blockStartMs = null, blockEndMs = null,
     isSameTitleMerge = false
@@ -1258,7 +1258,7 @@ const CalendarPage = () => {
     moveDragActiveRef.current = false;
     moveDragMovedRef.current = false;
     moveDragStartRef.current = { x: event.clientX, y: event.clientY };
-  };
+  }, [createMoveTaskCandidate]);
 
   const updateCellSelectionFromPoint = useCallback((clientX, clientY) => {
     if (!isSelectingCellsRef.current) return;
@@ -1440,6 +1440,11 @@ const CalendarPage = () => {
       if (!touch) return;
 
       lastTouchPositionRef.current = { x: touch.clientX, y: touch.clientY };
+      if (resizingTaskRef.current) {
+        if (event.cancelable) event.preventDefault();
+        updateResizingTaskFromPoint(touch.clientX, touch.clientY);
+        return;
+      }
       if (!isSelectingCellsRef.current) {
         const start = touchStartPositionRef.current;
         if (start && Math.hypot(touch.clientX - start.x, touch.clientY - start.y) > 12) {
@@ -1454,7 +1459,7 @@ const CalendarPage = () => {
 
     window.addEventListener('touchmove', handleTouchMove, { passive: false });
     return () => window.removeEventListener('touchmove', handleTouchMove);
-  }, [clearLongPress, updateCellSelectionFromPoint]);
+  }, [clearLongPress, updateCellSelectionFromPoint, updateResizingTaskFromPoint]);
 
   useLayoutEffect(() => {
     movingTaskRef.current = movingTask;
@@ -1685,7 +1690,7 @@ const CalendarPage = () => {
   }, [movingTask]);
 
   // Excel-style right-click: open the mini menu anchored to a cell range.
-  const openCellMenuAt = (event, dayIndex, anchorHour, focusHour) => {
+  const openCellMenuAt = useCallback((event, dayIndex, anchorHour, focusHour) => {
     event.preventDefault();
     if (movingTaskRef.current) {
       moveDragActiveRef.current = false;
@@ -1700,7 +1705,7 @@ const CalendarPage = () => {
       focusHour,
     });
     setCellMenu({ x: event.clientX, y: event.clientY });
-  };
+  }, [cancelCellDrag]);
 
   // Finish the drag on mouse release. Only an actual drag (focus moved away
   // from the initial selection) opens the mini menu; a plain press/release
@@ -2537,7 +2542,7 @@ const CalendarPage = () => {
   }, [selectionRect, selectionTasks.length, locale, language]);
 
   // Modal Open Handlers
-  const hydrateNoteForModal = (date) => {
+  const hydrateNoteForModal = useCallback((date) => {
     const key = dateKey(date);
     if (!notesReady) {
       noteHydratedKeyRef.current = null;
@@ -2546,18 +2551,18 @@ const CalendarPage = () => {
     }
     noteHydratedKeyRef.current = key;
     setNoteInput(calendarNotesQuery.data?.[key]?.content || '');
-  };
+  }, [calendarNotesQuery.data, notesReady]);
 
-  const openNoteModal = (date) => {
+  const openNoteModal = useCallback((date) => {
     hydrateNoteForModal(date);
     setActiveModal({ mode: 'note', date, task: null });
-  };
+  }, [hydrateNoteForModal]);
 
-  const openTaskPreviewModal = (date, task) => {
+  const openTaskPreviewModal = useCallback((date, task) => {
     setActiveModal({ mode: 'preview', date, task });
-  };
+  }, []);
 
-  const openTaskScheduleModal = (date, task = null, hour = null, endHour = null, focusNewTaskTitle = false) => {
+  const openTaskScheduleModal = useCallback((date, task = null, hour = null, endHour = null, focusNewTaskTitle = false) => {
     const keyDate = new Date(date);
     const hasFrame = typeof hour === 'number';
     if (hasFrame) {
@@ -2589,7 +2594,11 @@ const CalendarPage = () => {
       focusNewTaskTitle,
       frame: hasFrame ? { startAt: initialStart, dueAt: initialDue } : null,
     });
-  };
+  }, [hydrateNoteForModal]);
+
+  const handleCreateNote = useCallback(() => {
+    openNoteModal(selectedDate);
+  }, [openNoteModal, selectedDate]);
 
   const handleScheduleTaskChange = (value) => {
     if (value === NEW_TASK_ID) {
@@ -2762,7 +2771,7 @@ const CalendarPage = () => {
           dayView={t.dayView}
           onJumpToToday={jumpToToday}
           onChangePeriod={changePeriod}
-          onCreate={() => openNoteModal(selectedDate)}
+          onCreate={handleCreateNote}
         />
 
         {/* Calendar Content Views */}

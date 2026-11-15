@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { List } from 'lucide-react';
 
 const UnscheduledTasks = ({
@@ -48,4 +49,4 @@ const UnscheduledTasks = ({
   </section>
 );
 
-export default UnscheduledTasks;
+export default memo(UnscheduledTasks);

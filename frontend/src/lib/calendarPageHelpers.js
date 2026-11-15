@@ -23,12 +23,24 @@ export const toLocalInputValue = (value) => {
   return date.toISOString().slice(0, 16);
 };
 
+const timeFormatters = new Map();
+
+const getTimeFormatter = (locale) => {
+  const key = locale || 'default';
+  let formatter = timeFormatters.get(key);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(locale, {
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+    timeFormatters.set(key, formatter);
+  }
+  return formatter;
+};
+
 export const formatTimeOnly = (value, locale) => {
   if (!value) return '';
-  return new Intl.DateTimeFormat(locale, {
-    hour: 'numeric',
-    minute: '2-digit',
-  }).format(new Date(value));
+  return getTimeFormatter(locale).format(new Date(value));
 };
 
 export const getTaskBlockBounds = (task) => {

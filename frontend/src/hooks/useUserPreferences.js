@@ -47,7 +47,7 @@ export const useUserPreferences = (userId) => {
       ...defaultUserPreferences,
       ...query.data,
       theme: query.data?.theme === 'light' ? 'light' : 'dark',
-      accent: ['violet', 'rose', 'emerald', 'amber'].includes(query.data?.accent) ? query.data.accent : 'violet',
+      accent: ['violet', 'rose', 'emerald', 'amber', 'cyan', 'fuchsia'].includes(query.data?.accent) ? query.data.accent : 'violet',
       sortBy: ['title', 'createdAt'].includes(query.data?.sortBy) ? query.data.sortBy : 'createdAt',
     },
     hasLoadedPreferences: query.isSuccess,

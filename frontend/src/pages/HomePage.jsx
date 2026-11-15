@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Columns3, LayoutGrid, List, Award, Flame, Sparkles } from 'lucide-react';
@@ -287,22 +287,27 @@ const HomePage = ({ contentType = 'task' }) => {
     },
   });
 
-  const handleAddTask = (payload) => {
-    if (!currentUser?._id) return;
-    addTaskMutation.mutate(payload);
-  };
+  const addTaskMutate = addTaskMutation.mutate;
+  const toggleTaskMutate = toggleTaskMutation.mutate;
+  const deleteTaskMutate = deleteTaskMutation.mutate;
+  const updateTaskMutate = updateTaskMutation.mutate;
 
-  const handleToggleTask = (taskId) => {
+  const handleAddTask = useCallback((payload) => {
     if (!currentUser?._id) return;
-    toggleTaskMutation.mutate(taskId);
-  };
+    addTaskMutate(payload);
+  }, [addTaskMutate, currentUser?._id]);
 
-  const handleDeleteTask = (taskId) => {
+  const handleToggleTask = useCallback((taskId) => {
     if (!currentUser?._id) return;
-    deleteTaskMutation.mutate(taskId);
-  };
+    toggleTaskMutate(taskId);
+  }, [currentUser?._id, toggleTaskMutate]);
 
-  const handleUpdateTask = (taskId, nextTitle, payload = {}) => {
+  const handleDeleteTask = useCallback((taskId) => {
+    if (!currentUser?._id) return;
+    deleteTaskMutate(taskId);
+  }, [currentUser?._id, deleteTaskMutate]);
+
+  const handleUpdateTask = useCallback((taskId, nextTitle, payload = {}) => {
     if (!currentUser?._id) return;
 
     const body = { ...(payload || {}) };
@@ -312,8 +317,17 @@ const HomePage = ({ contentType = 'task' }) => {
       body.title = trimmed;
     }
 
-    updateTaskMutation.mutate({ taskId, body });
-  };
+    updateTaskMutate({ taskId, body });
+  }, [currentUser?._id, updateTaskMutate]);
+
+  const handleFilterChange = useCallback((key) => {
+    setFilterKey(key);
+    setCurrentPage(1);
+  }, []);
+
+  const handlePageChange = useCallback((page) => {
+    setCurrentPage(page);
+  }, []);
 
   const updatePreferences = async (nextPreferences) => {
     try {
@@ -374,10 +388,7 @@ const HomePage = ({ contentType = 'task' }) => {
         <StatsAndFilters
           tasks={tasks}
           activeFilter={filterKey}
-          onFilterChange={(key) => {
-            setFilterKey(key);
-            setCurrentPage(1);
-          }}
+          onFilterChange={handleFilterChange}
           contentType={contentType}
         />
 
@@ -544,9 +555,7 @@ const HomePage = ({ contentType = 'task' }) => {
           <TaskListPagination
             currentPage={safeCurrentPage}
             totalPages={totalPages}
-            onPageChange={(p) => {
-              setCurrentPage(p);
-            }}
+            onPageChange={handlePageChange}
           />
           <DateTimeFilter
             value={timeFilter}

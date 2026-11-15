@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { motion } from 'framer-motion';
 import {
   CalendarDays,
@@ -142,4 +143,4 @@ const CalendarToolbar = ({
   </header>
 );
 
-export default CalendarToolbar;
+export default memo(CalendarToolbar);

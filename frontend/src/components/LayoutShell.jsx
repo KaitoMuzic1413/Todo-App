@@ -35,7 +35,7 @@ export function LayoutShell({ children, hideAccountPanel = false }) {
     return localStorage.getItem('todo-theme') !== 'light';
   });
   const [localAccent] = useState(() => (
-    ['violet', 'rose', 'emerald', 'amber'].includes(localStorage.getItem('todo-accent'))
+    ['violet', 'rose', 'emerald', 'amber', 'cyan', 'fuchsia'].includes(localStorage.getItem('todo-accent'))
       ? localStorage.getItem('todo-accent')
       : 'violet'
   ));

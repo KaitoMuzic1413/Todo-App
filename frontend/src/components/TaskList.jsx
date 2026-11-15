@@ -1,5 +1,5 @@
 import { Check, CheckCircle2, Circle, Star, Trash2, X } from 'lucide-react';
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/lib/i18n';
 import { TASK_TITLE_MAX_LENGTH } from '@/lib/utils';
@@ -430,4 +430,4 @@ const TaskList = ({
   );
 };
 
-export default TaskList;
+export default memo(TaskList);

@@ -168,7 +168,7 @@ export const getAllTasks = async (req, res) => {
       ...userFilter,
       isDeleted: false,
       ...typeFilter,
-    }).sort({ lastUsedAt: -1, createdAt: -1 });
+    }).sort({ lastUsedAt: -1, createdAt: -1 }).lean();
     return res.status(200).json(tasks);
   } catch (error) {
     console.error('Error getAllTasks:', error);
@@ -215,7 +215,7 @@ export const getCalendarTasks = async (req, res) => {
           ],
         },
       ],
-    }).sort({ startAt: 1, dueAt: 1, createdAt: -1 });
+    }).sort({ startAt: 1, dueAt: 1, createdAt: -1 }).lean();
 
     await touchUserActivity(userId);
     return res.status(200).json(tasks);
@@ -839,7 +839,7 @@ export const getTrashTasks = async (req, res) => {
       filter.createdAt = dateFilter;
     }
 
-    const tasks = await Task.find(filter).sort({ deletedAt: -1 });
+    const tasks = await Task.find(filter).sort({ deletedAt: -1 }).lean();
     await touchUserActivity(userId);
     return res.status(200).json(tasks);
   } catch (error) {

@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { AlertTriangle, Clock, Plus, StickyNote } from 'lucide-react';
 import {
   dateKey,
@@ -6,6 +7,18 @@ import {
   getTaskCalendarDisplay,
 } from '@/lib/calendarUtils';
 import { formatTimeOnly } from '@/lib/calendarPageHelpers';
+
+const weekdayFormatters = new Map();
+
+const getWeekdayFormatter = (locale) => {
+  const key = locale || 'default';
+  let formatter = weekdayFormatters.get(key);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(locale, { weekday: 'short' });
+    weekdayFormatters.set(key, formatter);
+  }
+  return formatter;
+};
 
 const MonthView = ({
   calendarDays,
@@ -18,17 +31,19 @@ const MonthView = ({
   t,
   openNoteModal,
   openTaskScheduleModal,
-}) => (
+}) => {
+  const weekdayFormatter = getWeekdayFormatter(locale);
+  return (
   <section className='overflow-hidden rounded-3xl border border-slate-200/90 bg-white/90 shadow-sm backdrop-blur-md dark:border-slate-600 dark:bg-slate-800/90'>
-    <div className='grid grid-cols-7 border-b border-slate-200/90 bg-slate-50/70 text-center text-xs font-bold uppercase tracking-wider text-slate-500 dark:border-slate-600 dark:bg-slate-900/40 dark:text-slate-400'>
+    <div className='grid grid-cols-7 border-b border-slate-200/90 bg-slate-100/80 text-center text-xs font-bold uppercase tracking-wider text-slate-500 dark:border-slate-600 dark:bg-slate-900/40 dark:text-slate-400'>
       {calendarDays.slice(0, 7).map((date) => (
         <div key={dateKey(date)} className='py-2.5'>
-          {new Intl.DateTimeFormat(locale, { weekday: 'short' }).format(date)}
+          {weekdayFormatter.format(date)}
         </div>
       ))}
     </div>
 
-    <div className='grid grid-cols-7 divide-x divide-y divide-slate-100 dark:divide-slate-600/80'>
+    <div className='grid grid-cols-7 divide-x divide-y divide-slate-200/70 bg-slate-50 dark:divide-slate-600/80 dark:bg-transparent'>
       {calendarDays.map((date) => {
         const dayKey = dateKey(date);
         const isCurrentMonth = date.getMonth() === selectedDate.getMonth();
@@ -43,8 +58,8 @@ const MonthView = ({
             onClick={() => openNoteModal(date)}
             className={`group relative flex min-h-[110px] cursor-pointer flex-col p-1.5 transition-colors hover:bg-violet-50/40 dark:hover:bg-violet-900/15 sm:min-h-[135px] sm:p-2 ${
               !isCurrentMonth
-                ? 'bg-slate-50/40 text-slate-400 dark:bg-slate-900/30 dark:text-slate-600'
-                : 'bg-white/40 dark:bg-slate-800/40 text-slate-800 dark:text-slate-100'
+                ? 'bg-slate-100/60 text-slate-400 dark:bg-slate-900/30 dark:text-slate-600'
+                : 'bg-slate-50/80 text-slate-800 dark:bg-slate-800/40 dark:text-slate-100'
             }`}
           >
             <div className='mb-1 flex items-center justify-between'>
@@ -138,6 +153,7 @@ const MonthView = ({
       })}
     </div>
   </section>
-);
+  );
+};
 
-export default MonthView;
+export default memo(MonthView);

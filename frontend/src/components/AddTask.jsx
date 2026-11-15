@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { Plus } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n';
 import { Card } from './ui/card';
@@ -128,4 +128,4 @@ const AddTask = ({ onAdd, contentType = 'task' }) => {
   );
 };
 
-export default AddTask;
+export default memo(AddTask);

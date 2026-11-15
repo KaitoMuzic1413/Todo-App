@@ -298,9 +298,15 @@ export const buildCalendarMergeSegments = (intervals) => {
     if (eventIndex > 0 && active.size) {
       const previousPosition = events[eventIndex - 1].position;
       if (position > previousPosition) {
-        const members = [...active.values()]
-          .map(({ identity, task }) => ({ identity, task }))
-          .sort((left, right) => left.identity.localeCompare(right.identity));
+        const activeValues = [...active.values()];
+        const members = (activeValues.length === 1
+          ? [{
+              identity: activeValues[0].identity,
+              task: activeValues[0].task,
+            }]
+          : activeValues
+            .map(({ identity, task }) => ({ identity, task }))
+            .sort((left, right) => left.identity.localeCompare(right.identity)));
         const identityKeys = members.map(({ identity }) => identity);
         const previous = segments.at(-1);
         if (
@@ -749,25 +755,44 @@ export const getSequentialUnmergeSchedule = (entry, blockStart, index) => {
 
 export const groupTasksByCalendarDay = (tasks, days) => {
   const groups = new Map();
-  const addTask = (key, task) => groups.set(key, [...(groups.get(key) || []), task]);
+  const eventKeysByDay = new Map();
+  const dayInfos = [];
+  const dayInfoByKey = new Map();
+
+  for (const day of days) {
+    const key = dateKey(day);
+    const start = startOfDay(day).getTime();
+    const nextDay = startOfDay(day);
+    nextDay.setDate(nextDay.getDate() + 1);
+    const info = { key, startMs: start, endMs: nextDay.getTime() };
+    dayInfos.push(info);
+    if (!dayInfoByKey.has(key)) dayInfoByKey.set(key, info);
+  }
+
+  const addTask = (key, task, eventKey) => {
+    const group = groups.get(key);
+    if (group) group.push(task);
+    else groups.set(key, [task]);
+    const keys = eventKeysByDay.get(key);
+    if (keys) keys.add(eventKey);
+    else eventKeysByDay.set(key, new Set([eventKey]));
+  };
 
   for (const task of getTaskCalendarOccurrences(tasks)) {
+    const eventKey = getCalendarEventKey(task);
     if (task.startAt) {
       const start = new Date(task.startAt).getTime();
       const end = start + getTaskDurationMinutes(task) * 60000;
-      for (const day of days) {
-        const dayStart = startOfDay(day).getTime();
-        const nextDay = startOfDay(day);
-        nextDay.setDate(nextDay.getDate() + 1);
-        if (start < nextDay.getTime() && end > dayStart) addTask(dateKey(day), task);
+      for (const info of dayInfos) {
+        if (start < info.endMs && end > info.startMs) {
+          addTask(info.key, task, eventKey);
+        }
       }
     }
     if (task.dueAt) {
-      const dueDate = new Date(task.dueAt);
-      const key = dateKey(dueDate);
-      if (days.some((day) => dateKey(day) === key)
-        && !groups.get(key)?.some((event) => getCalendarEventKey(event) === getCalendarEventKey(task))) {
-        addTask(key, task);
+      const key = dateKey(new Date(task.dueAt));
+      if (dayInfoByKey.has(key) && !eventKeysByDay.get(key)?.has(eventKey)) {
+        addTask(key, task, eventKey);
       }
     }
   }
@@ -783,19 +808,27 @@ export const getDayWarnings = (dayTasks, date = null) => {
   const nextDay = date ? startOfDay(date) : null;
   if (nextDay) nextDay.setDate(nextDay.getDate() + 1);
   const dayEnd = nextDay ? nextDay.getTime() : Number.POSITIVE_INFINITY;
-  const blocks = dayTasks
-    .filter((task) => task.startAt)
-    .map((task) => {
-      const start = new Date(task.startAt).getTime();
-      const duration = getTaskDurationMinutes(task) * 60 * 1000;
-      const originalEnd = start + duration;
-      return {
-        start: Math.max(start, dayStart),
-        end: Math.min(originalEnd, dayEnd),
-      };
-    })
-    .filter((block) => block.start < block.end)
-    .sort((left, right) => left.start - right.start);
+  const blocks = [];
+  let plannedMinutes = 0;
+
+  for (const task of dayTasks) {
+    if (!task.startAt) continue;
+    const durationMinutes = getTaskDurationMinutes(task);
+    const start = new Date(task.startAt).getTime();
+    const end = start + durationMinutes * 60 * 1000;
+    const clippedStart = Math.max(start, dayStart);
+    const clippedEnd = Math.min(end, dayEnd);
+    if (date) {
+      plannedMinutes += Math.max(0, clippedEnd - clippedStart) / 60000;
+    } else {
+      plannedMinutes += durationMinutes;
+    }
+    if (clippedStart < clippedEnd) {
+      blocks.push({ start: clippedStart, end: clippedEnd });
+    }
+  }
+
+  blocks.sort((left, right) => left.start - right.start);
 
   let furthestEnd = 0;
   let overlaps = false;
@@ -804,13 +837,5 @@ export const getDayWarnings = (dayTasks, date = null) => {
     furthestEnd = Math.max(furthestEnd, block.end);
   }
 
-  const plannedMinutes = dayTasks
-    .filter((task) => task.startAt)
-    .reduce((total, task) => {
-      if (!date) return total + getTaskDurationMinutes(task);
-      const start = new Date(task.startAt).getTime();
-      const end = start + getTaskDurationMinutes(task) * 60 * 1000;
-      return total + Math.max(0, Math.min(end, dayEnd) - Math.max(start, dayStart)) / 60000;
-    }, 0);
   return { overlaps, overloaded: plannedMinutes > 480 };
 };

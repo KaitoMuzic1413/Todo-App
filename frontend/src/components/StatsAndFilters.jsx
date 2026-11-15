@@ -1,6 +1,6 @@
 import { Clipboard, CheckCircle2, Clock, Star } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n';
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const AnimatedNumber = ({ value }) => {
@@ -149,4 +149,4 @@ const StatsAndFilters = ({ tasks = [], onFilterChange, activeFilter = 'all', cus
   );
 };
 
-export default StatsAndFilters;
+export default memo(StatsAndFilters);

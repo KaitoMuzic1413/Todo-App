@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { FileText, Plus, StickyNote } from 'lucide-react';
 import {
   dateKey,
@@ -5,6 +6,18 @@ import {
   getTaskCalendarDisplay,
 } from '@/lib/calendarUtils';
 import { formatTimeOnly } from '@/lib/calendarPageHelpers';
+
+const fullDateFormatters = new Map();
+
+const getFullDateFormatter = (locale) => {
+  const key = locale || 'default';
+  let formatter = fullDateFormatters.get(key);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(locale, { dateStyle: 'full' });
+    fullDateFormatters.set(key, formatter);
+  }
+  return formatter;
+};
 
 const AgendaView = ({
   calendarDays,
@@ -16,7 +29,9 @@ const AgendaView = ({
   t,
   openNoteModal,
   openTaskScheduleModal,
-}) => (
+}) => {
+  const fullDateFormatter = getFullDateFormatter(locale);
+  return (
   <section className='space-y-4'>
     {calendarDays.map((date) => {
       const dayKey = dateKey(date);
@@ -46,7 +61,7 @@ const AgendaView = ({
               </span>
               <div className='min-w-0'>
                 <h3 className='truncate text-sm font-bold text-slate-900 dark:text-white'>
-                  {new Intl.DateTimeFormat(locale, { dateStyle: 'full' }).format(date)}
+                  {fullDateFormatter.format(date)}
                 </h3>
                 {isToday ? (
                   <span className='text-[11px] font-bold text-violet-600 dark:text-violet-400'>
@@ -130,6 +145,7 @@ const AgendaView = ({
       );
     })}
   </section>
-);
+  );
+};
 
-export default AgendaView;
+export default memo(AgendaView);
